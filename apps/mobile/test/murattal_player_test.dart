@@ -43,12 +43,16 @@ void main() {
     final engine = FakeAudioEngine();
     await pumpApp(tester, manifest: manifest, engine: engine);
     await openSurah(tester, 'Al-Fatihah');
+    expect(tester.widget<Text>(find.byKey(const Key('now-playing'))).data, 'Rast');
+    await openIramaSheet(tester);
     expect(chip(tester, 'rast').selected, isTrue);
     final chips = tester.widgetList<ChoiceChip>(find.byType(ChoiceChip)).toList();
     expect((chips.first.label as Text).data, 'Bayyati');
     for (final key in [murattalKey, ...naghomStyles.map((n) => n.slug)]) {
       expect(find.byKey(Key('naghom-$key')), findsOneWidget);
     }
+    await tester.tapAt(const Offset(10, 10)); // tutup lembar
+    await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const Key('play-surah')));
     await tester.pumpAndSettle();
@@ -61,9 +65,11 @@ void main() {
     await AudioPreferenceRepository(store).save(naghom: 'murattal', recitationId: 'm');
     await pumpApp(tester, manifest: manifest, engine: engine, store: store);
     await openSurah(tester, 'Al-Fatihah');
-    expect(chip(tester, 'murattal').selected, isTrue);
+    expect(tester.widget<Text>(find.byKey(const Key('now-playing'))).data, 'Murattal (tanpa irama)');
     await tester.tap(find.byKey(const Key('play-surah')));
     await tester.pumpAndSettle();
+    await openIramaSheet(tester);
+    expect(chip(tester, 'murattal').selected, isTrue);
     await tester.tap(find.byKey(const Key('naghom-rast')));
     await tester.pumpAndSettle();
     expect(engine.calls.last.first.toString(), 'https://cdn.test/r/001001.mp3');
@@ -76,8 +82,11 @@ void main() {
     await AudioPreferenceRepository(store).save(naghom: 'rast', recitationId: 'r'); // rast tak ada di surah 114
     await pumpApp(tester, manifest: manifest, engine: engine, store: store);
     await openSurah(tester, 'An-Nas');
+    await openIramaSheet(tester);
     expect(chip(tester, 'murattal').selected, isTrue);
     expect(chip(tester, 'rast').onSelected, isNull);
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('play-surah')));
     await tester.pumpAndSettle();
     expect(engine.calls.single.length, 6);

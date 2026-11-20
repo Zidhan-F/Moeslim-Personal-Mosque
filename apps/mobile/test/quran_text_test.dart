@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:moeslim_mobile/features/quran/quran_source.dart';
+import 'package:moeslim_mobile/features/quran/surah_page.dart';
 import 'package:personal_core/personal_core.dart';
 
 import 'helpers.dart';
@@ -27,10 +28,10 @@ void main() {
   });
 
   Future<void> openSurah(WidgetTester tester, String name) async {
-    await tester.tap(find.text("Al-Qur'an").last);
-    await tester.pump();
-    await tester.scrollUntilVisible(find.text(name), 300, scrollable: find.byType(Scrollable).first);
-    await tester.tap(find.text(name));
+    final nav = tester.state<NavigatorState>(find.byType(Navigator).first);
+    nav.popUntil((r) => r.isFirst);
+    await tester.pumpAndSettle();
+    nav.push(MaterialPageRoute(builder: (_) => SurahPage(surah: surahs.firstWhere((s) => s.name == name))));
     await tester.pumpAndSettle();
   }
 
@@ -44,12 +45,8 @@ void main() {
     await pumpApp(tester, quran: FakeQuranSource(data));
     await openSurah(tester, 'Al-Baqarah');
     expect(find.byKey(const Key('basmala-header')), findsOneWidget);
-    await tester.pageBack();
-    await tester.pumpAndSettle();
     await openSurah(tester, 'Al-Fatihah');
     expect(find.byKey(const Key('basmala-header')), findsNothing);
-    await tester.pageBack();
-    await tester.pumpAndSettle();
     await openSurah(tester, 'At-Taubah');
     expect(find.byKey(const Key('basmala-header')), findsNothing);
   });

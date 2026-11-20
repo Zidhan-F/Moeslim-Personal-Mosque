@@ -67,6 +67,9 @@ class PlayerState {
   final bool playing;
   final bool repeatAyah;
   final String? error;
+  final double speed;
+  final Duration position;
+  final Duration? duration;
 
   const PlayerState({
     this.surah,
@@ -77,6 +80,9 @@ class PlayerState {
     this.playing = false,
     this.repeatAyah = false,
     this.error,
+    this.speed = 1,
+    this.position = Duration.zero,
+    this.duration,
   });
 
   AudioTrack? get current => index != null && index! < queue.length ? queue[index!] : null;
@@ -91,6 +97,9 @@ class PlayerState {
     bool? repeatAyah,
     String? error,
     bool clearError = false,
+    double? speed,
+    Duration? position,
+    Duration? duration,
   }) => PlayerState(
     surah: surah ?? this.surah,
     naghom: naghom ?? this.naghom,
@@ -114,7 +123,9 @@ class QuranPlayer extends Notifier<PlayerState> {
     final engine = ref.watch(audioEngineProvider);
     _subs
       ..add(engine.currentIndex.listen((i) => state = state.copyWith(index: i)))
-      ..add(engine.playing.listen((p) => state = state.copyWith(playing: p)));
+      ..add(engine.playing.listen((p) => state = state.copyWith(playing: p)))
+      ..add(engine.position.listen((p) => state = state.copyWith(position: p)))
+      ..add(engine.duration.listen((d) => state = state.copyWith(duration: d)));
     ref.onDispose(() {
       for (final s in _subs) {
         s.cancel();
@@ -185,6 +196,20 @@ class QuranPlayer extends Notifier<PlayerState> {
     await selectNaghom(slug);
     await playAyah(1);
     return true;
+  }
+
+  /// Lompat ke ayat sebelumnya/berikutnya (delta -1/+1) dalam surah aktif.
+  Future<void> skip(int delta) async {
+    final surah = state.surah;
+    if (surah == null || state.recitation == null) return;
+    final current = state.current?.ayah ?? 1;
+    final target = (current + delta).clamp(1, surahs[surah - 1].ayahCount);
+    await playFrom(target);
+  }
+
+  Future<void> setSpeed(double speed) async {
+    state = state.copyWith(speed: speed);
+    await _engine.setSpeed(speed);
   }
 
   Future<void> togglePause() => state.playing ? _engine.pause() : _engine.resume();

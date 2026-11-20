@@ -4,6 +4,10 @@ import 'package:just_audio/just_audio.dart';
 abstract class AudioEngine {
   Stream<int?> get currentIndex;
   Stream<bool> get playing;
+  Stream<Duration> get position;
+  Stream<Duration?> get duration;
+  Future<void> setSpeed(double speed);
+  Future<void> seek(Duration position);
   Future<void> playAll(List<Uri> uris, {int startIndex = 0});
   Future<void> pause();
   Future<void> resume();
@@ -20,6 +24,18 @@ class JustAudioEngine implements AudioEngine {
 
   @override
   Stream<bool> get playing => _player.playingStream;
+
+  @override
+  Stream<Duration> get position => _player.positionStream;
+
+  @override
+  Stream<Duration?> get duration => _player.durationStream;
+
+  @override
+  Future<void> setSpeed(double speed) => _player.setSpeed(speed);
+
+  @override
+  Future<void> seek(Duration position) => _player.seek(position);
 
   @override
   Future<void> playAll(List<Uri> uris, {int startIndex = 0}) async {

@@ -41,6 +41,7 @@ void main() {
   testWidgets('7 pilihan irama; yang belum ada rekamannya nonaktif', (tester) async {
     await pumpApp(tester, manifest: manifest);
     await openFatihah(tester);
+    await openIramaSheet(tester);
     for (final s in naghomStyles) {
       expect(find.byKey(Key('naghom-${s.slug}')), findsOneWidget);
     }
@@ -53,15 +54,18 @@ void main() {
     final store = InMemoryStore();
     await pumpApp(tester, manifest: manifest, engine: engine, store: store);
     await openFatihah(tester);
-    expect(chip(tester, 'bayyati').selected, isTrue); // irama pertama yang tersedia
+    expect(tester.widget<Text>(find.byKey(const Key('now-playing'))).data, 'Bayyati'); // irama pertama yang tersedia
 
     await tester.tap(find.byKey(const Key('play-surah')));
     await tester.pumpAndSettle();
     expect(engine.calls.single.length, 7);
     expect(engine.calls.single.first.toString(), 'https://cdn.test/a/bayyati/001001.mp3');
 
+    await openIramaSheet(tester);
+    expect(chip(tester, 'bayyati').selected, isTrue);
     await tester.tap(find.byKey(const Key('naghom-rast')));
     await tester.pumpAndSettle();
+    expect(find.byKey(const Key('naghom-options')), findsNothing); // lembar tertutup setelah memilih
     expect(engine.calls.length, 2);
     expect(engine.calls.last.first.toString(), 'https://cdn.test/a/rast/001001.mp3');
     expect(await AudioPreferenceRepository(store).naghom(), 'rast');
@@ -76,6 +80,8 @@ void main() {
       100,
       scrollable: find.byType(Scrollable).first,
     );
+    await tester.ensureVisible(find.byKey(const Key('play-ayah-3')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('play-ayah-3')));
     await tester.pumpAndSettle();
     expect(engine.calls.single, [Uri.file('/local/001003.mp3')]);
@@ -85,6 +91,7 @@ void main() {
     final engine = FakeAudioEngine();
     await pumpApp(tester, manifest: manifest, engine: engine);
     await openFatihah(tester);
+    await openIramaSheet(tester);
     await tester.tap(find.byKey(const Key('repeat-ayah')));
     await tester.pumpAndSettle();
     expect(engine.repeat, isTrue);
@@ -93,6 +100,7 @@ void main() {
   testWidgets('tanpa katalog: pesan rekaman belum tersedia, semua irama nonaktif', (tester) async {
     await pumpApp(tester);
     await openFatihah(tester);
+    await openIramaSheet(tester);
     expect(find.byKey(const Key('no-audio')), findsOneWidget);
     expect(chip(tester, 'bayyati').onSelected, isNull);
   });

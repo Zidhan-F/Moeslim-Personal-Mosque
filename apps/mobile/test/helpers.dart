@@ -1,3 +1,4 @@
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -32,6 +33,19 @@ class FakeAudioEngine implements AudioEngine {
   Stream<int?> get currentIndex => _index.stream;
   @override
   Stream<bool> get playing => _playing.stream;
+
+  double speed = 1;
+  final _position = StreamController<Duration>.broadcast();
+  final _duration = StreamController<Duration?>.broadcast();
+
+  @override
+  Stream<Duration> get position => _position.stream;
+  @override
+  Stream<Duration?> get duration => _duration.stream;
+  @override
+  Future<void> setSpeed(double s) async => speed = s;
+  @override
+  Future<void> seek(Duration p) async => _position.add(p);
 
   @override
   Future<void> playAll(List<Uri> uris, {int startIndex = 0}) async {
@@ -109,4 +123,10 @@ Future<ProviderContainer> pumpApp(
   await tester.pump();
   await tester.pump();
   return container;
+}
+
+/// Buka lembar pilihan irama dari bar pemutar mushaf.
+Future<void> openIramaSheet(WidgetTester tester) async {
+  await tester.tap(find.byKey(const Key('irama-picker')));
+  await tester.pumpAndSettle();
 }

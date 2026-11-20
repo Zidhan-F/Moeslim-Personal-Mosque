@@ -56,6 +56,8 @@ void main() {
 
   testWidgets('panduan warna tajwid menampilkan semua aturan', (tester) async {
     await openFatihah(tester);
+    await tester.tap(find.byTooltip('Lainnya'));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('tajweed-legend')));
     await tester.pumpAndSettle();
     expect(find.text('Hamzah Washal'), findsOneWidget);

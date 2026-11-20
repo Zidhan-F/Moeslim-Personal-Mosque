@@ -80,7 +80,7 @@ void main() {
     await tester.tap(find.text('Al-Ikhlas'));
     await tester.pumpAndSettle();
 
-    expect(tester.widget<ChoiceChip>(find.byKey(const Key('naghom-rast'))).selected, isTrue);
+    expect(tester.widget<Text>(find.byKey(const Key('now-playing'))).data, 'Rast');
     await tester.tap(find.byKey(const Key('play-surah')));
     await tester.pumpAndSettle();
     expect(engine.calls.single.first.toString(), 'https://cdn.test/r/112001.mp3');
