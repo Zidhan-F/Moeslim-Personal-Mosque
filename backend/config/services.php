@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'google_play' => [
+        'package_name' => env('GOOGLE_PLAY_PACKAGE_NAME'),
+        'service_account_json' => env('GOOGLE_PLAY_SERVICE_ACCOUNT_JSON'),
+    ],
+
 ];

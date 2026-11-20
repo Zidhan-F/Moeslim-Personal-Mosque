@@ -13,6 +13,7 @@ use Tests\TestCase;
 class OperationsTest extends TestCase
 {
     private User $owner;
+
     private Mosque $mosque;
 
     protected function setUp(): void

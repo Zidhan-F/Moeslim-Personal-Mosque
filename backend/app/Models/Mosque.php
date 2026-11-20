@@ -13,10 +13,15 @@ class Mosque extends Model
 
     /** Batas penggunaan wajar (FUP) paket tunggal. */
     public const MAX_ACTIVE_MEMBERS = 5;
+
     public const STORAGE_QUOTA_BYTES = 1024 * 1024 * 1024;
+
     public const MAX_DISPLAYS = 5;
+
     public const MONTHLY_TRANSACTION_SOFT_LIMIT = 10000;
+
     public const MAX_ACTIVE_CONTENT = 500;
+
     public const MAX_INVENTORY_ITEMS = 5000;
 
     public const DEFAULT_SETTINGS = [

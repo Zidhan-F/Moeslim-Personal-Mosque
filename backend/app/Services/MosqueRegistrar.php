@@ -74,6 +74,7 @@ class MosqueRegistrar
             }
         }
         $d = 0.001; // ~110 m
+
         return Mosque::whereBetween('latitude', [$data['latitude'] - $d, $data['latitude'] + $d])
             ->whereBetween('longitude', [$data['longitude'] - $d, $data['longitude'] + $d])
             ->exists();

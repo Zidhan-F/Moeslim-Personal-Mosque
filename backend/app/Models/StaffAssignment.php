@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class StaffAssignment extends Model
 {
     public const DUTIES = ['imam', 'muadzin', 'khatib', 'bilal', 'operator', 'lainnya'];
+
     public const PRAYERS = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha', 'jumat', 'tarawih', 'ied'];
 
     protected $guarded = ['id', 'mosque_id'];

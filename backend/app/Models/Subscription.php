@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Subscription extends Model
 {
     public const TRIAL_DAYS = 30;
+
     public const GRACE_DAYS = 7;
 
     protected $guarded = ['id'];

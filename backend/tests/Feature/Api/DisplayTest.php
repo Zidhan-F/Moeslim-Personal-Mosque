@@ -11,6 +11,7 @@ use Tests\TestCase;
 class DisplayTest extends TestCase
 {
     private User $owner;
+
     private Mosque $mosque;
 
     protected function setUp(): void

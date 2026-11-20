@@ -63,7 +63,7 @@ class AuthTest extends TestCase
             return true;
         });
 
-        $this->postJson('/api/auth/email/verify', ['code' => '000000' === $code ? '111111' : '000000'])
+        $this->postJson('/api/auth/email/verify', ['code' => $code === '000000' ? '111111' : '000000'])
             ->assertUnprocessable();
         $this->postJson('/api/auth/email/verify', ['code' => $code])->assertOk();
         $this->assertNotNull($user->fresh()->email_verified_at);

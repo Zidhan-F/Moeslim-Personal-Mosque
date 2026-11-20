@@ -1,6 +1,11 @@
 <?php
 
+use App\Http\Controllers\Api\AnnouncementController;
+use App\Http\Controllers\Api\DisplayController;
+use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\FinanceController;
+use App\Http\Controllers\Api\InventoryController;
+use App\Http\Controllers\Api\StaffAssignmentController;
 use Illuminate\Support\Facades\Route;
 
 // Dimuat di dalam grup mosques/{mosque} (auth:sanctum + tenant + scopeBindings).
@@ -26,45 +31,45 @@ Route::prefix('finance')->group(function () {
     });
 });
 
-Route::get('events', [\App\Http\Controllers\Api\EventController::class, 'index'])->middleware('perm:events.view');
-Route::patch('events/{event}/display', [\App\Http\Controllers\Api\EventController::class, 'toggleDisplay'])->middleware('perm:events.display');
+Route::get('events', [EventController::class, 'index'])->middleware('perm:events.view');
+Route::patch('events/{event}/display', [EventController::class, 'toggleDisplay'])->middleware('perm:events.display');
 Route::middleware('perm:events.write')->group(function () {
-    Route::post('events', [\App\Http\Controllers\Api\EventController::class, 'store']);
-    Route::patch('events/{event}', [\App\Http\Controllers\Api\EventController::class, 'update']);
-    Route::post('events/{event}/archive', [\App\Http\Controllers\Api\EventController::class, 'archive']);
-    Route::delete('events/{event}', [\App\Http\Controllers\Api\EventController::class, 'destroy']);
+    Route::post('events', [EventController::class, 'store']);
+    Route::patch('events/{event}', [EventController::class, 'update']);
+    Route::post('events/{event}/archive', [EventController::class, 'archive']);
+    Route::delete('events/{event}', [EventController::class, 'destroy']);
 });
 
-Route::get('announcements', [\App\Http\Controllers\Api\AnnouncementController::class, 'index'])->middleware('perm:events.view');
-Route::patch('announcements/{announcement}/display', [\App\Http\Controllers\Api\AnnouncementController::class, 'toggleDisplay'])->middleware('perm:events.display');
+Route::get('announcements', [AnnouncementController::class, 'index'])->middleware('perm:events.view');
+Route::patch('announcements/{announcement}/display', [AnnouncementController::class, 'toggleDisplay'])->middleware('perm:events.display');
 Route::middleware('perm:events.write')->group(function () {
-    Route::post('announcements', [\App\Http\Controllers\Api\AnnouncementController::class, 'store']);
-    Route::patch('announcements/{announcement}', [\App\Http\Controllers\Api\AnnouncementController::class, 'update']);
-    Route::post('announcements/{announcement}/archive', [\App\Http\Controllers\Api\AnnouncementController::class, 'archive']);
-    Route::delete('announcements/{announcement}', [\App\Http\Controllers\Api\AnnouncementController::class, 'destroy']);
+    Route::post('announcements', [AnnouncementController::class, 'store']);
+    Route::patch('announcements/{announcement}', [AnnouncementController::class, 'update']);
+    Route::post('announcements/{announcement}/archive', [AnnouncementController::class, 'archive']);
+    Route::delete('announcements/{announcement}', [AnnouncementController::class, 'destroy']);
 });
 
-Route::get('staff-assignments', [\App\Http\Controllers\Api\StaffAssignmentController::class, 'index'])->middleware('perm:staff.view');
+Route::get('staff-assignments', [StaffAssignmentController::class, 'index'])->middleware('perm:staff.view');
 Route::middleware('perm:staff.write')->group(function () {
-    Route::post('staff-assignments', [\App\Http\Controllers\Api\StaffAssignmentController::class, 'store']);
-    Route::patch('staff-assignments/{staffAssignment}', [\App\Http\Controllers\Api\StaffAssignmentController::class, 'update']);
-    Route::delete('staff-assignments/{staffAssignment}', [\App\Http\Controllers\Api\StaffAssignmentController::class, 'destroy']);
+    Route::post('staff-assignments', [StaffAssignmentController::class, 'store']);
+    Route::patch('staff-assignments/{staffAssignment}', [StaffAssignmentController::class, 'update']);
+    Route::delete('staff-assignments/{staffAssignment}', [StaffAssignmentController::class, 'destroy']);
 });
 
 Route::middleware('perm:inventory.view')->group(function () {
-    Route::get('inventory', [\App\Http\Controllers\Api\InventoryController::class, 'index']);
-    Route::get('inventory/{inventoryItem}', [\App\Http\Controllers\Api\InventoryController::class, 'show']);
+    Route::get('inventory', [InventoryController::class, 'index']);
+    Route::get('inventory/{inventoryItem}', [InventoryController::class, 'show']);
 });
 Route::middleware('perm:inventory.write')->group(function () {
-    Route::post('inventory', [\App\Http\Controllers\Api\InventoryController::class, 'store']);
-    Route::patch('inventory/{inventoryItem}', [\App\Http\Controllers\Api\InventoryController::class, 'update']);
-    Route::delete('inventory/{inventoryItem}', [\App\Http\Controllers\Api\InventoryController::class, 'destroy']);
-    Route::post('inventory/{inventoryItem}/maintenance', [\App\Http\Controllers\Api\InventoryController::class, 'storeMaintenance']);
+    Route::post('inventory', [InventoryController::class, 'store']);
+    Route::patch('inventory/{inventoryItem}', [InventoryController::class, 'update']);
+    Route::delete('inventory/{inventoryItem}', [InventoryController::class, 'destroy']);
+    Route::post('inventory/{inventoryItem}/maintenance', [InventoryController::class, 'storeMaintenance']);
 });
 
-Route::get('displays', [\App\Http\Controllers\Api\DisplayController::class, 'index'])->middleware('perm:display.view');
+Route::get('displays', [DisplayController::class, 'index'])->middleware('perm:display.view');
 Route::middleware('perm:display.manage')->group(function () {
-    Route::post('displays/pairing-codes', [\App\Http\Controllers\Api\DisplayController::class, 'createPairingCode']);
-    Route::patch('displays/{displayDevice}', [\App\Http\Controllers\Api\DisplayController::class, 'update']);
-    Route::post('displays/{displayDevice}/revoke', [\App\Http\Controllers\Api\DisplayController::class, 'revoke']);
+    Route::post('displays/pairing-codes', [DisplayController::class, 'createPairingCode']);
+    Route::patch('displays/{displayDevice}', [DisplayController::class, 'update']);
+    Route::post('displays/{displayDevice}/revoke', [DisplayController::class, 'revoke']);
 });

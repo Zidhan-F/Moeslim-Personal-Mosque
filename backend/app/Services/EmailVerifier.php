@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Hash;
 class EmailVerifier
 {
     private const TTL_MINUTES = 15;
+
     private const MAX_ATTEMPTS = 5;
 
     public function send(User $user): void
