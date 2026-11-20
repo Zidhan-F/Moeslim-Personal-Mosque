@@ -31,8 +31,24 @@ const manifestJson = {
       'attribution': 'Rekaman Qari A',
       'surahs': [1],
     },
-    {'id': 'rusak', 'naghom': 'tidak-dikenal', 'base_url': 'x', 'license': 'x', 'attribution': 'x', 'surahs': 'all', 'qari': 'x'},
-    {'id': 'tanpa-lisensi', 'naghom': 'hijaz', 'base_url': 'x', 'license': '', 'attribution': 'x', 'surahs': 'all', 'qari': 'x'},
+    {
+      'id': 'rusak',
+      'naghom': 'tidak-dikenal',
+      'base_url': 'x',
+      'license': 'x',
+      'attribution': 'x',
+      'surahs': 'all',
+      'qari': 'x'
+    },
+    {
+      'id': 'tanpa-lisensi',
+      'naghom': 'hijaz',
+      'base_url': 'x',
+      'license': '',
+      'attribution': 'x',
+      'surahs': 'all',
+      'qari': 'x'
+    },
   ],
 };
 

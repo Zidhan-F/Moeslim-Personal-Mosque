@@ -31,8 +31,7 @@ class NaghomStyle {
   String get toneLabel => toneLevels == null ? 'Variasi nada tajam' : '$toneLevels $toneTerm nada';
 }
 
-const naghomDisclaimer =
-    'Materi irama sedang ditelaah oleh qari/guru tilawah. '
+const naghomDisclaimer = 'Materi irama sedang ditelaah oleh qari/guru tilawah. '
     'Latihan irama tidak boleh mengorbankan ketepatan tajwid dan makhraj.';
 
 const List<NaghomStyle> naghomStyles = [

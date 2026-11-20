@@ -1,7 +1,6 @@
 import 'quran.dart';
 
-String ayahFileName(int surah, int ayah) =>
-    '${surah.toString().padLeft(3, '0')}${ayah.toString().padLeft(3, '0')}.mp3';
+String ayahFileName(int surah, int ayah) => '${surah.toString().padLeft(3, '0')}${ayah.toString().padLeft(3, '0')}.mp3';
 
 /// Laporan kelengkapan berkas per ayat (`SSSAAA.mp3`) untuk satu qari + satu irama.
 class CoverageReport {
@@ -32,7 +31,10 @@ class CoverageReport {
 
   bool get complete => missing.isEmpty;
 
-  List<int> get completeSurahs => [for (final s in surahs) if (!missing.containsKey(s.number)) s.number];
+  List<int> get completeSurahs => [
+        for (final s in surahs)
+          if (!missing.containsKey(s.number)) s.number
+      ];
 
   /// Nilai `surahs` untuk katalog: hanya surah yang lengkap per ayat yang boleh dicantumkan.
   Object get manifestSurahs => complete ? 'all' : completeSurahs;
@@ -50,9 +52,23 @@ class AyahSegment {
 
   /// Argumen ffmpeg: potong [start, end] lalu encode MP3 mono 96 kbps (ringan untuk unduh offline).
   List<String> ffmpegArgs(String input, String outDir) => [
-        '-y', '-hide_banner', '-loglevel', 'error', '-i', input,
-        '-ss', start.toStringAsFixed(3), '-to', end.toStringAsFixed(3),
-        '-ac', '1', '-ar', '44100', '-b:a', '96k', '$outDir/$fileName',
+        '-y',
+        '-hide_banner',
+        '-loglevel',
+        'error',
+        '-i',
+        input,
+        '-ss',
+        start.toStringAsFixed(3),
+        '-to',
+        end.toStringAsFixed(3),
+        '-ac',
+        '1',
+        '-ar',
+        '44100',
+        '-b:a',
+        '96k',
+        '$outDir/$fileName',
       ];
 }
 
@@ -68,7 +84,9 @@ List<AyahSegment> parseAyahLabels(String text, int surah) {
     if (parts.length < 3) throw FormatException('Label tidak valid: $line');
     final start = double.parse(parts[0]), end = double.parse(parts[1]);
     final ayah = int.parse(parts[2].trim());
-    if (ayah != segs.length + 1) throw FormatException('Label ayat harus berurutan; ditemukan $ayah, seharusnya ${segs.length + 1}');
+    if (ayah != segs.length + 1) {
+      throw FormatException('Label ayat harus berurutan; ditemukan $ayah, seharusnya ${segs.length + 1}');
+    }
     if (end <= start || (segs.isNotEmpty && start < segs.last.start)) {
       throw FormatException('Waktu label ayat $ayah tidak valid');
     }

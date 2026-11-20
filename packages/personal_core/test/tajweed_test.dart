@@ -28,9 +28,12 @@ void main() {
     });
 
     test('segmen bersambung, menutup seluruh teks', () {
-      final s = segmentTajweed(text, const [TajweedSpan(2, 4, TajweedRule.ikhfa), TajweedSpan(7, 8, TajweedRule.qalqalah)]);
+      final s =
+          segmentTajweed(text, const [TajweedSpan(2, 4, TajweedRule.ikhfa), TajweedSpan(7, 8, TajweedRule.qalqalah)]);
       expect(s.map((e) => e.text).join(), text);
-      expect([for (final e in s) (e.text, e.rule)], [
+      expect([
+        for (final e in s) (e.text, e.rule)
+      ], [
         ('ab', null),
         ('cd', TajweedRule.ikhfa),
         ('efg', null),
@@ -40,8 +43,11 @@ void main() {
     });
 
     test('tumpang tindih: anotasi yang lebih pendek (lebih spesifik) menang', () {
-      final s = segmentTajweed(text, const [TajweedSpan(0, 6, TajweedRule.madThabii), TajweedSpan(2, 3, TajweedRule.ghunnah)]);
-      expect([for (final e in s) (e.text, e.rule)], [
+      final s = segmentTajweed(
+          text, const [TajweedSpan(0, 6, TajweedRule.madThabii), TajweedSpan(2, 3, TajweedRule.ghunnah)]);
+      expect([
+        for (final e in s) (e.text, e.rule)
+      ], [
         ('ab', TajweedRule.madThabii),
         ('c', TajweedRule.ghunnah),
         ('def', TajweedRule.madThabii),
@@ -50,7 +56,8 @@ void main() {
     });
 
     test('anotasi di luar batas teks diabaikan dengan aman', () {
-      final s = segmentTajweed('abc', const [TajweedSpan(1, 99, TajweedRule.iqlab), TajweedSpan(5, 6, TajweedRule.ikhfa)]);
+      final s =
+          segmentTajweed('abc', const [TajweedSpan(1, 99, TajweedRule.iqlab), TajweedSpan(5, 6, TajweedRule.ikhfa)]);
       expect([for (final e in s) (e.text, e.rule)], [('a', null), ('bc', TajweedRule.iqlab)]);
     });
   });

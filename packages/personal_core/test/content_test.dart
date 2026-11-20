@@ -14,8 +14,7 @@ void main() {
   });
 
   test('7 irama naghom sesuai blueprint dan ditandai perlu telaah', () {
-    expect(naghomStyles.map((e) => e.name),
-        ['Bayyati', 'Hijaz', 'Shaba', 'Rast', 'Jiharkah', 'Sika', 'Nahawand']);
+    expect(naghomStyles.map((e) => e.name), ['Bayyati', 'Hijaz', 'Shaba', 'Rast', 'Jiharkah', 'Sika', 'Nahawand']);
     expect(naghomStyles.firstWhere((e) => e.slug == 'rast').toneLevels, 6);
     expect(naghomStyles.every((e) => e.needsExpertReview), isTrue);
   });

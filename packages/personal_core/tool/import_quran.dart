@@ -1,7 +1,7 @@
 // Mengubah berkas teks Tanzil (format `sura|aya|teks`) yang sudah diunduh secara sah
 // menjadi aset JSON per surah untuk aplikasi Moeslim Personal.
 //
-//   dart run tool/import_quran.dart <teks.txt> <output-dir> [terjemahan.txt] [--tajweed anotasi.json]
+//   dart run tool/import_quran.dart <teks.txt> <output-dir> [terjemahan.txt] [--tajweed anotasi.json] [--strip-basmala]
 //
 // --tajweed : dataset anotasi tajwid `[{surah, ayah, annotations:[{rule,start,end}]}]` yang dibuat
 //             untuk EDISI TEKS YANG SAMA. Posisi anotasi diverifikasi terhadap panjang teks tiap ayat;
@@ -16,6 +16,7 @@ import 'package:personal_core/personal_core.dart';
 
 void main(List<String> argv) {
   final args = [...argv];
+  final stripBasmala = args.remove('--strip-basmala');
   String? tajweedPath;
   final ti = args.indexOf('--tajweed');
   if (ti >= 0) {
@@ -26,7 +27,15 @@ void main(List<String> argv) {
     stderr.writeln('Pemakaian: dart run tool/import_quran.dart <teks.txt> <output-dir> [terjemahan.txt] [--tajweed anotasi.json]');
     exit(64);
   }
-  final text = parseTanzil(File(args[0]).readAsStringSync());
+  final rawText = parseTanzil(File(args[0]).readAsStringSync());
+  // --strip-basmala: lepas basmalah yang disisipkan sumber ke awal ayat 1 (kembalikan ke teks asli).
+  final text = {
+    for (final e in rawText.entries)
+      e.key: [
+        for (final a in e.value)
+          stripBasmala ? Ayah(a.surah, a.number, stripLeadingBasmala(a.surah, a.number, a.text)) : a,
+      ],
+  };
   final tr = args.length > 2 ? parseTanzil(File(args[2]).readAsStringSync()) : <int, List<Ayah>>{};
 
   var total = 0;
@@ -53,6 +62,15 @@ void main(List<String> argv) {
     }
     if (outOfBounds > 0) {
       stderr.writeln('Dibatalkan: $outOfBounds anotasi tajwid di luar batas teks. Pastikan anotasi dibuat untuk edisi teks yang sama.');
+      exit(1);
+    }
+    final textMap = {for (final e in text.entries) for (final a in e.value) (a.surah, a.number): a.text};
+    final align = checkTajweedAlignment(textMap, parsed.spans);
+    stdout.writeln('Kesejajaran anotasi: ${align.anchorsAligned}/${align.anchorsChecked} '
+        '(${(align.ratio * 100).toStringAsFixed(2)}%), ayat tidak sejajar: ${align.misalignedAyat.length}');
+    if (align.ratio < 0.999) {
+      stderr.writeln('Dibatalkan: anotasi tajwid tidak sejajar dengan teks (edisi berbeda). '
+          'Buat ulang anotasi dari teks yang sama sebelum mengimpor.');
       exit(1);
     }
     tajweed = parsed.spans;

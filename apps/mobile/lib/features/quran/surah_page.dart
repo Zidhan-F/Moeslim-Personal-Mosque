@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:personal_core/personal_core.dart';
 
 import '../../core/providers.dart';
@@ -103,12 +104,26 @@ class _SurahPageState extends ConsumerState<SurahPage> {
               ],
             );
           }
+          // Basmalah sebagai pembuka surah (bukan bagian ayat 1), kecuali Al-Fatihah & At-Taubah.
+          final header = showsBasmalaHeader(widget.surah.number) ? 1 : 0;
           return ListView.separated(
             padding: const EdgeInsets.all(16),
-            itemCount: ayat.length,
+            itemCount: ayat.length + header,
             separatorBuilder: (_, _) => const Divider(),
-            itemBuilder: (_, i) {
-              final a = ayat[i];
+            itemBuilder: (_, index) {
+              if (header == 1 && index == 0) {
+                return Padding(
+                  key: const Key('basmala-header'),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Text(
+                    basmala,
+                    textAlign: TextAlign.center,
+                    textDirection: TextDirection.rtl,
+                    style: quranTextStyle(fontSize: 28 * scale, color: Theme.of(context).colorScheme.primary),
+                  ),
+                );
+              }
+              final a = ayat[index - header];
               final marked = _bookmarked.contains(a.number);
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,

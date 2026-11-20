@@ -4,10 +4,42 @@ import 'package:test/test.dart';
 final manifest = AudioManifest.fromJson({
   'version': 2,
   'recitations': [
-    {'id': 'qari-m', 'qari': 'Qari M', 'kind': 'murattal', 'base_url': 'https://cdn.test/m', 'license': 'Izin tertulis', 'attribution': 'Qari M', 'surahs': 'all'},
-    {'id': 'qari-b', 'qari': 'Qari B', 'naghom': 'bayyati', 'base_url': 'https://cdn.test/b', 'license': 'Izin', 'attribution': 'Qari B', 'surahs': [1]},
-    {'id': 'tanpa-lisensi', 'qari': 'X', 'kind': 'murattal', 'base_url': 'https://cdn.test/x', 'license': '', 'attribution': 'X', 'surahs': 'all'},
-    {'id': 'jenis-salah', 'qari': 'X', 'kind': 'mujawwad', 'base_url': 'https://cdn.test/y', 'license': 'L', 'attribution': 'X', 'surahs': 'all'},
+    {
+      'id': 'qari-m',
+      'qari': 'Qari M',
+      'kind': 'murattal',
+      'base_url': 'https://cdn.test/m',
+      'license': 'Izin tertulis',
+      'attribution': 'Qari M',
+      'surahs': 'all'
+    },
+    {
+      'id': 'qari-b',
+      'qari': 'Qari B',
+      'naghom': 'bayyati',
+      'base_url': 'https://cdn.test/b',
+      'license': 'Izin',
+      'attribution': 'Qari B',
+      'surahs': [1]
+    },
+    {
+      'id': 'tanpa-lisensi',
+      'qari': 'X',
+      'kind': 'murattal',
+      'base_url': 'https://cdn.test/x',
+      'license': '',
+      'attribution': 'X',
+      'surahs': 'all'
+    },
+    {
+      'id': 'jenis-salah',
+      'qari': 'X',
+      'kind': 'mujawwad',
+      'base_url': 'https://cdn.test/y',
+      'license': 'L',
+      'attribution': 'X',
+      'surahs': 'all'
+    },
   ],
 });
 

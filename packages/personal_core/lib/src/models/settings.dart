@@ -34,8 +34,7 @@ class PersonalSettings {
   static final PersonalSettings defaults =
       PersonalSettings(location: indonesianCities.firstWhere((c) => c.name == 'Jakarta'));
 
-  PrayerCalculator get calculator =>
-      PrayerCalculator(method, madhab: madhab, adjustments: adjustments);
+  PrayerCalculator get calculator => PrayerCalculator(method, madhab: madhab, adjustments: adjustments);
 
   PrayerTimes timesFor(DateTime date) =>
       calculator.compute(date, location.coordinates, utcOffsetHours: location.utcOffset);

@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:personal_core/personal_core.dart';
 
 /// Teks ayat (RTL) dengan pewarnaan tajwid dari anotasi dataset.
@@ -18,7 +19,7 @@ class TajweedText extends StatelessWidget {
       textScaler: MediaQuery.textScalerOf(context),
       text: TextSpan(
         // Warna dasar dari tema agar terbaca di mode terang & gelap.
-        style: DefaultTextStyle.of(context).style.merge(style),
+        style: DefaultTextStyle.of(context).style.merge(quranTextStyle()).merge(style),
         children: [
           for (final s in segments)
             TextSpan(

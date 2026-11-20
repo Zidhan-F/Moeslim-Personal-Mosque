@@ -6,6 +6,17 @@ import 'package:personal_core/personal_core.dart';
 import '../quran/audio/audio_providers.dart';
 
 /// Pernyataan non-komersial Moeslim Personal dan atribusi seluruh sumber konten.
+/// Atribusi sumber konten bawaan (lihat juga apps/mobile/assets/quran/SOURCE.md & docs/licensing/).
+const contentSources = <(String, String)>[
+  (
+    'Teks Al-Qur\'an: Tanzil Quran Text (Uthmani)',
+    'Hak cipta © Tanzil Project — tanzil.net. Disalin apa adanya (verbatim); basmalah ditampilkan sebagai '
+        'pembuka surah, bukan bagian ayat 1.',
+  ),
+  ('Font mushaf: Amiri Quran', '© The Amiri Project Authors — SIL Open Font License 1.1.'),
+  ('Font antarmuka: Inter', '© The Inter Project Authors — SIL Open Font License 1.1.'),
+];
+
 class AboutLicensesPage extends ConsumerWidget {
   const AboutLicensesPage({super.key});
 
@@ -46,13 +57,8 @@ class AboutLicensesPage extends ConsumerWidget {
             ),
           const SizedBox(height: 16),
           Text('Teks Al-Qur\'an, terjemahan & anotasi tajwid', style: t.titleMedium),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8),
-            child: Text(
-              'Sumber dan atribusi dataset dicantumkan sesuai ketentuan lisensinya saat dataset dipasang '
-              '(lihat berkas SOURCE.md pada aset Al-Qur\'an).',
-            ),
-          ),
+          for (final (title, detail) in contentSources)
+            ListTile(contentPadding: EdgeInsets.zero, title: Text(title), subtitle: Text(detail)),
           const SizedBox(height: 8),
           const Text(
             'Moeslim Mosque adalah fitur tambahan opsional untuk pengurus masjid yang berbayar per masjid. '

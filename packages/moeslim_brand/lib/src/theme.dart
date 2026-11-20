@@ -5,6 +5,10 @@ import 'colors.dart';
 const _font = 'Inter';
 const _package = 'moeslim_brand';
 
+/// Gaya teks Arab Al-Qur'an (font mushaf Amiri Quran, SIL OFL 1.1, dibundel).
+TextStyle quranTextStyle({double fontSize = 26, Color? color}) =>
+    TextStyle(fontFamily: 'AmiriQuran', package: _package, fontSize: fontSize, height: 2.0, color: color);
+
 /// Tema Material 3 Moeslim PM (terang & gelap) dengan tipografi Inter yang dibundel (offline).
 abstract final class BrandTheme {
   static ThemeData light() => _build(

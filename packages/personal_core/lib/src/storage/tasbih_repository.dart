@@ -28,12 +28,14 @@ class TasbihRepository {
   }
 
   Future<void> reset(String id) async {
-    final all = await _all()..['$id.count'] = 0;
+    final all = await _all()
+      ..['$id.count'] = 0;
     await _store.writeJson(_key, all);
   }
 
   Future<void> setTarget(String id, int target) async {
-    final all = await _all()..['$id.target'] = target;
+    final all = await _all()
+      ..['$id.target'] = target;
     await _store.writeJson(_key, all);
   }
 }

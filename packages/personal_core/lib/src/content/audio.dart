@@ -44,8 +44,7 @@ class Recitation {
 
   bool covers(int surah) => surahs == null || surahs!.contains(surah);
 
-  String fileName(int surah, int ayah) =>
-      '${surah.toString().padLeft(3, '0')}${ayah.toString().padLeft(3, '0')}.mp3';
+  String fileName(int surah, int ayah) => '${surah.toString().padLeft(3, '0')}${ayah.toString().padLeft(3, '0')}.mp3';
 
   String ayahUrl(int surah, int ayah) => '$baseUrl/${fileName(surah, ayah)}';
 

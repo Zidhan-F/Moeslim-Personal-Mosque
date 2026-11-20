@@ -29,14 +29,10 @@ cd apps/masjid_display && flutter run --dart-define=API_BASE_URL=http://10.0.2.2
 
 ## Teks Al-Qur'an
 
-Repo ini **tidak** menyertakan teks Al-Qur'an/terjemahan. Impor dari sumber berlisensi yang telah
-ditashih (Lajnah Pentashihan Mushaf Al-Qur'an Kemenag), lalu salin hasilnya ke `apps/mobile/assets/quran/`
-dan daftarkan folder itu di `pubspec.yaml`:
-
-```bash
-cd packages/personal_core
-dart run tool/import_quran.dart <teks-tanzil.txt> ../../apps/mobile/assets/quran [terjemahan.txt]
-```
+Aplikasi sudah memuat **teks Arab Al-Qur'an lengkap** (Tanzil Quran Text — Uthmani, 114 surah, 6.236 ayat)
+dengan font mushaf **Amiri Quran**, di `apps/mobile/assets/quran/` (sumber & ketentuan: `SOURCE.md`).
+Terjemahan, audio, dan anotasi tajwid menunggu izin/langkah teknis — lihat **`docs/licensing/`**
+(register lisensi + surat permohonan izin siap kirim).
 
 ## Audio murottal 7 irama
 
@@ -51,6 +47,7 @@ Teks Al-Qur'an diwarnai sesuai hukum tajwid dari dataset anotasi yang diimpor be
 ## Dokumen
 
 - `docs/tajwid-warna.md` — pewarnaan tajwid & format anotasi
+- `docs/licensing/` — register lisensi konten & surat permohonan izin
 
 - `docs/audio-naghom.md` — pemutar audio & format katalog 7 irama
 

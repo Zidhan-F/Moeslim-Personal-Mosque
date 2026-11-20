@@ -3,8 +3,11 @@ import 'package:test/test.dart';
 
 void main() {
   test('ringkasan 7 irama persis sesuai materi pemilik produk', () {
-    expect({for (final s in naghomStyles) s.name: s.summary}, {
-      'Bayyati': 'Memiliki 4 tingkat nada, berkarakter lembut, meliuk, dan sering digunakan pada awal atau akhir bacaan.',
+    expect({
+      for (final s in naghomStyles) s.name: s.summary
+    }, {
+      'Bayyati':
+          'Memiliki 4 tingkat nada, berkarakter lembut, meliuk, dan sering digunakan pada awal atau akhir bacaan.',
       'Hijaz': 'Berkarakter cepat, lincah (allegro), dengan variasi nada yang tajam.',
       'Shaba': 'Berkarakter cepat, cenderung mendayu atau menggugah rasa haru, memiliki 4 tingkat nada.',
       'Rast': 'Memiliki 6 tingkat nada yang ringan dan cepat, sering dipakai untuk azan atau imam shalat.',
@@ -25,8 +28,24 @@ void main() {
   final m = AudioManifest.fromJson({
     'version': 1,
     'recitations': [
-      {'id': 'm', 'qari': 'M', 'kind': 'murattal', 'base_url': 'https://c/m', 'license': 'L', 'attribution': 'A', 'surahs': 'all'},
-      {'id': 'r', 'qari': 'R', 'naghom': 'rast', 'base_url': 'https://c/r', 'license': 'L', 'attribution': 'A', 'surahs': [1, 112]},
+      {
+        'id': 'm',
+        'qari': 'M',
+        'kind': 'murattal',
+        'base_url': 'https://c/m',
+        'license': 'L',
+        'attribution': 'A',
+        'surahs': 'all'
+      },
+      {
+        'id': 'r',
+        'qari': 'R',
+        'naghom': 'rast',
+        'base_url': 'https://c/r',
+        'license': 'L',
+        'attribution': 'A',
+        'surahs': [1, 112]
+      },
     ],
   });
 
