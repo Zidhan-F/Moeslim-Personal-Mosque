@@ -73,6 +73,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.textContaining('Tanzil Quran Text'), 200, scrollable: find.byType(Scrollable).first);
     expect(find.textContaining('Tanzil'), findsWidgets);
+    await tester.scrollUntilVisible(find.textContaining('Font mushaf: Amiri Quran'), 200, scrollable: find.byType(Scrollable).first);
     expect(find.textContaining('Amiri Quran'), findsWidgets);
+    expect(find.textContaining('Kementerian Agama RI'), findsWidgets);
   });
 }
