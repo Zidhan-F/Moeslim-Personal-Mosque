@@ -35,7 +35,14 @@ cd packages/personal_core
 dart run tool/import_quran.dart <teks-tanzil.txt> ../../apps/mobile/assets/quran [terjemahan.txt]
 ```
 
+## Audio murottal 7 irama
+
+Pemutar per surah/ayat dengan pilihan 7 irama naghom. Repo tidak menyertakan audio; rekaman
+berlisensi didaftarkan lewat katalog — lihat `docs/audio-naghom.md`.
+
 ## Dokumen
+
+- `docs/audio-naghom.md` — pemutar audio & format katalog 7 irama
 
 - `docs/blueprint.md` — spesifikasi (Blueprint v1.1)
 - `docs/adr/` — keputusan arsitektur

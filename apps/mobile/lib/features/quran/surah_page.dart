@@ -3,6 +3,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:personal_core/personal_core.dart';
 
 import '../../core/providers.dart';
+import 'audio/audio_providers.dart';
+import 'audio/naghom_player_bar.dart';
 import 'quran_source.dart';
 
 class SurahPage extends ConsumerStatefulWidget {
@@ -22,6 +24,7 @@ class _SurahPageState extends ConsumerState<SurahPage> {
     super.initState();
     _loadBookmarks();
     ref.read(quranProgressProvider).setLastRead(AyahRef(widget.surah.number, widget.initialAyah ?? 1));
+    Future.microtask(() => ref.read(quranPlayerProvider.notifier).prepare(widget.surah.number));
   }
 
   Future<void> _loadBookmarks() async {
@@ -41,22 +44,36 @@ class _SurahPageState extends ConsumerState<SurahPage> {
     final text = ref.watch(surahTextProvider(widget.surah.number));
     final scale = ref.watch(settingsProvider).value?.fontScale ?? 1.0;
 
+    final player = ref.watch(quranPlayerProvider);
+    final canPlay = player.recitation != null && player.surah == widget.surah.number;
+    Widget playButton(int ayah) => IconButton(
+      key: Key('play-ayah-$ayah'),
+      tooltip: 'Putar ayat $ayah',
+      icon: Icon(player.current?.ayah == ayah && player.playing ? Icons.graphic_eq : Icons.play_circle_outline),
+      onPressed: canPlay ? () => ref.read(quranPlayerProvider.notifier).playAyah(ayah) : null,
+    );
+
     return Scaffold(
       appBar: AppBar(title: Text('${widget.surah.number}. ${widget.surah.name}')),
+      bottomNavigationBar: NaghomPlayerBar(surah: widget.surah),
       body: text.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('$e')),
         data: (ayat) {
           if (ayat == null) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(24),
-                child: Text(
-                  'Teks Al-Qur\'an belum tersedia di perangkat.\n\nDataset mushaf dan terjemahan harus diimpor dari sumber '
-                  'resmi yang telah ditashih (Lajnah Pentashihan Mushaf Al-Qur\'an Kemenag) beserta izin distribusinya.',
-                  textAlign: TextAlign.center,
+            return ListView(
+              children: [
+                const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Text(
+                    'Teks Al-Qur\'an belum tersedia di perangkat.\n\nDataset mushaf dan terjemahan harus diimpor dari sumber '
+                    'resmi yang telah ditashih (Lajnah Pentashihan Mushaf Al-Qur\'an Kemenag) beserta izin distribusinya.',
+                    textAlign: TextAlign.center,
+                  ),
                 ),
-              ),
+                for (var a = 1; a <= widget.surah.ayahCount; a++)
+                  ListTile(dense: true, title: Text('Ayat $a'), trailing: playButton(a)),
+              ],
             );
           }
           return ListView.separated(
@@ -73,6 +90,7 @@ class _SurahPageState extends ConsumerState<SurahPage> {
                     children: [
                       CircleAvatar(radius: 14, child: Text('${a.number}', style: const TextStyle(fontSize: 11))),
                       const Spacer(),
+                      playButton(a.number),
                       IconButton(
                         icon: Icon(marked ? Icons.bookmark : Icons.bookmark_border),
                         onPressed: () async {

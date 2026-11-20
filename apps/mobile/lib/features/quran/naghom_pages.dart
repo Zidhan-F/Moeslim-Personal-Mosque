@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:personal_core/personal_core.dart';
 
 import '../../core/providers.dart';
+import 'audio/audio_providers.dart';
 
 final _naghomStateProvider = FutureProvider.autoDispose((ref) async {
   final repo = ref.watch(naghomProgressProvider);
@@ -118,7 +119,7 @@ class _NaghomDetailPageState extends ConsumerState<NaghomDetailPage> {
             s.toneLevels != null ? '${s.toneLevels} tingkat (menurut materi awal)' : 'Menunggu kurikulum final',
           ),
           _Info('Penggunaan', s.usage),
-          const _Info('Contoh audio', 'Contoh audio berlisensi akan tersedia setelah ditelaah qari/guru tilawah.'),
+          _SampleAudio(style: s),
           const SizedBox(height: 8),
           TextField(
             controller: _note,
@@ -155,4 +156,37 @@ class _Info extends StatelessWidget {
       subtitle: Text(body),
     ),
   );
+}
+
+/// Contoh audio irama: tersedia bila katalog memiliki rekaman irama ini untuk Al-Fatihah.
+class _SampleAudio extends ConsumerWidget {
+  final NaghomStyle style;
+  const _SampleAudio({required this.style});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final manifest = ref.watch(audioManifestProvider).value ?? AudioManifest.empty;
+    final option = manifest.naghomOptionsFor(1).firstWhere((o) => o.style.slug == style.slug);
+    final player = ref.watch(quranPlayerProvider);
+    final playingThis = player.playing && player.naghom == style.slug;
+    return Card(
+      child: ListTile(
+        title: Text('Contoh audio', style: Theme.of(context).textTheme.labelLarge),
+        subtitle: Text(
+          option.available
+              ? '${option.recitations.first.qari} — Al-Fatihah ayat 1'
+              : 'Rekaman berlisensi irama ${style.name} akan tersedia setelah ditelaah qari/guru tilawah.',
+        ),
+        trailing: option.available
+            ? IconButton.filled(
+                key: const Key('naghom-sample'),
+                icon: Icon(playingThis ? Icons.stop : Icons.play_arrow),
+                onPressed: () => playingThis
+                    ? ref.read(quranPlayerProvider.notifier).stop()
+                    : ref.read(quranPlayerProvider.notifier).playSample(style.slug),
+              )
+            : null,
+      ),
+    );
+  }
 }

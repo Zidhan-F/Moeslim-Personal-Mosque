@@ -14,7 +14,9 @@ dependencies:
   flutter_secure_storage: ^11.2.0
   http: ^1.6.0
   intl: ^0.20.3
+  just_audio: ^0.10.6
   material_ui: ^1.1.0
+  path_provider: ^2.1.6
   personal_core:
     path: ../../packages/personal_core
   shared_prayer:
@@ -28,3 +30,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/audio/manifest.json
