@@ -17,7 +17,7 @@ class MoeslimApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.watch(settingsProvider).value;
     return MaterialApp(
-      title: 'Moeslim',
+      title: 'Moeslim PM',
       debugShowCheckedModeBanner: false,
       theme: buildTheme(Brightness.light),
       darkTheme: buildTheme(Brightness.dark),

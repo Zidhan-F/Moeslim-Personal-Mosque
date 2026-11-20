@@ -9,6 +9,7 @@ Monorepo ekosistem Moeslim: **Moeslim Personal** (gratis, tanpa akun, offline-fi
 |---|---|---|
 | `backend/` | API Laravel 13 + PostgreSQL untuk Moeslim Masjid | `php artisan test` |
 | `packages/shared_prayer/` | Dart murni: jadwal sholat (Kemenag, MWL, dll.), kiblat, Hijriah | `dart test` |
+| `packages/moeslim_brand/` | Identitas visual: warna, tema, font Inter, logo (lihat `docs/brand/`) | `flutter test` |
 | `packages/personal_core/` | Konten (114 surah, 7 Naghom, dzikir, kota) & penyimpanan lokal | `dart test` |
 | `apps/mobile/` | Flutter: Moeslim Personal + klien Moeslim Masjid | `flutter test` |
 | `apps/masjid_display/` | Flutter (Android TV/box): TV Display masjid | `flutter test` |

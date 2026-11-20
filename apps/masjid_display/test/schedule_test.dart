@@ -3,16 +3,16 @@ import 'package:moeslim_display/src/schedule.dart';
 import 'package:shared_prayer/shared_prayer.dart';
 
 Map<String, dynamic> mosque({Map<String, int>? iqamah}) => {
-      'latitude': -6.1754,
-      'longitude': 106.8272,
-      'timezone': 'Asia/Jakarta',
-      'prayer_method': 'kemenag',
-      'settings': {
-        'iqamah_minutes': iqamah ?? {'fajr': 10, 'dhuhr': 10, 'asr': 10, 'maghrib': 5, 'isha': 10},
-        'prayer_adjustments': {'fajr': 0, 'dhuhr': 0, 'asr': 0, 'maghrib': 0, 'isha': 0},
-        'hijri_offset_days': 0,
-      },
-    };
+  'latitude': -6.1754,
+  'longitude': 106.8272,
+  'timezone': 'Asia/Jakarta',
+  'prayer_method': 'kemenag',
+  'settings': {
+    'iqamah_minutes': iqamah ?? {'fajr': 10, 'dhuhr': 10, 'asr': 10, 'maghrib': 5, 'isha': 10},
+    'prayer_adjustments': {'fajr': 0, 'dhuhr': 0, 'asr': 0, 'maghrib': 0, 'isha': 0},
+    'hijri_offset_days': 0,
+  },
+};
 
 void main() {
   test('offset zona waktu Indonesia', () {
@@ -53,7 +53,9 @@ void main() {
   });
 
   test('jeda iqamah mengikuti pengaturan masjid', () {
-    final custom = DisplaySchedule.fromMosque(mosque(iqamah: {'fajr': 15, 'dhuhr': 3, 'asr': 10, 'maghrib': 5, 'isha': 10}));
+    final custom = DisplaySchedule.fromMosque(
+      mosque(iqamah: {'fajr': 15, 'dhuhr': 3, 'asr': 10, 'maghrib': 5, 'isha': 10}),
+    );
     final s = custom.statusAt(dhuhr.add(const Duration(minutes: 1)));
     expect(s.remaining, const Duration(minutes: 2));
   });

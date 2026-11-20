@@ -76,7 +76,7 @@ class NaghomHero extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('${i + 1}', style: const TextStyle(color: Colors.white70)),
+                            Text('${i + 1}', style: const TextStyle(color: Colors.white)),
                             Text(
                               s.name,
                               style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),

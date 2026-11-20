@@ -1,17 +1,19 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:moeslim_brand/moeslim_brand.dart';
 
 /// Warna identitas tiap irama (dipakai konsisten di Beranda, katalog, detail, dan pemutar).
+/// Semua memenuhi kontras ≥ 4.5:1 untuk teks putih; Bayyati memakai emerald brand.
 const naghomColors = <String, Color>{
-  'bayyati': Color(0xFF0B6E4F),
+  'bayyati': BrandColors.emerald,
   'hijaz': Color(0xFFB23A48),
   'shaba': Color(0xFF6D4C9F),
   'rast': Color(0xFF1F6FB2),
-  'jiharkah': Color(0xFFC77D18),
-  'sika': Color(0xFF2E8B8B),
+  'jiharkah': Color(0xFF9A5B0E),
+  'sika': Color(0xFF1F7272),
   'nahawand': Color(0xFF4A5A7A),
 };
 
-Color naghomColor(String slug) => naghomColors[slug] ?? const Color(0xFF0B6E4F);
+Color naghomColor(String slug) => naghomColors[slug] ?? BrandColors.emerald;
 
 /// Visual tingkat nada: batang naik sebanyak jumlah tingkat (Hijaz: pola zig-zag tajam).
 class ToneLevels extends StatelessWidget {

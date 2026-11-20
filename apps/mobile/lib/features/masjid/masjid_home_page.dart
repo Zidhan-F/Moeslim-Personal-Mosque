@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:personal_core/personal_core.dart';
 
 import 'dashboard_page.dart';
@@ -76,7 +77,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          const Icon(Icons.mosque, size: 64),
+          const Center(child: BrandLogo(variant: BrandLogoVariant.stacked, height: 120)),
           const SizedBox(height: 8),
           const Text(
             'Kelola kas, agenda, petugas, dan TV Display masjid bersama hingga 5 pengurus. Rp59.000/bulan, seluruh fitur.',

@@ -1,14 +1,19 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:shared_prayer/shared_prayer.dart';
 
 import 'display_api.dart';
 import 'schedule.dart';
 import 'state.dart';
 
-const _emerald = Color(0xFF0B6E4F);
-const _gold = Color(0xFFC9A227);
+const _emerald = BrandColors.emerald;
+const _gold = BrandColors.gold;
+const _deep = BrandColors.deep;
+
+/// Teks di atas latar emas wajib warna deep (kontras 6.2:1); putih di atas emas hanya 2.1:1.
+const _onGold = BrandColors.deep;
 
 String _two(int v) => v.toString().padLeft(2, '0');
 String _hm(DateTime t) => '${_two(t.hour)}:${_two(t.minute)}';
@@ -68,7 +73,7 @@ class _PairingScreenState extends ConsumerState<PairingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _emerald,
+      backgroundColor: _deep,
       body: Center(
         child: SizedBox(
           width: 520,
@@ -78,7 +83,7 @@ class _PairingScreenState extends ConsumerState<PairingScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.tv, size: 56, color: _emerald),
+                  const BrandLogo(height: 72, onDark: false),
                   const SizedBox(height: 12),
                   Text('Hubungkan TV Display', style: Theme.of(context).textTheme.headlineSmall),
                   const SizedBox(height: 8),
@@ -134,7 +139,7 @@ class DisplayScreen extends ConsumerWidget {
 
     if (content == null) {
       return Scaffold(
-        backgroundColor: _emerald,
+        backgroundColor: _deep,
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -182,8 +187,9 @@ class DisplayScreen extends ConsumerWidget {
     };
 
     return Scaffold(
-      backgroundColor: const Color(0xFF06261C),
-      body: DefaultTextStyle(
+      backgroundColor: _deep,
+      // merge (bukan ganti) agar tipografi Inter dari tema tetap dipakai.
+      body: DefaultTextStyle.merge(
         style: const TextStyle(color: Colors.white),
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -192,6 +198,8 @@ class DisplayScreen extends ConsumerWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const BrandLogo(variant: BrandLogoVariant.symbol, height: 72, onDark: true),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -233,22 +241,25 @@ class DisplayScreen extends ConsumerWidget {
                   color: status.phase == SchedulePhase.beforeAdhan ? _emerald : _gold,
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        statusText,
-                        key: const Key('status'),
-                        style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w600),
+                child: DefaultTextStyle.merge(
+                  style: TextStyle(color: status.phase == SchedulePhase.beforeAdhan ? Colors.white : _onGold),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          statusText,
+                          key: const Key('status'),
+                          style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w600),
+                        ),
                       ),
-                    ),
-                    if (status.phase != SchedulePhase.praying)
-                      Text(
-                        _hms(status.remaining),
-                        key: const Key('countdown'),
-                        style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
-                      ),
-                  ],
+                      if (status.phase != SchedulePhase.praying)
+                        Text(
+                          _hms(status.remaining),
+                          key: const Key('countdown'),
+                          style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
+                        ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -303,8 +314,14 @@ class DisplayScreen extends ConsumerWidget {
                                   key: const Key('finance-balance'),
                                   style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
                                 ),
-                                Text('Masuk bulan ini ${_rupiah(finance['month_in'] as num)}'),
-                                Text('Keluar bulan ini ${_rupiah(finance['month_out'] as num)}'),
+                                Text(
+                                  'Masuk bulan ini ${_rupiah(finance['month_in'] as num)}',
+                                  style: const TextStyle(fontSize: 22),
+                                ),
+                                Text(
+                                  'Keluar bulan ini ${_rupiah(finance['month_out'] as num)}',
+                                  style: const TextStyle(fontSize: 22),
+                                ),
                                 const SizedBox(height: 16),
                               ],
                               for (final s in (content['staff_today'] as List? ?? const []).cast<Map>())
@@ -370,11 +387,14 @@ class _PrayerTile extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 4),
       padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(color: active ? _gold : Colors.white10, borderRadius: BorderRadius.circular(12)),
-      child: Column(
-        children: [
-          Text(label, style: const TextStyle(fontSize: 22)),
-          Text(_hm(time), style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold)),
-        ],
+      child: DefaultTextStyle.merge(
+        style: TextStyle(color: active ? _onGold : Colors.white),
+        child: Column(
+          children: [
+            Text(label, style: const TextStyle(fontSize: 22)),
+            Text(_hm(time), style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold)),
+          ],
+        ),
       ),
     ),
   );

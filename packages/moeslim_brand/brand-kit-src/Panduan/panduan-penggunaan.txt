@@ -1,0 +1,22 @@
+MOESLIM PM — PANDUAN SINGKAT
+
+LOGO UTAMA
+- Pakai SVG/05_moeslim_pm_primary_horizontal.svg untuk header, website, dan dokumen.
+- Pakai SVG/06_moeslim_pm_stacked.svg untuk poster atau area vertikal.
+- Pakai SVG/01_moeslim_pm_symbol.svg untuk simbol mandiri.
+- Pakai SVG/07_moeslim_pm_horizontal_white.svg pada latar gelap.
+
+IKON ANDROID
+- Gunakan Android/play_store_icon_512x512.png di Play Console.
+- Gunakan Android/ic_launcher_foreground_432.png + Android/ic_launcher_background_432.png untuk adaptive launcher bila build Android mendukungnya.
+- Raster density tersedia untuk launcher legacy di folder Android.
+
+FAVICON
+- Salin aset di folder Favicon; lihat favicon-html.txt.
+
+KETENTUAN
+- Pertahankan proporsi mark; jangan dipipihkan.
+- Gunakan clear space minimal 10% tinggi logo.
+- Gunakan warna emas hanya sebagai aksen.
+- PNG dibuat dari master SVG.
+- Konsep logo asli berformat raster; master SVG ini adalah redraw khusus produksi, tidak sama piksel demi piksel.

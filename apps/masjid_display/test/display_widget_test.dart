@@ -5,44 +5,63 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:moeslim_display/main.dart';
 import 'package:moeslim_display/src/state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Map<String, dynamic> content({Map<String, dynamic>? finance}) => {
-      'server_time': '2025-01-01T05:00:00+00:00',
-      'mosque': {
-        'id': 'M1', 'name': 'Masjid Al-Ikhlas', 'address': 'Jl. Merdeka', 'city': 'Jakarta',
-        'latitude': -6.1754, 'longitude': 106.8272, 'timezone': 'Asia/Jakarta', 'prayer_method': 'kemenag',
-        'settings': {
-          'iqamah_minutes': {'fajr': 10, 'dhuhr': 10, 'asr': 10, 'maghrib': 5, 'isha': 10},
-          'prayer_adjustments': {'fajr': 0, 'dhuhr': 0, 'asr': 0, 'maghrib': 0, 'isha': 0},
-          'hijri_offset_days': 0,
-        },
-      },
-      'events': [
-        {'id': 1, 'title': 'Kajian Ahad', 'category': 'kajian', 'speaker': 'Ust. Fulan', 'location': null, 'starts_at': '2025-01-05T00:00:00+00:00', 'ends_at': null},
-      ],
-      'announcements': [],
-      'staff_today': [{'duty_type': 'imam', 'prayer': 'maghrib', 'name': 'H. Ahmad'}],
-      'finance': finance,
-      'device': {'id': 1, 'name': 'TV', 'config': {}},
-    };
+  'server_time': '2025-01-01T05:00:00+00:00',
+  'mosque': {
+    'id': 'M1',
+    'name': 'Masjid Al-Ikhlas',
+    'address': 'Jl. Merdeka',
+    'city': 'Jakarta',
+    'latitude': -6.1754,
+    'longitude': 106.8272,
+    'timezone': 'Asia/Jakarta',
+    'prayer_method': 'kemenag',
+    'settings': {
+      'iqamah_minutes': {'fajr': 10, 'dhuhr': 10, 'asr': 10, 'maghrib': 5, 'isha': 10},
+      'prayer_adjustments': {'fajr': 0, 'dhuhr': 0, 'asr': 0, 'maghrib': 0, 'isha': 0},
+      'hijri_offset_days': 0,
+    },
+  },
+  'events': [
+    {
+      'id': 1,
+      'title': 'Kajian Ahad',
+      'category': 'kajian',
+      'speaker': 'Ust. Fulan',
+      'location': null,
+      'starts_at': '2025-01-05T00:00:00+00:00',
+      'ends_at': null,
+    },
+  ],
+  'announcements': [],
+  'staff_today': [
+    {'duty_type': 'imam', 'prayer': 'maghrib', 'name': 'H. Ahmad'},
+  ],
+  'finance': finance,
+  'device': {'id': 1, 'name': 'TV', 'config': {}},
+};
 
 Future<void> pump(WidgetTester tester, http.Client client, {DateTime? now}) async {
   tester.view.physicalSize = const Size(1920, 1080);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   final prefs = await SharedPreferences.getInstance();
-  await tester.pumpWidget(ProviderScope(
-    overrides: [
-      prefsProvider.overrideWithValue(prefs),
-      httpClientProvider.overrideWithValue(client),
-      nowProvider.overrideWith((ref) => Stream.value(now ?? DateTime.utc(2025, 1, 1, 4, 30))), // 11:30 WIB
-      clockProvider.overrideWithValue(() => now ?? DateTime.utc(2025, 1, 1, 4, 30)),
-    ],
-    child: const DisplayApp(),
-  ));
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        prefsProvider.overrideWithValue(prefs),
+        httpClientProvider.overrideWithValue(client),
+        nowProvider.overrideWith((ref) => Stream.value(now ?? DateTime.utc(2025, 1, 1, 4, 30))), // 11:30 WIB
+        clockProvider.overrideWithValue(() => now ?? DateTime.utc(2025, 1, 1, 4, 30)),
+      ],
+      child: const DisplayApp(),
+    ),
+  );
   await tester.pump();
   await tester.pump();
 }
@@ -53,7 +72,13 @@ void main() {
     final client = MockClient((req) async {
       if (req.url.path.endsWith('/display/pair')) {
         expect(jsonDecode(req.body)['code'], '123456');
-        return http.Response(jsonEncode({'token': 'dev-token', 'mosque': {'name': 'Masjid Al-Ikhlas'}}), 201);
+        return http.Response(
+          jsonEncode({
+            'token': 'dev-token',
+            'mosque': {'name': 'Masjid Al-Ikhlas'},
+          }),
+          201,
+        );
       }
       expect(req.headers['Authorization'], 'Bearer dev-token');
       return http.Response(jsonEncode(content()), 200, headers: {'etag': '"v1"'});
@@ -111,7 +136,10 @@ void main() {
       'display.etag': '"v1"',
       'display.skewMs': const Duration(hours: 5).inMilliseconds, // skew basi
     });
-    await pump(tester, MockClient((_) async => http.Response('', 304, headers: {'x-server-time': '2025-01-01T04:30:00+00:00'})));
+    await pump(
+      tester,
+      MockClient((_) async => http.Response('', 304, headers: {'x-server-time': '2025-01-01T04:30:00+00:00'})),
+    );
     expect(tester.widget<Text>(find.byKey(const Key('clock'))).data, startsWith('11:30'));
   });
 
@@ -131,14 +159,18 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     var calls = 0;
     var clock = DateTime.utc(2025, 1, 1, 5);
-    final container = ProviderContainer(overrides: [
-      prefsProvider.overrideWithValue(prefs),
-      clockProvider.overrideWithValue(() => clock),
-      httpClientProvider.overrideWithValue(MockClient((_) async {
-        calls++;
-        return http.Response('', 304);
-      })),
-    ]);
+    final container = ProviderContainer(
+      overrides: [
+        prefsProvider.overrideWithValue(prefs),
+        clockProvider.overrideWithValue(() => clock),
+        httpClientProvider.overrideWithValue(
+          MockClient((_) async {
+            calls++;
+            return http.Response('', 304);
+          }),
+        ),
+      ],
+    );
     addTearDown(container.dispose);
     final c = container.read(displayControllerProvider.notifier);
     await c.tick(clock);
@@ -146,5 +178,22 @@ void main() {
     clock = clock.subtract(const Duration(hours: 3)); // NTP mengoreksi jam mundur
     await c.tick(clock);
     expect(calls, 2);
+  });
+
+  testWidgets('identitas brand: logo di pairing & kontras teks di banner iqamah (emas)', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await pump(tester, MockClient((_) async => http.Response('{}', 500)));
+    expect(find.bySemanticsLabel(BrandLogo.semanticLabel), findsOneWidget);
+  });
+
+  testWidgets('banner iqamah berlatar emas memakai teks deep (kontras ≥ 4.5:1) & logo di header', (tester) async {
+    SharedPreferences.setMockInitialValues({'display.token': 't', 'display.content': jsonEncode(content())});
+    await pump(tester, MockClient((_) async => http.Response('', 304)), now: DateTime.utc(2025, 1, 1, 5, 1));
+    expect(find.text('Iqamah Dzuhur'), findsOneWidget);
+    final status = tester.widget<Text>(find.byKey(const Key('status')));
+    final color =
+        status.style?.color ?? DefaultTextStyle.of(tester.element(find.byKey(const Key('status')))).style.color!;
+    expect(contrastRatio(color, BrandColors.gold), greaterThanOrEqualTo(4.5));
+    expect(find.bySemanticsLabel(BrandLogo.semanticLabel), findsOneWidget);
   });
 }

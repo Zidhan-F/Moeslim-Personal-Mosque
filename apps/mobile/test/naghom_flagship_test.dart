@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:personal_core/personal_core.dart';
 
+import 'package:moeslim_mobile/features/quran/naghom_pages.dart';
+
 import 'helpers.dart';
 
 final toneBars = find.byWidgetPredicate(
@@ -58,6 +60,8 @@ void main() {
       120,
       scrollable: find.descendant(of: hero, matching: find.byType(Scrollable)),
     );
+    await tester.ensureVisible(find.byKey(const Key('hero-rast')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('hero-rast')));
     await tester.pumpAndSettle();
 
@@ -65,7 +69,7 @@ void main() {
       tester.widget<Text>(find.byKey(const Key('naghom-summary'))).data,
       'Memiliki 6 tingkat nada yang ringan dan cepat, sering dipakai untuk azan atau imam shalat.',
     );
-    expect(toneBars, findsNWidgets(6));
+    expect(find.descendant(of: find.byType(NaghomDetailPage), matching: toneBars), findsNWidgets(6));
 
     await tester.ensureVisible(find.byKey(const Key('listen-with-naghom')));
     await tester.pumpAndSettle();
@@ -90,9 +94,11 @@ void main() {
       120,
       scrollable: find.descendant(of: hero, matching: find.byType(Scrollable)),
     );
+    await tester.ensureVisible(find.byKey(const Key('hero-sika')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('hero-sika')));
     await tester.pumpAndSettle();
     expect(find.text('4 jenis nada'), findsWidgets);
-    expect(toneBars, findsNWidgets(4));
+    expect(find.descendant(of: find.byType(NaghomDetailPage), matching: toneBars), findsNWidgets(4));
   });
 }

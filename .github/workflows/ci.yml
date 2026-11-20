@@ -54,10 +54,10 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        app: [mobile, masjid_display]
+        app: [apps/mobile, apps/masjid_display, packages/moeslim_brand]
     defaults:
       run:
-        working-directory: apps/${{ matrix.app }}
+        working-directory: ${{ matrix.app }}
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2

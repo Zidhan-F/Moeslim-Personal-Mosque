@@ -16,6 +16,8 @@ dependencies:
   intl: ^0.20.3
   just_audio: ^0.10.6
   material_ui: ^1.1.0
+  moeslim_brand:
+    path: ../../packages/moeslim_brand
   path_provider: ^2.1.6
   personal_core:
     path: ../../packages/personal_core

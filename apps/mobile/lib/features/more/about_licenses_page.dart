@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:personal_core/personal_core.dart';
 
 import '../quran/audio/audio_providers.dart';
@@ -22,6 +23,8 @@ class AboutLicensesPage extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          const Center(child: BrandLogo(variant: BrandLogoVariant.stacked, height: 140)),
+          const SizedBox(height: 16),
           Card(
             color: Theme.of(context).colorScheme.primaryContainer,
             child: const Padding(padding: EdgeInsets.all(16), child: Text(statement)),

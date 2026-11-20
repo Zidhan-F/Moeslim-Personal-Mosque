@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:shared_prayer/shared_prayer.dart';
 
 import '../../core/format.dart';
 import '../../core/providers.dart';
-import '../../core/theme.dart';
 import '../quran/naghom_hero.dart';
 
 class HomePage extends ConsumerWidget {
@@ -17,7 +17,7 @@ class HomePage extends ConsumerWidget {
     final settings = ref.watch(settingsProvider).value;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Moeslim')),
+      appBar: AppBar(title: const BrandLogo(height: 40), toolbarHeight: 72),
       body: status.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Gagal memuat jadwal: $e')),
@@ -69,18 +69,31 @@ class _NextPrayerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
     return Container(
+      key: const Key('prayer-card'),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        gradient: const LinearGradient(colors: [MoeslimColors.emerald, MoeslimColors.emeraldDark]),
+        gradient: const LinearGradient(
+          colors: [BrandColors.emerald, BrandColors.deep],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
       ),
-      child: DefaultTextStyle(
+      // merge (bukan ganti) agar tipografi Inter dari tema tetap dipakai.
+      child: DefaultTextStyle.merge(
         style: const TextStyle(color: Colors.white),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('$city • ${longDate(status.now)}', style: const TextStyle(color: Colors.white70)),
-            Text(hijri, style: const TextStyle(color: MoeslimColors.gold)),
+            Text('$city • ${longDate(status.now)}', style: const TextStyle(color: BrandColors.cream)),
+            Row(
+              children: [
+                // Emas hanya aksen dekoratif (kontras emas di atas emerald < 4.5:1).
+                const Icon(Icons.nightlight_round, size: 16, color: BrandColors.gold),
+                const SizedBox(width: 6),
+                Text(hijri, style: const TextStyle(color: BrandColors.cream)),
+              ],
+            ),
             const SizedBox(height: 12),
             Text('Menuju ${status.nextPrayer.label}', style: t.titleMedium?.copyWith(color: Colors.white)),
             Text(
@@ -90,7 +103,7 @@ class _NextPrayerCard extends StatelessWidget {
             ),
             Text(
               '${status.nextPrayer.label} pukul ${hhmm(status.nextTime)}',
-              style: const TextStyle(color: Colors.white70),
+              style: const TextStyle(color: BrandColors.cream),
             ),
           ],
         ),

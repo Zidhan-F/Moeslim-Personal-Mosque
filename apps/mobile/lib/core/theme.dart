@@ -1,30 +1,12 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:moeslim_brand/moeslim_brand.dart';
 
-/// Hijau zamrud, latar krem/putih, aksen emas (Blueprint §02).
+/// Alias warna lama → token brand kit Moeslim PM (lihat packages/moeslim_brand).
 class MoeslimColors {
-  static const emerald = Color(0xFF0B6E4F);
-  static const emeraldDark = Color(0xFF07513A);
-  static const cream = Color(0xFFFBF7EE);
-  static const gold = Color(0xFFC9A227);
+  static const emerald = BrandColors.emerald;
+  static const emeraldDark = BrandColors.deep;
+  static const cream = BrandColors.cream;
+  static const gold = BrandColors.gold;
 }
 
-ThemeData buildTheme(Brightness brightness) {
-  final scheme = ColorScheme.fromSeed(
-    seedColor: MoeslimColors.emerald,
-    brightness: brightness,
-    primary: brightness == Brightness.light ? MoeslimColors.emerald : const Color(0xFF6FD3A8),
-    secondary: MoeslimColors.gold,
-    surface: brightness == Brightness.light ? MoeslimColors.cream : const Color(0xFF101814),
-  );
-  return ThemeData(
-    useMaterial3: true,
-    colorScheme: scheme,
-    scaffoldBackgroundColor: scheme.surface,
-    appBarTheme: AppBarTheme(backgroundColor: scheme.surface, foregroundColor: scheme.onSurface, centerTitle: false),
-    cardTheme: CardThemeData(
-      elevation: 0,
-      color: brightness == Brightness.light ? Colors.white : const Color(0xFF17221C),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-    ),
-  );
-}
+ThemeData buildTheme(Brightness brightness) => brightness == Brightness.light ? BrandTheme.light() : BrandTheme.dark();

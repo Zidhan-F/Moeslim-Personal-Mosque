@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
@@ -21,9 +22,9 @@ class DisplayApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => MaterialApp(
-    title: 'Moeslim Display',
+    title: 'Moeslim PM Display',
     debugShowCheckedModeBanner: false,
-    theme: ThemeData(useMaterial3: true, colorSchemeSeed: const Color(0xFF0B6E4F)),
+    theme: BrandTheme.light(),
     // Remote TV: navigasi D-pad memakai fokus bawaan; tombol OK = activate.
     shortcuts: {
       ...WidgetsApp.defaultShortcuts,

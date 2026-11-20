@@ -66,7 +66,12 @@ class MorePage extends ConsumerWidget {
             subtitle: const Text('Gratis, non-komersial, tanpa iklan • atribusi sumber konten'),
             onTap: () => push(const AboutLicensesPage()),
           ),
-          const AboutListTile(applicationName: 'Moeslim', applicationVersion: '0.1.0', icon: Icon(Icons.info_outline)),
+          const AboutListTile(
+            applicationName: 'Moeslim PM',
+            applicationVersion: '0.1.0',
+            applicationLegalese: 'Personal & Mosque',
+            icon: Icon(Icons.info_outline),
+          ),
         ],
       ),
     );
