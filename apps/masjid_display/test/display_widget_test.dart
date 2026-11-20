@@ -110,9 +110,33 @@ void main() {
     await pump(tester, MockClient((_) => throw Exception('offline')));
     expect(find.text('Masjid Al-Ikhlas'), findsOneWidget);
     expect(find.text('Menuju azan Dzuhur'), findsOneWidget); // 11:30 WIB tanpa koreksi jam
-    expect(find.text('Rp1.500.000'), findsOneWidget);
+    expect(find.byKey(const Key('active-prayer')), findsOneWidget);
+    expect(find.text('Syuruq'), findsOneWidget);
     expect(find.textContaining('Offline'), findsOneWidget);
     expect(find.textContaining('10:15'), findsOneWidget);
+  });
+
+  testWidgets('layar Informasi Jamaah bergantian: agenda, rekap kas, pengumuman', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'display.token': 't',
+      'display.content': jsonEncode(content(finance: {'balance': 1500000, 'month_in': 2000000, 'month_out': 500000})),
+    });
+    // 11:30:45 WIB: detik ≥ 40 dan azan Dzuhur masih ±29 menit → giliran Informasi Jamaah.
+    await pump(tester, MockClient((_) => throw Exception('offline')), now: DateTime.utc(2025, 1, 1, 4, 30, 45));
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('Agenda Masjid'), findsOneWidget);
+    expect(find.text('Rekap Kas Masjid'), findsOneWidget);
+    expect(find.text('Rp1.500.000'), findsOneWidget);
+    expect(find.text('Pengumuman Terbaru'), findsOneWidget);
+    expect(find.byKey(const Key('status')), findsNothing);
+  });
+
+  testWidgets('menjelang azan layar utama dikunci (tidak berganti ke informasi)', (tester) async {
+    SharedPreferences.setMockInitialValues({'display.token': 't', 'display.content': jsonEncode(content())});
+    // 11:52:45 WIB: azan Dzuhur < 10 menit lagi.
+    await pump(tester, MockClient((_) => throw Exception('offline')), now: DateTime.utc(2025, 1, 1, 4, 52, 45));
+    expect(find.text('Menuju azan Dzuhur'), findsOneWidget);
+    expect(find.text('Agenda Masjid'), findsNothing);
   });
 
   testWidgets('perangkat dicabut (401) kembali ke layar pairing', (tester) async {

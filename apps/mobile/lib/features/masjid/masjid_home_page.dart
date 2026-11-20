@@ -179,8 +179,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       } else {
         await n.login(_email.text.trim(), _password.text);
       }
-      if (mounted && Navigator.of(context).canPop())
+      if (mounted && Navigator.of(context).canPop()) {
         Navigator.of(context).pop(); // gerbang MasjidHomePage beralih otomatis
+      }
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = _apiError(e));
     } finally {

@@ -297,8 +297,9 @@ class _MembersPageState extends ConsumerState<MembersPage> {
         ),
       );
     } on ApiException catch (e) {
-      if (mounted)
+      if (mounted) {
         showSnack(context, e.errors.values.expand((v) => v is List ? v : [v]).firstOrNull?.toString() ?? e.message);
+      }
     }
   }
 }

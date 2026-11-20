@@ -93,8 +93,9 @@ class _DoaListPageState extends ConsumerState<DoaListPage> {
               final filtered = list.where(
                 (d) => _q.isEmpty || d.translation.toLowerCase().contains(_q) || d.reference.toLowerCase().contains(_q),
               );
-              if (list.isEmpty)
+              if (list.isEmpty) {
                 return [const Padding(padding: EdgeInsets.all(24), child: Text('Teks Al-Qur\'an belum tersedia.'))];
+              }
               return [
                 for (final d in filtered.take(200))
                   Card(

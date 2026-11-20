@@ -17,7 +17,7 @@ class ApiException implements Exception {
   String toString() => message;
 }
 
-/// Klien REST Moeslim Masjid. Base URL diatur saat build:
+/// Klien REST Moeslim Mosque. Base URL diatur saat build:
 /// `--dart-define=API_BASE_URL=https://api.contoh.id/api`.
 class MasjidApi {
   static const defaultBaseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'http://10.0.2.2:8000/api');

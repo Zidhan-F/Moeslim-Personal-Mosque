@@ -44,13 +44,14 @@ class _SurahPageState extends ConsumerState<SurahPage> {
 
   Future<void> _loadBookmarks() async {
     final b = await ref.read(quranProgressProvider).bookmarks();
-    if (mounted)
+    if (mounted) {
       setState(
         () => _bookmarked = {
           for (final r in b)
             if (r.surah == surah.number) r.ayah,
         },
       );
+    }
   }
 
   void _pickSurah() => showModalBottomSheet(
@@ -132,15 +133,17 @@ class _SurahPageState extends ConsumerState<SurahPage> {
             isSelected: tajweedOn,
             icon: const Icon(Icons.format_color_text),
             onPressed: () {
-              if (settings != null)
+              if (settings != null) {
                 ref.read(settingsProvider.notifier).save(settings.copyWith(tajweedColors: !tajweedOn));
+              }
             },
           ),
           PopupMenuButton<String>(
             tooltip: 'Lainnya',
             onSelected: (v) {
-              if (v == 'legend')
+              if (v == 'legend') {
                 Navigator.of(context).push(MaterialPageRoute(builder: (_) => const TajweedLegendPage()));
+              }
               if (v == 'murottal') {
                 Navigator.of(context).push(MaterialPageRoute(builder: (_) => MurottalPage(initialSurah: surah.number)));
               }

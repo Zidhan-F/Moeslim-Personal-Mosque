@@ -14,8 +14,13 @@ Status: diterima (keputusan pemilik produk)
 ## Aturan produk (diuji otomatis)
 - Layar fitur Personal (Beranda, Quran, Sholat, Ibadah) **tidak memuat** harga, ajakan berlangganan,
   premium, atau iklan (`test/personal_free_test.dart`).
-- Pintu masuk Mosque **hanya** di menu *Lainnya → Fitur tambahan (opsional) → Moeslim Mosque*,
-  dengan keterangan bahwa layanan ini tidak diperlukan untuk fitur Personal.
+- Pintu masuk Mosque **hanya** dua: menu *Profil → Fitur tambahan (opsional) → Moeslim Mosque*
+  (dengan keterangan bahwa layanan ini tidak diperlukan untuk fitur Personal) dan pengalih core
+  *Moeslim Personal ▾ / Moeslim Mosque ▾* di AppBar Beranda. Pengalih membuka halaman "Pilih Peran"
+  yang menjelaskan Personal gratis tanpa akun; harga Mosque hanya tampil di halaman itu dan di
+  tab Akun Mosque, tidak pernah di layar fitur Personal.
+- Di dalam Mosque, navigasi bawah mengikuti izin peran dari server (Beranda, Keuangan, Kegiatan,
+  Petugas, Akun); izin tetap diperiksa di backend.
 - Fitur Personal tidak pernah mensyaratkan login.
 
 ## Konsekuensi teknis & legal

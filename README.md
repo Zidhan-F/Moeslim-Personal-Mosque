@@ -1,17 +1,18 @@
-# Moeslim — Personal & Masjid
+# Moeslim PM — Personal & Mosque
 
-Monorepo ekosistem Moeslim: **Moeslim Personal** (gratis, tanpa akun, offline-first) dan
-**Moeslim Masjid** (cloud, multi-tenant, Rp59.000/bulan/masjid, maks. 5 pengurus & 5 TV Display).
+Satu aplikasi dengan dua menu: **Moeslim Personal** (aplikasi utama — gratis, non-komersial, tanpa akun,
+offline-first) dan **Moeslim Mosque** (fitur tambahan opsional untuk pengurus masjid — cloud, multi-tenant,
+Rp59.000/bulan/masjid, maks. 5 pengurus & 5 TV Display). Lihat `docs/adr/0005-personal-non-commercial.md`.
 
 **Fitur andalan: 7 Jenis Irama (Naghom) Al-Qur'an** — Bayyati, Hijaz, Shaba, Rast, Jiharkah, Sika, Nahawand.
 
 | Path | Isi | Test |
 |---|---|---|
-| `backend/` | API Laravel 13 + PostgreSQL untuk Moeslim Masjid | `php artisan test` |
+| `backend/` | API Laravel 13 + PostgreSQL untuk Moeslim Mosque | `php artisan test` |
 | `packages/shared_prayer/` | Dart murni: jadwal sholat (Kemenag, MWL, dll.), kiblat, Hijriah | `dart test` |
 | `packages/moeslim_brand/` | Identitas visual: warna, tema, font Inter, logo (lihat `docs/brand/`) | `flutter test` |
 | `packages/personal_core/` | Konten (114 surah, 7 Naghom, dzikir, kota) & penyimpanan lokal | `dart test` |
-| `apps/mobile/` | Flutter: Moeslim Personal + klien Moeslim Masjid | `flutter test` |
+| `apps/mobile/` | Flutter: Moeslim Personal + fitur tambahan Moeslim Mosque | `flutter test` |
 | `apps/masjid_display/` | Flutter (Android TV/box): TV Display masjid | `flutter test` |
 | `docs/` | Blueprint v1.1, ADR, rencana implementasi, referensi API | |
 
@@ -27,12 +28,20 @@ cd apps/mobile && flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000/ap
 cd apps/masjid_display && flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000/api
 ```
 
+## Tampilan
+
+Tangkapan layar hasil render (font & warna brand) ada di `docs/brand/screenshots/`:
+`personal/` (Beranda, Al-Qur'an, Mushaf, Murottal, 7 Irama, Jadwal, Kiblat, Tasbih, Catatan Ibadah),
+`mosque/` (Pilih Peran, Registrasi, Login/Aktivasi, Dashboard, Keuangan, Tambah/Riwayat Transaksi,
+Laporan, Pengurus & Role, Agenda, Petugas, Inventaris, Konfigurasi TV, Konten, Akun) dan
+`tv/` (Layar Utama, fase Iqamah, Informasi Jamaah, tema Terang & Gelap).
+
 ## Teks Al-Qur'an
 
 Aplikasi sudah memuat **teks Arab Al-Qur'an lengkap** (Tanzil Quran Text — Uthmani, 114 surah, 6.236 ayat)
 dengan font mushaf **Amiri Quran**, di `apps/mobile/assets/quran/` (sumber & ketentuan: `SOURCE.md`).
-Terjemahan, audio, dan anotasi tajwid menunggu izin/langkah teknis — lihat **`docs/licensing/`**
-(register lisensi + surat permohonan izin siap kirim).
+Terjemahan Indonesia (Kemenag) ikut dimuat. Pewarnaan tajwid masih menunggu data anotasi yang
+selaras dengan teks — lihat **`docs/licensing/`**.
 
 ## Audio murottal 7 irama
 
