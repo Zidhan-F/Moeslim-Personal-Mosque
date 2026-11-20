@@ -66,6 +66,7 @@ void main() {
     await tester.tap(find.byKey(const Key('naghom-entry')));
     await tester.pumpAndSettle();
     expect(tester.widget<Text>(find.byKey(const Key('coverage-bayyati'))).data, endsWith('Audio: 114/114 surah'));
+    await tester.scrollUntilVisible(find.byKey(const Key('coverage-rast')), 150, scrollable: find.byType(Scrollable).first);
     expect(tester.widget<Text>(find.byKey(const Key('coverage-rast'))).data, endsWith('Audio: 2/114 surah'));
   });
 }

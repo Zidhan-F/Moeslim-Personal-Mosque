@@ -112,6 +112,9 @@ void main() {
     await tester.pump();
     await tester.tap(find.byKey(const Key('naghom-entry')));
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Rast'), 150, scrollable: find.byType(Scrollable).first);
+    await tester.ensureVisible(find.text('Rast'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Rast'));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('naghom-sample')));

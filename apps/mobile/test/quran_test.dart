@@ -45,6 +45,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Bayyati'), findsOneWidget);
     expect(find.textContaining('0 dari 7'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Rast'), 150, scrollable: find.byType(Scrollable).first);
+    await tester.ensureVisible(find.text('Rast'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Rast'));
     await tester.pumpAndSettle();
     expect(find.textContaining('6 tingkat'), findsWidgets);

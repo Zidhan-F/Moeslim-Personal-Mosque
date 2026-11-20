@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:personal_core/personal_core.dart';
 
 import '../../core/providers.dart';
+import '../../ui/components.dart';
 import 'audio/audio_providers.dart';
 import 'naghom_theme.dart';
 import 'surah_page.dart';
@@ -23,35 +25,73 @@ class NaghomCatalogPage extends ConsumerWidget {
     final manifest = ref.watch(audioManifestProvider).value ?? AudioManifest.empty;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('7 Jenis Irama (Naghom) Al-Qur\'an')),
+      appBar: AppBar(title: const Text('7 Jenis Irama (Naghom)'), centerTitle: true),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          LinearProgressIndicator(value: done.length / naghomStyles.length, minHeight: 8),
-          Padding(
-            padding: const EdgeInsets.all(4),
-            child: Text('${done.length} dari ${naghomStyles.length} irama dipelajari'),
+          PatternBanner(
+            child: Row(
+              children: [
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '7 Jenis Irama\n(Naghom) Al-Qur\'an',
+                        style: TextStyle(color: Colors.white, fontSize: 21, fontWeight: FontWeight.w800),
+                      ),
+                      SizedBox(height: 6),
+                      Text(
+                        'Pengenalan tujuh irama bacaan Al-Qur\'an yang populer dan banyak digunakan qari\'.',
+                        style: TextStyle(color: BrandColors.cream),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.graphic_eq, size: 56, color: BrandColors.gold.withValues(alpha: .95)),
+              ],
+            ),
           ),
-          for (final (i, s) in naghomStyles.indexed)
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: LinearProgressIndicator(
+                  value: done.length / naghomStyles.length,
+                  minHeight: 6,
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text('${done.length} dari ${naghomStyles.length} irama dipelajari', style: const TextStyle(fontSize: 12)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          for (final s in naghomStyles)
             Card(
-              clipBehavior: Clip.antiAlias,
+              margin: const EdgeInsets.symmetric(vertical: 5),
               child: InkWell(
+                borderRadius: BorderRadius.circular(16),
                 onTap: () async {
                   await Navigator.of(context).push(MaterialPageRoute(builder: (_) => NaghomDetailPage(style: s)));
                   ref.invalidate(_naghomStateProvider);
                 },
-                child: Container(
-                  decoration: BoxDecoration(
-                    border: Border(left: BorderSide(color: naghomColor(s.slug), width: 6)),
-                  ),
-                  padding: const EdgeInsets.all(12),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
                   child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CircleAvatar(
-                        backgroundColor: naghomColor(s.slug),
-                        foregroundColor: Colors.white,
-                        child: Text('${i + 1}'),
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: naghomColor(s.slug).withValues(alpha: .12),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.all(8),
+                        child: FittedBox(
+                          child: ToneLevels(levels: s.toneLevels, color: naghomColor(s.slug), height: 26),
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -60,28 +100,23 @@ class NaghomCatalogPage extends ConsumerWidget {
                           children: [
                             Row(
                               children: [
-                                Expanded(child: Text(s.name, style: Theme.of(context).textTheme.titleMedium)),
-                                if (fav.contains(s.slug)) const Icon(Icons.star, size: 18),
-                                if (done.contains(s.slug)) const Icon(Icons.check_circle, color: Colors.green),
+                                Text(s.name, style: Theme.of(context).textTheme.titleMedium),
+                                const SizedBox(width: 6),
+                                if (fav.contains(s.slug)) const Icon(Icons.star, size: 16, color: BrandColors.goldText),
+                                if (done.contains(s.slug))
+                                  Icon(Icons.check_circle, size: 16, color: Theme.of(context).colorScheme.primary),
                               ],
                             ),
-                            Text(s.summary),
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                ToneLevels(levels: s.toneLevels, color: naghomColor(s.slug), height: 20),
-                                const SizedBox(width: 8),
-                                Text(s.toneLabel, style: const TextStyle(fontSize: 12)),
-                              ],
-                            ),
+                            Text(s.summary, style: const TextStyle(fontSize: 13)),
                             Text(
-                              'Audio: ${manifest.surahsWithNaghom(s.slug).length}/114 surah',
+                              '${s.toneLabel} • Audio: ${manifest.surahsWithNaghom(s.slug).length}/114 surah',
                               key: Key('coverage-${s.slug}'),
-                              style: const TextStyle(fontSize: 12),
+                              style: TextStyle(fontSize: 11.5, color: Theme.of(context).colorScheme.onSurfaceVariant),
                             ),
                           ],
                         ),
                       ),
+                      const Icon(Icons.chevron_right),
                     ],
                   ),
                 ),
