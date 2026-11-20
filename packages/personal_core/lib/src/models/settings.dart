@@ -15,6 +15,9 @@ class PersonalSettings {
   final double fontScale;
   final bool notificationsEnabled;
 
+  /// Warnai teks Al-Qur'an sesuai hukum tajwid (bila dataset anotasi tersedia).
+  final bool tajweedColors;
+
   const PersonalSettings({
     required this.location,
     this.useDeviceLocation = false,
@@ -25,6 +28,7 @@ class PersonalSettings {
     this.themeMode = AppThemeMode.system,
     this.fontScale = 1.0,
     this.notificationsEnabled = true,
+    this.tajweedColors = true,
   });
 
   static final PersonalSettings defaults =
@@ -46,6 +50,7 @@ class PersonalSettings {
     AppThemeMode? themeMode,
     double? fontScale,
     bool? notificationsEnabled,
+    bool? tajweedColors,
   }) =>
       PersonalSettings(
         location: location ?? this.location,
@@ -57,6 +62,7 @@ class PersonalSettings {
         themeMode: themeMode ?? this.themeMode,
         fontScale: fontScale ?? this.fontScale,
         notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
+        tajweedColors: tajweedColors ?? this.tajweedColors,
       );
 
   Map<String, Object> toJson() => {
@@ -69,6 +75,7 @@ class PersonalSettings {
         'themeMode': themeMode.name,
         'fontScale': fontScale,
         'notificationsEnabled': notificationsEnabled,
+        'tajweedColors': tajweedColors,
       };
 
   factory PersonalSettings.fromJson(Map<String, dynamic> j) {
@@ -89,6 +96,7 @@ class PersonalSettings {
       themeMode: byName(AppThemeMode.values, j['themeMode'], AppThemeMode.system),
       fontScale: (j['fontScale'] as num?)?.toDouble() ?? 1.0,
       notificationsEnabled: j['notificationsEnabled'] as bool? ?? true,
+      tajweedColors: j['tajweedColors'] as bool? ?? true,
     );
   }
 }

@@ -1,6 +1,10 @@
 /// Metadata surah Al-Qur'an. Teks ayat TIDAK disertakan di repo: teks dan
 /// terjemahan harus diimpor dari sumber berlisensi yang telah ditashih
 /// (lihat `tool/import_quran.dart`).
+library;
+
+import 'tajweed.dart';
+
 class Surah {
   final int number;
   final String name;
@@ -18,12 +22,26 @@ class Ayah {
   final String text;
   final String? translation;
 
-  const Ayah(this.surah, this.number, this.text, {this.translation});
+  /// Anotasi tajwid untuk pewarnaan (kosong bila dataset tajwid tidak diimpor).
+  final List<TajweedSpan> tajweed;
 
-  Map<String, Object?> toJson() => {'s': surah, 'a': number, 't': text, if (translation != null) 'tr': translation};
+  const Ayah(this.surah, this.number, this.text, {this.translation, this.tajweed = const []});
 
-  factory Ayah.fromJson(Map<String, dynamic> j) =>
-      Ayah(j['s'] as int, j['a'] as int, j['t'] as String, translation: j['tr'] as String?);
+  Map<String, Object?> toJson() => {
+        's': surah,
+        'a': number,
+        't': text,
+        if (translation != null) 'tr': translation,
+        if (tajweed.isNotEmpty) 'tj': [for (final s in tajweed) s.toJson()],
+      };
+
+  factory Ayah.fromJson(Map<String, dynamic> j) => Ayah(
+        j['s'] as int,
+        j['a'] as int,
+        j['t'] as String,
+        translation: j['tr'] as String?,
+        tajweed: (j['tj'] as List? ?? const []).map(TajweedSpan.fromJson).whereType<TajweedSpan>().toList(),
+      );
 }
 
 /// Parser format teks Tanzil: satu ayat per baris `sura|aya|teks`.

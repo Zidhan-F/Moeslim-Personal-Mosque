@@ -40,7 +40,14 @@ dart run tool/import_quran.dart <teks-tanzil.txt> ../../apps/mobile/assets/quran
 Pemutar per surah/ayat dengan pilihan 7 irama naghom. Repo tidak menyertakan audio; rekaman
 berlisensi didaftarkan lewat katalog — lihat `docs/audio-naghom.md`.
 
+## Pewarnaan tajwid
+
+Teks Al-Qur'an diwarnai sesuai hukum tajwid dari dataset anotasi yang diimpor bersama teks
+(`--tajweed`), dengan panduan warna & tombol on/off — lihat `docs/tajwid-warna.md`.
+
 ## Dokumen
+
+- `docs/tajwid-warna.md` — pewarnaan tajwid & format anotasi
 
 - `docs/audio-naghom.md` — pemutar audio & format katalog 7 irama
 

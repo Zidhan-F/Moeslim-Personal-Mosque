@@ -6,6 +6,7 @@ import '../../core/providers.dart';
 import 'audio/audio_providers.dart';
 import 'audio/naghom_player_bar.dart';
 import 'quran_source.dart';
+import 'tajweed_view.dart';
 
 class SurahPage extends ConsumerStatefulWidget {
   final Surah surah;
@@ -43,6 +44,7 @@ class _SurahPageState extends ConsumerState<SurahPage> {
   Widget build(BuildContext context) {
     final text = ref.watch(surahTextProvider(widget.surah.number));
     final scale = ref.watch(settingsProvider).value?.fontScale ?? 1.0;
+    final tajweedOn = ref.watch(settingsProvider).value?.tajweedColors ?? true;
 
     final player = ref.watch(quranPlayerProvider);
     final canPlay = player.recitation != null && player.surah == widget.surah.number;
@@ -54,7 +56,27 @@ class _SurahPageState extends ConsumerState<SurahPage> {
     );
 
     return Scaffold(
-      appBar: AppBar(title: Text('${widget.surah.number}. ${widget.surah.name}')),
+      appBar: AppBar(
+        title: Text('${widget.surah.number}. ${widget.surah.name}'),
+        actions: [
+          IconButton(
+            key: const Key('toggle-tajweed'),
+            tooltip: tajweedOn ? 'Matikan warna tajwid' : 'Nyalakan warna tajwid',
+            isSelected: tajweedOn,
+            icon: const Icon(Icons.format_color_text),
+            onPressed: () {
+              final s = ref.read(settingsProvider).value;
+              if (s != null) ref.read(settingsProvider.notifier).save(s.copyWith(tajweedColors: !tajweedOn));
+            },
+          ),
+          IconButton(
+            key: const Key('tajweed-legend'),
+            tooltip: 'Panduan warna tajwid',
+            icon: const Icon(Icons.palette_outlined),
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const TajweedLegendPage())),
+          ),
+        ],
+      ),
       bottomNavigationBar: NaghomPlayerBar(surah: widget.surah),
       body: text.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -101,9 +123,10 @@ class _SurahPageState extends ConsumerState<SurahPage> {
                       ),
                     ],
                   ),
-                  Text(
-                    a.text,
-                    textDirection: TextDirection.rtl,
+                  TajweedText(
+                    key: Key('ayah-${a.number}'),
+                    ayah: a,
+                    colored: tajweedOn,
                     style: TextStyle(fontSize: 26 * scale, height: 1.9),
                   ),
                   if (a.translation != null)
