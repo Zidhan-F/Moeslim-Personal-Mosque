@@ -152,7 +152,13 @@ class CompassPainter extends CustomPainter {
       final tp = TextPainter(
         text: TextSpan(
           text: e.key,
-          style: const TextStyle(color: BrandColors.deep, fontWeight: FontWeight.w700, fontSize: 16),
+          style: const TextStyle(
+            fontFamily: 'Inter',
+            package: 'moeslim_brand',
+            color: BrandColors.deep,
+            fontWeight: FontWeight.w700,
+            fontSize: 16,
+          ),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
