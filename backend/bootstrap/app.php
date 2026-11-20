@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'tenant' => \App\Http\Middleware\EnsureTenantMember::class,
             'perm' => \App\Http\Middleware\RequirePermission::class,
+            'display.auth' => \App\Http\Middleware\AuthenticateDisplay::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

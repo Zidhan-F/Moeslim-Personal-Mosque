@@ -112,6 +112,11 @@ class Mosque extends Model
             + $this->announcements()->where('status', 'active')->count();
     }
 
+    public function displayDevices(): HasMany
+    {
+        return $this->hasMany(DisplayDevice::class);
+    }
+
     public function subscription(): HasOne
     {
         return $this->hasOne(Subscription::class);

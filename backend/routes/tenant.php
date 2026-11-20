@@ -61,3 +61,10 @@ Route::middleware('perm:inventory.write')->group(function () {
     Route::delete('inventory/{inventoryItem}', [\App\Http\Controllers\Api\InventoryController::class, 'destroy']);
     Route::post('inventory/{inventoryItem}/maintenance', [\App\Http\Controllers\Api\InventoryController::class, 'storeMaintenance']);
 });
+
+Route::get('displays', [\App\Http\Controllers\Api\DisplayController::class, 'index'])->middleware('perm:display.view');
+Route::middleware('perm:display.manage')->group(function () {
+    Route::post('displays/pairing-codes', [\App\Http\Controllers\Api\DisplayController::class, 'createPairingCode']);
+    Route::patch('displays/{displayDevice}', [\App\Http\Controllers\Api\DisplayController::class, 'update']);
+    Route::post('displays/{displayDevice}/revoke', [\App\Http\Controllers\Api\DisplayController::class, 'revoke']);
+});
