@@ -1,0 +1,18 @@
+.superpowers/
+.DS_Store
+.idea/
+.vscode/
+*.iml
+# Dart/Flutter
+.dart_tool/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+pubspec_overrides.yaml
+# Backend
+backend/vendor/
+backend/node_modules/
+backend/.env
+backend/storage/*.key
+backend/.phpunit.result.cache
+backend/.phpunit.cache
