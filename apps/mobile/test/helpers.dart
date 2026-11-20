@@ -5,6 +5,7 @@ import 'package:moeslim_mobile/app.dart';
 import 'package:moeslim_mobile/core/providers.dart';
 import 'package:moeslim_mobile/features/ibadah/qibla_page.dart';
 import 'package:moeslim_mobile/features/masjid/session.dart';
+
 import 'dart:async';
 
 import 'package:moeslim_mobile/features/quran/audio/audio_engine.dart';
@@ -56,7 +57,8 @@ class FakeOfflineAudio implements OfflineAudioStore {
   FakeOfflineAudio([Set<String>? d]) : downloaded = d ?? {};
 
   @override
-  Future<Uri?> localUri(AudioTrack t) async => downloaded.contains(t.fileName) ? Uri.file('/local/${t.fileName}') : null;
+  Future<Uri?> localUri(AudioTrack t) async =>
+      downloaded.contains(t.fileName) ? Uri.file('/local/${t.fileName}') : null;
   @override
   Future<bool> isSurahDownloaded(Recitation r, int surah) async =>
       r.playlist(surah).every((t) => downloaded.contains(t.fileName));
@@ -64,6 +66,7 @@ class FakeOfflineAudio implements OfflineAudioStore {
   Future<void> downloadSurah(Recitation r, int surah, {void Function(int, int)? onProgress}) async {
     downloaded.addAll(r.playlist(surah).map((t) => t.fileName));
   }
+
   @override
   Future<void> deleteSurah(Recitation r, int surah) async {}
 }
@@ -82,17 +85,19 @@ Future<ProviderContainer> pumpApp(
   AudioEngine? engine,
   OfflineAudioStore? offline,
 }) async {
-  final container = ProviderContainer(overrides: [
-    storeProvider.overrideWithValue(store ?? InMemoryStore()),
-    nowProvider.overrideWith((ref) => Stream.value(now ?? fixedNow)),
-    headingProvider.overrideWith((ref) => Stream.value(null)),
-    quranSourceProvider.overrideWithValue(quran ?? FakeQuranSource()),
-    audioManifestProvider.overrideWith((ref) async => manifest ?? AudioManifest.empty),
-    audioEngineProvider.overrideWithValue(engine ?? FakeAudioEngine()),
-    offlineAudioProvider.overrideWithValue(offline ?? FakeOfflineAudio()),
-    if (client != null) httpClientProvider.overrideWithValue(client),
-    tokenStoreProvider.overrideWithValue(tokens ?? MemoryTokenStore()),
-  ]);
+  final container = ProviderContainer(
+    overrides: [
+      storeProvider.overrideWithValue(store ?? InMemoryStore()),
+      nowProvider.overrideWith((ref) => Stream.value(now ?? fixedNow)),
+      headingProvider.overrideWith((ref) => Stream.value(null)),
+      quranSourceProvider.overrideWithValue(quran ?? FakeQuranSource()),
+      audioManifestProvider.overrideWith((ref) async => manifest ?? AudioManifest.empty),
+      audioEngineProvider.overrideWithValue(engine ?? FakeAudioEngine()),
+      offlineAudioProvider.overrideWithValue(offline ?? FakeOfflineAudio()),
+      if (client != null) httpClientProvider.overrideWithValue(client),
+      tokenStoreProvider.overrideWithValue(tokens ?? MemoryTokenStore()),
+    ],
+  );
   addTearDown(container.dispose);
   await tester.pumpWidget(UncontrolledProviderScope(container: container, child: const MoeslimApp()));
   await tester.pump();

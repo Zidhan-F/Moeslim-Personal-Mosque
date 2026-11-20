@@ -100,4 +100,17 @@ class AudioManifest {
         for (final style in naghomStyles)
           NaghomOption(style, recitations.where((r) => r.naghom == style.slug && r.covers(surah)).toList()),
       ];
+
+  /// Irama yang belum tersedia di seluruh 114 surah → daftar surah yang belum tercakup.
+  Map<String, List<int>> coverageGaps() => {
+        for (final style in naghomStyles)
+          if (quran.surahs.any((s) => !recitations.any((r) => r.naghom == style.slug && r.covers(s.number))))
+            style.slug: [
+              for (final s in quran.surahs)
+                if (!recitations.any((r) => r.naghom == style.slug && r.covers(s.number))) s.number,
+            ],
+      };
+
+  /// Target produk: ketujuh irama tersedia untuk setiap ayat di setiap surah.
+  bool get allNaghomForAllSurahs => coverageGaps().isEmpty;
 }

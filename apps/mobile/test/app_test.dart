@@ -63,9 +63,8 @@ void main() {
 
   testWidgets('ganti kota di pengaturan menyimpan dan mengubah beranda', (tester) async {
     final store = InMemoryStore();
-    await SettingsRepository(store).save(
-      PersonalSettings.defaults.copyWith(location: indonesianCities.firstWhere((c) => c.name == 'Makassar')),
-    );
+    await SettingsRepository(store)
+        .save(PersonalSettings.defaults.copyWith(location: indonesianCities.firstWhere((c) => c.name == 'Makassar')));
     await pumpApp(tester, store: store);
     expect(find.textContaining('Makassar'), findsWidgets);
   });

@@ -48,3 +48,41 @@ berlisensi untuk surah tersebut tampil nonaktif.
 | Berkas per surah + timestamp | Lebih sedikit berkas | Butuh data timing ayat yang akurat; seek kurang presisi |
 | Katalog statis di CDN (dipilih) | Tanpa server, cache CDN, offline-first | Pembaruan perlu rilis katalog berversi |
 | Katalog via API backend | Bisa dikelola dari dashboard | Menambah ketergantungan online bagi Personal |
+
+## Target: 7 irama di setiap ayat seluruh mushaf
+
+Total produksi per qari: **6.236 ayat × 7 irama = 43.652 berkas ayat**. Aplikasi sudah siap untuk
+cakupan penuh; yang perlu disiapkan adalah rekaman. Alat yang tersedia (`packages/personal_core/tool/`):
+
+| Alat | Fungsi |
+|---|---|
+| `split_surah_audio.dart <audio> <label.txt> <surah> <out>` | Potong rekaman satu surah menjadi `SSSAAA.mp3` (MP3 mono 96 kbps) dari label Audacity (`start⇥end⇥nomor ayat`). Validasi: jumlah label = jumlah ayat, nomor urut, waktu valid |
+| `audio_coverage.dart <root> --base-url … --manifest … [--require-all]` | Laporan kelengkapan per qari × irama (x/6.236 ayat, x/114 surah), membuat `manifest.json` (hanya surah yang lengkap per ayat), gagal (exit 1) bila ada irama yang belum lengkap |
+
+Struktur folder produksi:
+```
+produksi/
+  qari-fulan/
+    qari.json            {"qari": "Qari Fulan", "license": "…", "attribution": "…"}
+    bayyati/001001.mp3 … 114006.mp3
+    hijaz/…  shaba/…  rast/…  jiharkah/…  sika/…  nahawand/…
+```
+
+Alur per surah per irama: rekam surah utuh → editor menandai batas ayat di Audacity (Label Track,
+ekspor `label.txt`) → `split_surah_audio` → telaah tajwid per ayat → `audio_coverage` → unggah ke CDN
+→ terbitkan katalog dengan `version` baru. Aplikasi menampilkan cakupan per irama ("Audio: x/114 surah").
+
+### Tahapan rilis yang disarankan
+| Fase | Cakupan | Berkas (×7 irama) |
+|---|---|---|
+| 1 | Al-Fatihah + Juz 30 (surah 78–114) | 571 ayat → 3.997 |
+| 2 | Yasin, Al-Kahf, Al-Mulk, Al-Waqi'ah, Ar-Rahman | 397 ayat → 2.779 |
+| 3 | Seluruh mushaf (`--require-all` lulus) | 6.236 ayat → 43.652 |
+
+Perkiraan kasar: murattal satu khatam ±20–25 jam; tilawah berirama lebih lambat (±1,5–2×), sehingga
+7 irama ≈ 250–350 jam audio bersih per qari (±13 GB pada 96 kbps), belum termasuk waktu telaah.
+
+### Catatan untuk penelaah
+Dalam praktik tilawah, qari umumnya berpindah maqam di dalam satu surah. Membaca satu surah penuh
+dengan satu irama adalah pendekatan **didaktik** (latihan). Penelaah perlu menyepakati pendekatan ini
+dan memastikan irama tidak mengorbankan tajwid, makhraj, dan waqaf.

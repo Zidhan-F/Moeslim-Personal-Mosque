@@ -7,8 +7,24 @@ import 'helpers.dart';
 final manifest = AudioManifest.fromJson({
   'version': 1,
   'recitations': [
-    {'id': 'a-bayyati', 'qari': 'Qari A', 'naghom': 'bayyati', 'base_url': 'https://cdn.test/a/bayyati', 'license': 'Izin', 'attribution': 'Qari A', 'surahs': [1]},
-    {'id': 'a-rast', 'qari': 'Qari A', 'naghom': 'rast', 'base_url': 'https://cdn.test/a/rast', 'license': 'Izin', 'attribution': 'Qari A', 'surahs': [1]},
+    {
+      'id': 'a-bayyati',
+      'qari': 'Qari A',
+      'naghom': 'bayyati',
+      'base_url': 'https://cdn.test/a/bayyati',
+      'license': 'Izin',
+      'attribution': 'Qari A',
+      'surahs': [1],
+    },
+    {
+      'id': 'a-rast',
+      'qari': 'Qari A',
+      'naghom': 'rast',
+      'base_url': 'https://cdn.test/a/rast',
+      'license': 'Izin',
+      'attribution': 'Qari A',
+      'surahs': [1],
+    },
   ],
 });
 
@@ -26,7 +42,11 @@ void main() {
     await pumpApp(tester, manifest: manifest);
     await openFatihah(tester);
     for (final s in naghomStyles) {
-      await tester.scrollUntilVisible(find.byKey(Key('naghom-${s.slug}')), 80, scrollable: find.descendant(of: find.byKey(const Key('naghom-options')), matching: find.byType(Scrollable)));
+      await tester.scrollUntilVisible(
+        find.byKey(Key('naghom-${s.slug}')),
+        80,
+        scrollable: find.descendant(of: find.byKey(const Key('naghom-options')), matching: find.byType(Scrollable)),
+      );
       expect(find.byKey(Key('naghom-${s.slug}')), findsOneWidget);
     }
     expect(chip(tester, 'rast').onSelected, isNotNull);
@@ -56,7 +76,11 @@ void main() {
     final engine = FakeAudioEngine();
     await pumpApp(tester, manifest: manifest, engine: engine, offline: FakeOfflineAudio({'001003.mp3'}));
     await openFatihah(tester);
-    await tester.scrollUntilVisible(find.byKey(const Key('play-ayah-3')), 100, scrollable: find.byType(Scrollable).first);
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('play-ayah-3')),
+      100,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(find.byKey(const Key('play-ayah-3')));
     await tester.pumpAndSettle();
     expect(engine.calls.single, [Uri.file('/local/001003.mp3')]);

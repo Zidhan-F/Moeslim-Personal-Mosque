@@ -17,6 +17,9 @@ class NaghomCatalogPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(_naghomStateProvider).value;
     final done = state?.completed ?? const <String>{};
+    final manifest = ref.watch(audioManifestProvider).value ?? AudioManifest.empty;
+    int coverage(String slug) =>
+        surahs.where((su) => manifest.recitations.any((r) => r.naghom == slug && r.covers(su.number))).length;
     final fav = state?.favorites ?? const <String>{};
 
     return Scaffold(
@@ -39,7 +42,13 @@ class NaghomCatalogPage extends ConsumerWidget {
               child: ListTile(
                 leading: CircleAvatar(child: Text('${i + 1}')),
                 title: Text(s.name),
-                subtitle: Text(s.character, maxLines: 2, overflow: TextOverflow.ellipsis),
+                subtitle: Text(
+                  '${s.character}\nAudio: ${coverage(s.slug)}/114 surah',
+                  key: Key('coverage-${s.slug}'),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                isThreeLine: true,
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [

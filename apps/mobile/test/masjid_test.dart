@@ -13,33 +13,54 @@ http.Response json(Object body, [int status = 200]) =>
     http.Response(jsonEncode(body), status, headers: {'content-type': 'application/json'});
 
 MockClient fakeBackend(List<http.Request> log) => MockClient((req) async {
-      log.add(req);
-      final p = req.url.path.replaceFirst('/api', '');
-      switch ((req.method, p)) {
-        case ('POST', '/auth/login'):
-          final body = jsonDecode(req.body) as Map;
-          return body['password'] == 'benar-sekali-123'
-              ? json({'token': 't0k3n', 'user': {}})
-              : json({'message': 'Email atau kata sandi salah.', 'errors': {'email': ['Email atau kata sandi salah.']}}, 422);
-        case ('GET', '/me'):
-          return json({'user': {'id': 1, 'name': 'Bendahara', 'email': 'b@x.id', 'email_verified': true}, 'memberships': []});
-        case ('GET', '/mosques'):
-          return json({'data': [{'id': 'M1', 'name': 'Masjid Al-Ikhlas', 'role': 'bendahara'}]});
-        case ('GET', '/mosques/M1/dashboard'):
-          return json({
-            'permissions': ['finance.view', 'finance.write', 'events.view'],
-            'finance': {'balance': 250000, 'month_in': 300000, 'month_out': 50000, 'funds': [{'name': 'Kas Operasional', 'balance': 250000}]},
-            'subscription': {'state': 'trialing'},
-            'warnings': ['storage_warning'],
-            'displays': {'active': 1, 'online': 1},
-            'staff_today': [],
-            'upcoming_events': [],
-          });
-        case ('POST', '/mosques/M1/finance/transactions'):
-          return json({'data': {'id': 1}}, 201);
-      }
-      return json({'message': 'not found'}, 404);
-    });
+  log.add(req);
+  final p = req.url.path.replaceFirst('/api', '');
+  switch ((req.method, p)) {
+    case ('POST', '/auth/login'):
+      final body = jsonDecode(req.body) as Map;
+      return body['password'] == 'benar-sekali-123'
+          ? json({'token': 't0k3n', 'user': {}})
+          : json({
+              'message': 'Email atau kata sandi salah.',
+              'errors': {
+                'email': ['Email atau kata sandi salah.'],
+              },
+            }, 422);
+    case ('GET', '/me'):
+      return json({
+        'user': {'id': 1, 'name': 'Bendahara', 'email': 'b@x.id', 'email_verified': true},
+        'memberships': [],
+      });
+    case ('GET', '/mosques'):
+      return json({
+        'data': [
+          {'id': 'M1', 'name': 'Masjid Al-Ikhlas', 'role': 'bendahara'},
+        ],
+      });
+    case ('GET', '/mosques/M1/dashboard'):
+      return json({
+        'permissions': ['finance.view', 'finance.write', 'events.view'],
+        'finance': {
+          'balance': 250000,
+          'month_in': 300000,
+          'month_out': 50000,
+          'funds': [
+            {'name': 'Kas Operasional', 'balance': 250000},
+          ],
+        },
+        'subscription': {'state': 'trialing'},
+        'warnings': ['storage_warning'],
+        'displays': {'active': 1, 'online': 1},
+        'staff_today': [],
+        'upcoming_events': [],
+      });
+    case ('POST', '/mosques/M1/finance/transactions'):
+      return json({
+        'data': {'id': 1},
+      }, 201);
+  }
+  return json({'message': 'not found'}, 404);
+});
 
 void main() {
   group('MasjidApi', () {
@@ -56,7 +77,9 @@ void main() {
       final api = MasjidApi(fakeBackend([]), baseUrl: 'https://api.test/api');
       expect(
         () => api.login('b@x.id', 'salah'),
-        throwsA(isA<ApiException>().having((e) => e.status, 'status', 422).having((e) => e.errors.keys, 'errors', ['email'])),
+        throwsA(
+          isA<ApiException>().having((e) => e.status, 'status', 422).having((e) => e.errors.keys, 'errors', ['email']),
+        ),
       );
     });
 

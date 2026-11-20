@@ -2,6 +2,7 @@
 library;
 
 export 'src/content/audio.dart';
+export 'src/content/audio_production.dart';
 export 'src/content/cities.dart';
 export 'src/content/dzikir.dart';
 export 'src/content/naghom.dart';

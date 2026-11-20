@@ -16,11 +16,16 @@ void main() {
 
   testWidgets('dengan dataset, ayat tampil dan bookmark tersimpan', (tester) async {
     final store = InMemoryStore();
-    await pumpApp(tester,
-        store: store,
-        quran: FakeQuranSource({
-          1: [const Ayah(1, 1, 'نص تجريبي', translation: 'teks uji 1'), const Ayah(1, 2, 'نص', translation: 'teks uji 2')],
-        }));
+    await pumpApp(
+      tester,
+      store: store,
+      quran: FakeQuranSource({
+        1: [
+          const Ayah(1, 1, 'نص تجريبي', translation: 'teks uji 1'),
+          const Ayah(1, 2, 'نص', translation: 'teks uji 2'),
+        ],
+      }),
+    );
     await tester.tap(find.text('Quran').last);
     await tester.pump();
     await tester.tap(find.text('Al-Fatihah'));
