@@ -1,5 +1,9 @@
 # Audio Murottal dengan Pilihan 7 Irama (Naghom)
 
+Pilihan bacaan di pemutar: **Murattal** (bacaan tartil standar, tanpa label irama) ditampilkan pertama,
+diikuti 7 irama. Murattal menjadi default bila preferensi pengguna tidak tersedia untuk surah tersebut,
+sehingga setiap surah tetap dapat diputar walau rekaman irama belum lengkap.
+
 Saat memutar Al-Qur'an **per surah atau per ayat**, pengguna memilih satu dari 7 irama
 (Bayyati, Hijaz, Shaba, Rast, Jiharkah, Sika, Nahawand). Irama yang belum memiliki rekaman
 berlisensi untuk surah tersebut tampil nonaktif.
@@ -31,6 +35,16 @@ berlisensi untuk surah tersebut tampil nonaktif.
 }
 ```
 - `naghom`: salah satu slug `bayyati|hijaz|shaba|rast|jiharkah|sika|nahawand`.
+- Rekaman Murattal memakai `"kind": "murattal"` (tanpa `naghom`):
+  `{"id": "qari-x-murattal", "qari": "Qari X", "kind": "murattal", "base_url": "…", "license": "…", "attribution": "…", "surahs": "all"}`.
+  Folder produksi: `<root>/<id-qari>/murattal/SSSAAA.mp3` (dibaca otomatis oleh `audio_coverage.dart`).
+
+### Sumber Murattal yang sudah ada
+Koleksi publik seperti EveryAyah/QuranicAudio menyediakan murattal per ayat berformat `SSSAAA.mp3`
+dari banyak qari, sehingga `base_url`-nya dapat langsung didaftarkan **setelah ada izin tertulis** dari
+pemegang hak rekaman (qari/penerbit). Izin publik koleksi tersebut umumnya untuk penggunaan non-komersial;
+cantumkan ruang lingkup izin di `license` dan simpan dokumennya. Untuk ketersediaan offline dan
+keandalan, sebaiknya berkas di-mirror ke CDN Moeslim sesuai izin.
 - `surahs`: daftar nomor surah, atau `"all"`. Setiap surah yang dicantumkan **wajib lengkap per ayat**.
 - Entri tanpa `license` atau dengan `naghom` tidak dikenal **diabaikan** oleh aplikasi.
 

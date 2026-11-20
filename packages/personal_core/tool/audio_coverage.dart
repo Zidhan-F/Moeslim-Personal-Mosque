@@ -2,7 +2,7 @@
 //
 // Struktur folder produksi:
 //   <root>/<id-qari>/qari.json            {"qari": "...", "license": "...", "attribution": "..."}
-//   <root>/<id-qari>/<naghom>/SSSAAA.mp3  naghom = bayyati|hijaz|shaba|rast|jiharkah|sika|nahawand
+//   <root>/<id-qari>/<jenis>/SSSAAA.mp3   jenis = murattal|bayyati|hijaz|shaba|rast|jiharkah|sika|nahawand
 //
 //   dart run tool/audio_coverage.dart <root> [--base-url URL] [--manifest out.json] [--version N] [--require-all]
 //
@@ -27,6 +27,7 @@ void main(List<String> args) {
   final baseUrl = (opt('--base-url') ?? 'https://cdn.example.com/audio').replaceAll(RegExp(r'/+$'), '');
   final recitations = <Map<String, Object>>[];
   final perNaghomComplete = {for (final n in naghomStyles) n.slug: false};
+  var murattalComplete = false;
 
   stdout.writeln('${'Qari/Irama'.padRight(32)} Ayat           Surah lengkap');
   for (final qariDir in root.listSync().whereType<Directory>().toList()..sort((a, b) => a.path.compareTo(b.path))) {
@@ -41,21 +42,22 @@ void main(List<String> args) {
       stderr.writeln('Lewati $id: lisensi kosong');
       continue;
     }
-    for (final n in naghomStyles) {
-      final dir = Directory('${qariDir.path}/${n.slug}');
+    for (final key in [murattalKey, ...naghomStyles.map((n) => n.slug)]) {
+      final dir = Directory('${qariDir.path}/$key');
       if (!dir.existsSync()) continue;
       final names = dir.listSync().whereType<File>().map((f) => f.uri.pathSegments.last);
       final report = CoverageReport.fromFileNames(names);
-      stdout.writeln('${'$id/${n.slug}'.padRight(32)} '
+      stdout.writeln('${'$id/$key'.padRight(32)} '
           '${'${report.totalPresent}/${CoverageReport.totalAyat}'.padRight(14)} ${report.completeSurahs.length}/114'
           '${report.unexpected.isNotEmpty ? '  (berkas asing: ${report.unexpected.take(3).join(', ')})' : ''}');
-      if (report.complete) perNaghomComplete[n.slug] = true;
+      if (report.complete && key != murattalKey) perNaghomComplete[key] = true;
+      if (report.complete && key == murattalKey) murattalComplete = true;
       if (report.completeSurahs.isEmpty) continue;
       recitations.add({
-        'id': '$id-${n.slug}',
+        'id': '$id-$key',
         'qari': meta['qari'] as String? ?? id,
-        'naghom': n.slug,
-        'base_url': '$baseUrl/$id/${n.slug}',
+        if (key == murattalKey) 'kind': murattalKey else 'naghom': key,
+        'base_url': '$baseUrl/$id/$key',
         'license': meta['license'] as String,
         'attribution': meta['attribution'] as String? ?? '',
         'surahs': report.manifestSurahs,
@@ -63,6 +65,7 @@ void main(List<String> args) {
     }
   }
 
+  stdout.writeln(murattalComplete ? '\n✔ Murattal lengkap untuk seluruh 114 surah.' : '\n✘ Murattal belum lengkap di seluruh mushaf.');
   final missingNaghom = [for (final e in perNaghomComplete.entries) if (!e.value) e.key];
   stdout.writeln(missingNaghom.isEmpty
       ? '\n✔ Ketujuh irama lengkap untuk seluruh 114 surah.'

@@ -28,8 +28,8 @@ class _NaghomPlayerBarState extends ConsumerState<NaghomPlayerBar> {
     final manifest = ref.watch(audioManifestProvider).value ?? AudioManifest.empty;
     final player = ref.watch(quranPlayerProvider);
     final ctl = ref.read(quranPlayerProvider.notifier);
-    final options = manifest.naghomOptionsFor(widget.surah.number);
-    final selected = options.where((o) => o.style.slug == player.naghom).firstOrNull;
+    final options = manifest.optionsFor(widget.surah.number);
+    final selected = options.where((o) => o.key == player.naghom).firstOrNull;
     final rec = player.recitation;
     final scheme = Theme.of(context).colorScheme;
     ref.listen(
@@ -48,7 +48,7 @@ class _NaghomPlayerBarState extends ConsumerState<NaghomPlayerBar> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Pilih irama (naghom)', style: Theme.of(context).textTheme.labelMedium),
+              Text('Pilih bacaan: Murattal atau irama (naghom)', style: Theme.of(context).textTheme.labelMedium),
               SizedBox(
                 height: 44,
                 child: ListView(
@@ -59,14 +59,12 @@ class _NaghomPlayerBarState extends ConsumerState<NaghomPlayerBar> {
                       Padding(
                         padding: const EdgeInsets.only(right: 6),
                         child: Tooltip(
-                          message: o.available
-                              ? o.style.character
-                              : 'Rekaman ${o.style.name} untuk surah ini belum tersedia',
+                          message: o.available ? o.description : 'Rekaman ${o.label} untuk surah ini belum tersedia',
                           child: ChoiceChip(
-                            key: Key('naghom-${o.style.slug}'),
-                            label: Text(o.style.name),
-                            selected: o.style.slug == player.naghom,
-                            onSelected: o.available ? (_) => ctl.selectNaghom(o.style.slug) : null,
+                            key: Key('naghom-${o.key}'),
+                            label: Text(o.label),
+                            selected: o.key == player.naghom,
+                            onSelected: o.available ? (_) => ctl.selectNaghom(o.key) : null,
                           ),
                         ),
                       ),
@@ -77,7 +75,7 @@ class _NaghomPlayerBarState extends ConsumerState<NaghomPlayerBar> {
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 8),
                   child: Text(
-                    'Belum ada rekaman berlisensi untuk surah ini. Rekaman 7 irama ditambahkan setelah ditelaah qari.',
+                    'Belum ada rekaman berlisensi untuk surah ini. Murattal & 7 irama ditambahkan setelah izin dan telaah qari.',
                     key: Key('no-audio'),
                   ),
                 )
@@ -87,7 +85,7 @@ class _NaghomPlayerBarState extends ConsumerState<NaghomPlayerBar> {
                     isExpanded: true,
                     value: rec?.id,
                     items: [for (final r in selected.recitations) DropdownMenuItem(value: r.id, child: Text(r.qari))],
-                    onChanged: (id) => ctl.selectNaghom(selected.style.slug, recitationId: id),
+                    onChanged: (id) => ctl.selectNaghom(selected.key, recitationId: id),
                   ),
                 Row(
                   children: [
@@ -108,8 +106,8 @@ class _NaghomPlayerBarState extends ConsumerState<NaghomPlayerBar> {
                     Expanded(
                       child: Text(
                         player.current != null
-                            ? '${selected.style.name} • ayat ${player.current!.ayah}'
-                            : '${selected.style.name} • ${rec?.qari ?? ''}',
+                            ? '${selected.label} • ayat ${player.current!.ayah}'
+                            : '${selected.label} • ${rec?.qari ?? ''}',
                         key: const Key('now-playing'),
                         overflow: TextOverflow.ellipsis,
                       ),

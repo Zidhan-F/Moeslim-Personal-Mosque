@@ -128,23 +128,24 @@ class QuranPlayer extends Notifier<PlayerState> {
   Future<void> prepare(int surah) async {
     if (state.surah != null && state.surah != surah && state.playing) await _engine.stop();
     final manifest = await ref.read(audioManifestProvider.future);
-    final options = manifest.naghomOptionsFor(surah);
+    final options = manifest.optionsFor(surah);
     final prefs = ref.read(audioPrefsProvider);
     final prefNaghom = await prefs.naghom(), prefRec = await prefs.recitationId();
     final opt =
-        options.where((o) => o.available && o.style.slug == prefNaghom).firstOrNull ??
+        options.where((o) => o.available && o.key == prefNaghom).firstOrNull ??
         options.where((o) => o.available).firstOrNull;
     final rec = opt == null
         ? null
         : (opt.recitations.where((r) => r.id == prefRec).firstOrNull ?? opt.recitations.first);
-    state = PlayerState(surah: surah, naghom: opt?.style.slug, recitation: rec, repeatAyah: state.repeatAyah);
+    state = PlayerState(surah: surah, naghom: opt?.key, recitation: rec, repeatAyah: state.repeatAyah);
   }
 
+  /// Pilih bacaan: [slug] = `murattal` atau slug irama.
   Future<void> selectNaghom(String slug, {String? recitationId}) async {
     final surah = state.surah;
     if (surah == null) return;
     final manifest = await ref.read(audioManifestProvider.future);
-    final opt = manifest.naghomOptionsFor(surah).firstWhere((o) => o.style.slug == slug);
+    final opt = manifest.optionsFor(surah).firstWhere((o) => o.key == slug);
     if (!opt.available) return;
     final rec = opt.recitations.where((r) => r.id == recitationId).firstOrNull ?? opt.recitations.first;
     final wasPlaying = state.playing;
