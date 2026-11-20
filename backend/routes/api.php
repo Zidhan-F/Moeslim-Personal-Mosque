@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\MemberController;
 use App\Http\Controllers\Api\MosqueController;
 use Illuminate\Support\Facades\Route;
 
@@ -19,4 +21,26 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('me', [AuthController::class, 'me']);
     Route::get('mosques', [MosqueController::class, 'index']);
     Route::post('mosques', [MosqueController::class, 'store']);
+    Route::post('invitations/accept', [MemberController::class, 'accept'])->middleware('throttle:10,1');
+
+    Route::prefix('mosques/{mosque}')->middleware('tenant')->scopeBindings()->group(function () {
+        Route::get('/', [MosqueController::class, 'show']);
+        Route::patch('/', [MosqueController::class, 'update'])->middleware('perm:mosque.update');
+
+        Route::get('members', [MemberController::class, 'index'])->middleware('perm:members.view');
+        Route::middleware('perm:members.manage')->group(function () {
+            Route::post('members/invite', [MemberController::class, 'invite']);
+            Route::delete('invitations/{invitation}', [MemberController::class, 'revokeInvitation']);
+            Route::patch('members/{member}', [MemberController::class, 'update']);
+            Route::post('members/{member}/deactivate', [MemberController::class, 'deactivate']);
+            Route::post('members/{member}/reactivate', [MemberController::class, 'reactivate']);
+            Route::post('transfer-ownership', [MemberController::class, 'transferOwnership']);
+        });
+
+        Route::get('audit-logs', [AuditLogController::class, 'index'])->middleware('perm:audit.view');
+
+        require __DIR__.'/tenant.php';
+    });
 });
+
+require __DIR__.'/public.php';
