@@ -55,6 +55,26 @@ class Mosque extends Model
         return $this->members()->where('status', 'active');
     }
 
+    public function funds(): HasMany
+    {
+        return $this->hasMany(Fund::class)->orderBy('sort')->orderBy('id');
+    }
+
+    public function cashAccounts(): HasMany
+    {
+        return $this->hasMany(CashAccount::class)->orderBy('id');
+    }
+
+    public function financeCategories(): HasMany
+    {
+        return $this->hasMany(FinanceCategory::class)->orderBy('id');
+    }
+
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(FinanceTransaction::class);
+    }
+
     public function subscription(): HasOne
     {
         return $this->hasOne(Subscription::class);

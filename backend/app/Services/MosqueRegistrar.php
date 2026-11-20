@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Events\MosqueRegistered;
 use App\Models\Mosque;
 use App\Models\Subscription;
 use App\Models\User;
@@ -10,14 +11,6 @@ use Illuminate\Support\Str;
 
 class MosqueRegistrar
 {
-    /** @var list<callable(Mosque): void> Hook untuk modul lain (mis. dana & akun kas default). */
-    private static array $hooks = [];
-
-    public static function afterRegistered(callable $hook): void
-    {
-        self::$hooks[] = $hook;
-    }
-
     /** @return array{0: Mosque, 1: bool} masjid dan apakah dicurigai duplikat */
     public function register(User $owner, array $data): array
     {
@@ -44,9 +37,7 @@ class MosqueRegistrar
                 'trial_ends_at' => now()->addDays(Subscription::TRIAL_DAYS),
             ]);
 
-            foreach (self::$hooks as $hook) {
-                $hook($mosque);
-            }
+            MosqueRegistered::dispatch($mosque);
 
             return [$mosque, $duplicate];
         });

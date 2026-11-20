@@ -15,6 +15,9 @@ return [
 
     'default' => env('FILESYSTEM_DISK', 'local'),
 
+    // Disk privat untuk lampiran transaksi (gunakan 's3' di produksi).
+    'attachments_disk' => env('ATTACHMENTS_DISK', 'local'),
+
     /*
     |--------------------------------------------------------------------------
     | Filesystem Disks
