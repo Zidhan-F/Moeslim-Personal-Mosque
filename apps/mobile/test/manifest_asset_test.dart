@@ -21,6 +21,17 @@ void main() {
     }
   });
 
+  test('katalog bawaan: murattal tersedia untuk seluruh 114 surah', () {
+    final m = AudioManifest.fromJson(jsonDecode(File('assets/audio/manifest.json').readAsStringSync()) as Map<String, dynamic>);
+    final murattal = m.recitations.where((r) => r.isMurattal).toList();
+    expect(murattal.length, greaterThanOrEqualTo(1));
+    for (var s = 1; s <= 114; s++) {
+      expect(m.murattalCovers(s), isTrue, reason: 'surah $s');
+    }
+    expect(murattal.every((r) => r.attribution.isNotEmpty), isTrue);
+    expect(murattal.first.ayahUrl(1, 1), endsWith('/001001.mp3'));
+  });
+
   testWidgets('katalog Naghom menampilkan cakupan audio per irama', (tester) async {
     await pumpApp(
       tester,

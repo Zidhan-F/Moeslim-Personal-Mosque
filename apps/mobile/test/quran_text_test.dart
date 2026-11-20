@@ -17,6 +17,8 @@ void main() {
       total += ayat.length;
     }
     expect(total, 6236);
+    expect((await src.load(1))!.first.translation, startsWith('Dengan menyebut nama Allah'));
+    expect((await src.load(114))!.last.translation, isNotEmpty);
     expect((await src.load(2))!.first.text, isNot(startsWith('\u0628\u0650\u0633\u0652\u0645\u0650')));
     expect((await src.load(1))!.first.text, startsWith('\u0628\u0650\u0633\u0652\u0645\u0650')); // Al-Fatihah: basmalah = ayat 1
   });

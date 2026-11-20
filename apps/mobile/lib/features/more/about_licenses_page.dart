@@ -13,6 +13,10 @@ const contentSources = <(String, String)>[
     'Hak cipta © Tanzil Project — tanzil.net. Disalin apa adanya (verbatim); basmalah ditampilkan sebagai '
         'pembuka surah, bukan bagian ayat 1.',
   ),
+  (
+    'Terjemahan: Al-Qur\'an dan Terjemahannya — Kementerian Agama RI',
+    'Teks terjemahan id.indonesian melalui Tanzil.net (pembaruan 4 Juni 2010).',
+  ),
   ('Font mushaf: Amiri Quran', '© The Amiri Project Authors — SIL Open Font License 1.1.'),
   ('Font antarmuka: Inter', '© The Inter Project Authors — SIL Open Font License 1.1.'),
 ];

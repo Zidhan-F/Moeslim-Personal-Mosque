@@ -1,5 +1,8 @@
 # Register Lisensi Konten Moeslim PM
 
+> Keputusan pemilik produk (20 Nov 2026): terjemahan dan audio publik dipasang langsung tanpa menunggu
+> surat izin. Surat di folder ini tetap tersedia bila diperlukan di kemudian hari.
+
 Prinsip (ADR 0005): fitur **Personal** gratis & non-komersial; **Mosque** fitur tambahan berbayar dalam
 aplikasi yang sama. Konten pihak ketiga hanya dipakai di fitur Personal, selalu dengan atribusi
 (halaman *Tentang & Lisensi*), dan tidak dipakai di Mosque/TV Display.
@@ -10,9 +13,9 @@ aplikasi yang sama. Konten pihak ketiga hanya dipakai di fitur Personal, selalu 
 | Font mushaf Amiri Quran | Amiri Project | SIL OFL 1.1 | Tidak | **Terpasang** |
 | Font Inter | Inter Project | SIL OFL 1.1 | Tidak | **Terpasang** |
 | Anotasi tajwid | cpfair/quran-tajweed | CC BY 4.0 (komersial boleh dengan atribusi) | Tidak | **Tertunda teknis** — anotasi resmi dibuat untuk berkas teks Tanzil 2017; terhadap teks terpasang hanya 54% sejajar sehingga importer menolaknya. Perlu dibuat ulang dengan `tajweed_classifier.py` milik proyek tersebut dari teks terpasang (lihat bawah) |
-| Terjemahan Indonesia | Kementerian Agama RI ("Al-Qur'an dan Terjemahannya") | Hak cipta Kemenag; distribusi Tanzil umumnya untuk non-komersial | **Ya** | Menunggu izin — `surat-kemenag-terjemahan.md` |
+| Terjemahan Indonesia | Kementerian Agama RI ("Al-Qur'an dan Terjemahannya") | Hak cipta Kemenag; distribusi Tanzil umumnya untuk non-komersial | Keputusan pemilik produk: pasang langsung | **Terpasang** (Tanzil `id.indonesian`), atribusi tampil; izin tertulis belum ada |
 | Telaah/tashih mushaf | Lajnah Pentashihan Mushaf Al-Qur'an (LPMQ) | — | **Ya** (rekomendasi) | Draf permohonan di surat yang sama |
-| Audio murattal per ayat | EveryAyah / QuranicAudio / qari terkait | Bervariasi per qari; umumnya non-komersial | **Ya** | Menunggu izin — `surat-izin-audio-murattal.md` |
+| Audio murattal per ayat | EveryAyah / QuranicAudio / qari terkait | Bervariasi per qari; umumnya non-komersial | Keputusan pemilik produk: pasang langsung | **Terpasang** di katalog: Alafasy, Al-Husary, Abdul Basit, Al-Minshawi (streaming dari everyayah.com), atribusi tampil; izin tertulis belum ada |
 | Audio 7 Irama (Naghom) | Qari mitra (produksi sendiri) | Perjanjian lisensi | **Ya** (kontrak) | Templat — `perjanjian-lisensi-rekaman-qari.md` |
 
 ## Membuat ulang anotasi tajwid (langkah teknis tertunda)

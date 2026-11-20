@@ -1,4 +1,41 @@
 {
-  "version": 1,
-  "recitations": []
+  "version": 2,
+  "recitations": [
+    {
+      "id": "everyayah-alafasy-murattal",
+      "qari": "Mishary Rashid Alafasy",
+      "kind": "murattal",
+      "base_url": "https://everyayah.com/data/Alafasy_128kbps",
+      "license": "Koleksi publik EveryAyah.com — dipakai di fitur Personal gratis dengan atribusi (keputusan pemilik produk; izin pemegang hak belum dikonfirmasi)",
+      "attribution": "Mishary Rashid Alafasy — EveryAyah.com",
+      "surahs": "all"
+    },
+    {
+      "id": "everyayah-husary-murattal",
+      "qari": "Mahmoud Khalil Al-Husary",
+      "kind": "murattal",
+      "base_url": "https://everyayah.com/data/Husary_128kbps",
+      "license": "Koleksi publik EveryAyah.com — dipakai di fitur Personal gratis dengan atribusi (keputusan pemilik produk; izin pemegang hak belum dikonfirmasi)",
+      "attribution": "Mahmoud Khalil Al-Husary — EveryAyah.com",
+      "surahs": "all"
+    },
+    {
+      "id": "everyayah-abdulbasit-murattal",
+      "qari": "Abdul Basit Abdus Samad",
+      "kind": "murattal",
+      "base_url": "https://everyayah.com/data/Abdul_Basit_Murattal_192kbps",
+      "license": "Koleksi publik EveryAyah.com — dipakai di fitur Personal gratis dengan atribusi (keputusan pemilik produk; izin pemegang hak belum dikonfirmasi)",
+      "attribution": "Abdul Basit Abdus Samad — EveryAyah.com",
+      "surahs": "all"
+    },
+    {
+      "id": "everyayah-minshawi-murattal",
+      "qari": "Mohamed Siddiq Al-Minshawi",
+      "kind": "murattal",
+      "base_url": "https://everyayah.com/data/Minshawy_Murattal_128kbps",
+      "license": "Koleksi publik EveryAyah.com — dipakai di fitur Personal gratis dengan atribusi (keputusan pemilik produk; izin pemegang hak belum dikonfirmasi)",
+      "attribution": "Mohamed Siddiq Al-Minshawi — EveryAyah.com",
+      "surahs": "all"
+    }
+  ]
 }

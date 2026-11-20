@@ -14,4 +14,9 @@
 **Wajib sebelum rilis:** verifikasi ulang ketentuan resmi di https://tanzil.net/download dan telaah
 kesesuaian dengan Mushaf Standar Indonesia oleh penelaah (lihat `docs/licensing/`).
 
-Terjemahan dan anotasi tajwid **belum** disertakan (lihat `docs/licensing/README.md`).
+## Terjemahan
+**Al-Qur'an dan Terjemahannya — Kementerian Agama RI** (`id.indonesian`, Tanzil.net, pembaruan 4 Juni 2010),
+dari paket npm `tanzil` (`public/trans-id.txt`). Disertakan atas keputusan pemilik produk untuk fitur Personal
+yang gratis; izin tertulis Kemenag belum dikonfirmasi.
+
+Anotasi tajwid **belum** disertakan (lihat `docs/licensing/README.md`).
