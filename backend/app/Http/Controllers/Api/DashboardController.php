@@ -53,7 +53,7 @@ class DashboardController extends Controller
         $displays = $mosque->displayDevices()->where('status', 'active')->get(['id', 'name', 'last_seen_at']);
 
         return response()->json([
-            'mosque' => ['id' => $mosque->id, 'name' => $mosque->name],
+            'mosque' => ['id' => $mosque->id, 'name' => $mosque->name, 'city' => $mosque->city],
             'role' => $membership->role,
             'permissions' => Permissions::listFor($membership, $mosque),
             'finance' => $financeData,

@@ -114,3 +114,12 @@ class SessionNotifier extends AsyncNotifier<MasjidSession?> {
 }
 
 final sessionProvider = AsyncNotifierProvider<SessionNotifier, MasjidSession?>(SessionNotifier.new);
+
+/// Kode undangan yang dimasukkan saat aktivasi akun; diterima otomatis setelah email terverifikasi.
+class PendingInviteNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+  void set(String? token) => state = token;
+}
+
+final pendingInviteProvider = NotifierProvider<PendingInviteNotifier, String?>(PendingInviteNotifier.new);
