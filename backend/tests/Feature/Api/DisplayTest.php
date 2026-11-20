@@ -127,7 +127,8 @@ class DisplayTest extends TestCase
         $token = $this->pair();
         $etag = $this->withToken($token)->getJson('/api/display/content')->headers->get('ETag');
         $this->assertNotEmpty($etag);
-        $this->withToken($token)->withHeader('If-None-Match', $etag)->getJson('/api/display/content')->assertStatus(304);
+        $this->withToken($token)->withHeader('If-None-Match', $etag)->getJson('/api/display/content')->assertStatus(304)
+            ->assertHeader('X-Server-Time');
     }
 
     public function test_only_operator_or_admin_manage_displays(): void

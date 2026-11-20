@@ -25,7 +25,8 @@ class AnnouncementController extends Controller
 
     public function store(Request $request, Mosque $mosque): JsonResponse
     {
-        $data = $request->validate($this->rules());
+        // Nilai null eksplisit untuk kolom ber-default diabaikan (pakai default DB).
+        $data = array_filter($request->validate($this->rules()), fn ($v, $k) => $v !== null || ! in_array($k, ['priority', 'show_on_display'], true), ARRAY_FILTER_USE_BOTH);
         $ann = DB::transaction(function () use ($request, $mosque, $data) {
             $locked = Mosque::whereKey($mosque->id)->lockForUpdate()->first();
             if ($locked->activeContentCount() >= Mosque::MAX_ACTIVE_CONTENT) {

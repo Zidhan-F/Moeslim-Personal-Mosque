@@ -120,10 +120,11 @@ class DisplayController extends Controller
         $etag = '"'.sha1(json_encode($content)).'"';
 
         if ($request->header('If-None-Match') === $etag) {
-            return response('', 304)->header('ETag', $etag);
+            return response('', 304)->header('ETag', $etag)->header('X-Server-Time', now()->toIso8601String());
         }
 
-        return response()->json($content + ['server_time' => now()->toIso8601String()])->header('ETag', $etag);
+        return response()->json($content + ['server_time' => now()->toIso8601String()])
+            ->header('ETag', $etag)->header('X-Server-Time', now()->toIso8601String());
     }
 
     private function guardLimit(Mosque $mosque): void

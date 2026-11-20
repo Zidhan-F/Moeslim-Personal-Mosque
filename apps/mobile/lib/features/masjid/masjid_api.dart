@@ -56,8 +56,16 @@ class MasjidApi {
     } catch (_) {
       throw const ApiException(0, 'Tidak dapat terhubung ke server. Periksa koneksi internet.');
     }
-    final decoded = res.body.isEmpty ? null : jsonDecode(res.body);
-    if (res.statusCode >= 200 && res.statusCode < 300) return decoded;
+    dynamic decoded;
+    try {
+      decoded = res.body.isEmpty ? null : jsonDecode(res.body);
+    } on FormatException {
+      decoded = null; // mis. halaman HTML dari proxy
+    }
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      if (res.body.isNotEmpty && decoded == null) throw ApiException(res.statusCode, 'Respons server tidak valid.');
+      return decoded;
+    }
 
     final map = decoded is Map<String, dynamic> ? decoded : <String, dynamic>{};
     throw ApiException(

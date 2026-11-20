@@ -45,6 +45,12 @@ class Mosque extends Model
         ];
     }
 
+    /** Tanggal hari ini menurut zona waktu masjid (bukan zona server). */
+    public function today(): string
+    {
+        return now($this->timezone)->toDateString();
+    }
+
     public function setting(string $key): mixed
     {
         return data_get(array_replace_recursive(self::DEFAULT_SETTINGS, $this->settings ?? []), $key);

@@ -103,4 +103,48 @@ void main() {
     await pump(tester, MockClient((_) async => http.Response('', 304)), now: DateTime.utc(2025, 1, 1, 5, 1));
     expect(find.text('Iqamah Dzuhur'), findsOneWidget);
   });
+
+  testWidgets('selisih jam diperbarui dari header X-Server-Time walau respons 304', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'display.token': 't',
+      'display.content': jsonEncode(content()),
+      'display.etag': '"v1"',
+      'display.skewMs': const Duration(hours: 5).inMilliseconds, // skew basi
+    });
+    await pump(tester, MockClient((_) async => http.Response('', 304, headers: {'x-server-time': '2025-01-01T04:30:00+00:00'})));
+    expect(tester.widget<Text>(find.byKey(const Key('clock'))).data, startsWith('11:30'));
+  });
+
+  testWidgets('pesan error non-JSON (502 HTML) tetap tampil saat pairing', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await pump(tester, MockClient((_) async => http.Response('<html>Bad Gateway</html>', 502)));
+    await tester.enterText(find.byKey(const Key('pair-code')), '123456');
+    await tester.tap(find.byKey(const Key('pair-submit')));
+    await tester.pump();
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    expect(find.textContaining('502'), findsOneWidget);
+  });
+
+  test('tick tetap menyinkron bila jam perangkat mundur', () async {
+    SharedPreferences.setMockInitialValues({'display.token': 't'});
+    final prefs = await SharedPreferences.getInstance();
+    var calls = 0;
+    var clock = DateTime.utc(2025, 1, 1, 5);
+    final container = ProviderContainer(overrides: [
+      prefsProvider.overrideWithValue(prefs),
+      clockProvider.overrideWithValue(() => clock),
+      httpClientProvider.overrideWithValue(MockClient((_) async {
+        calls++;
+        return http.Response('', 304);
+      })),
+    ]);
+    addTearDown(container.dispose);
+    final c = container.read(displayControllerProvider.notifier);
+    await c.tick(clock);
+    expect(calls, 1);
+    clock = clock.subtract(const Duration(hours: 3)); // NTP mengoreksi jam mundur
+    await c.tick(clock);
+    expect(calls, 2);
+  });
 }

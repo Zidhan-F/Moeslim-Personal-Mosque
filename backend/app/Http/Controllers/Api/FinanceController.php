@@ -98,6 +98,9 @@ class FinanceController extends Controller
         if (! $key || strlen($key) > 100) {
             throw new DomainRuleException('idempotency_key_required', 'Header Idempotency-Key wajib diisi.', 428);
         }
+        if (str_starts_with($key, FinanceService::INTERNAL_KEY_PREFIX)) {
+            throw new DomainRuleException('idempotency_key_reserved', 'Awalan Idempotency-Key ini dicadangkan sistem.');
+        }
 
         $data = $request->validate([
             'flow' => ['required', Rule::in(FinanceTransaction::FLOWS)],
@@ -190,7 +193,8 @@ class FinanceController extends Controller
                     fputcsv($out, [
                         $t->date->toDateString(), $t->reference_no,
                         ['in' => 'Masuk', 'out' => 'Keluar', 'transfer' => 'Transfer'][$t->flow],
-                        $t->fund?->name, $t->account?->name, $t->toAccount?->name, $t->category?->name,
+                        $this->csvSafe($t->fund?->name), $this->csvSafe($t->account?->name),
+                        $this->csvSafe($t->toAccount?->name), $this->csvSafe($t->category?->name),
                         $this->csvSafe($t->description),
                         $t->flow === 'in' ? $t->amount : '', $t->flow === 'out' ? $t->amount : '',
                     ]);

@@ -12,6 +12,9 @@ use Illuminate\Support\Facades\DB;
 
 class FinanceService
 {
+    /** Awalan kunci idempoten internal (entri pembalik); ditolak bila dikirim klien. */
+    public const INTERNAL_KEY_PREFIX = 'reversal:';
+
     /**
      * Catat transaksi secara idempoten.
      *
@@ -86,11 +89,11 @@ class FinanceService
 
             $tx = FinanceTransaction::create($data + [
                 'mosque_id' => $mosque->id,
-                'reference_no' => $this->nextReference($mosque, now()->toDateString()),
+                'reference_no' => $this->nextReference($mosque, $mosque->today()),
                 'amount' => $original->amount,
                 'fund_id' => $original->fund_id,
                 'category_id' => $original->category_id,
-                'date' => now()->toDateString(),
+                'date' => $mosque->today(),
                 'description' => mb_substr("Pembatalan {$original->reference_no}: {$reason}", 0, 255),
                 'reversal_of_id' => $original->id,
                 'created_by' => $by->id,
@@ -145,7 +148,7 @@ class FinanceService
     public function monthlyCount(Mosque $mosque): int
     {
         return FinanceTransaction::where('mosque_id', $mosque->id)
-            ->where('created_at', '>=', now()->startOfMonth())->count();
+            ->where('created_at', '>=', now($mosque->timezone)->startOfMonth()->utc())->count();
     }
 
     private function guardRestrictedFund(Mosque $mosque, int $fundId, int $amount): void

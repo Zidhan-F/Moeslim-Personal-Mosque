@@ -91,6 +91,9 @@ class MemberService
             if ($member->role === 'admin' && $role !== 'admin') {
                 $this->guardLastAdmin($mosque, $member);
             }
+            if ($member->is_owner && $role !== 'admin') {
+                throw new DomainRuleException('owner_role_locked', 'Role pemilik masjid tidak dapat diubah. Pindahkan kepemilikan terlebih dahulu.');
+            }
             $from = $member->role;
             $member->update(['role' => $role]);
             Audit::log($mosque, 'member.role_changed', $member, ['from' => $from, 'to' => $role]);

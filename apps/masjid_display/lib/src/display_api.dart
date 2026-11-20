@@ -16,7 +16,17 @@ class DisplayApiException implements Exception {
 class ContentResponse {
   final Map<String, dynamic>? content; // null = 304 tidak berubah
   final String? etag;
-  const ContentResponse(this.content, this.etag);
+  final DateTime? serverTime; // dari header X-Server-Time (ada di 200 & 304)
+  const ContentResponse(this.content, this.etag, {this.serverTime});
+}
+
+Map<String, dynamic>? _tryJson(String body) {
+  try {
+    final v = jsonDecode(body);
+    return v is Map<String, dynamic> ? v : null;
+  } on FormatException {
+    return null;
+  }
 }
 
 class DisplayApi {
@@ -34,9 +44,9 @@ class DisplayApi {
         body: jsonEncode({'code': code, 'device_name': 'Moeslim Display'}),
       ),
     );
-    final body = jsonDecode(res.body) as Map<String, dynamic>;
-    if (res.statusCode != 201) {
-      throw DisplayApiException(res.statusCode, (body['message'] as String?) ?? 'Pairing gagal.');
+    final body = _tryJson(res.body);
+    if (res.statusCode != 201 || body == null) {
+      throw DisplayApiException(res.statusCode, (body?['message'] as String?) ?? 'Pairing gagal (${res.statusCode}).');
     }
     return (token: body['token'] as String, mosqueName: (body['mosque'] as Map)['name'] as String);
   }
@@ -48,11 +58,17 @@ class DisplayApi {
         headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token', 'If-None-Match': ?etag},
       ),
     );
-    if (res.statusCode == 304) return ContentResponse(null, etag);
-    if (res.statusCode != 200) {
+    final serverTime = DateTime.tryParse(res.headers['x-server-time'] ?? '');
+    if (res.statusCode == 304) return ContentResponse(null, etag, serverTime: serverTime);
+    final body = _tryJson(res.body);
+    if (res.statusCode != 200 || body == null) {
       throw DisplayApiException(res.statusCode, 'Gagal mengambil konten (${res.statusCode}).');
     }
-    return ContentResponse(jsonDecode(res.body) as Map<String, dynamic>, res.headers['etag']);
+    return ContentResponse(
+      body,
+      res.headers['etag'],
+      serverTime: serverTime ?? DateTime.tryParse(body['server_time'] as String? ?? ''),
+    );
   }
 
   Future<http.Response> _guard(Future<http.Response> Function() call) async {

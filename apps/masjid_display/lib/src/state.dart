@@ -80,7 +80,9 @@ class DisplayController extends Notifier<DisplayState> {
 
   /// Dipanggil tiap detik oleh layar; hanya menyinkron bila sudah waktunya.
   Future<void> tick(DateTime now) async {
-    if (_lastAttempt == null || now.difference(_lastAttempt!) >= refreshEvery) await refresh();
+    // Selisih negatif = jam perangkat mundur (mis. koreksi NTP) → anggap sudah waktunya.
+    final elapsed = _lastAttempt == null ? null : now.difference(_lastAttempt!);
+    if (elapsed == null || elapsed.isNegative || elapsed >= refreshEvery) await refresh();
   }
 
   Future<void> refresh({bool force = false}) async {
@@ -94,12 +96,13 @@ class DisplayController extends Notifier<DisplayState> {
       final now = clock();
       var content = state.content;
       var skew = state.clockSkew;
+      if (res.serverTime != null) {
+        skew = res.serverTime!.difference(now);
+        await _prefs.setInt(_kSkew, skew.inMilliseconds);
+      }
       if (res.content != null) {
         content = res.content;
-        final server = DateTime.tryParse(res.content!['server_time'] as String? ?? '');
-        if (server != null) skew = server.difference(now);
         await _prefs.setString(_kContent, jsonEncode(content));
-        await _prefs.setInt(_kSkew, skew.inMilliseconds);
         if (res.etag != null) await _prefs.setString(_kEtag, res.etag!);
       }
       await _prefs.setString(_kSync, now.toIso8601String());

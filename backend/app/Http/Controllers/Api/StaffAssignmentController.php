@@ -16,8 +16,8 @@ class StaffAssignmentController extends Controller
     public function index(Request $request, Mosque $mosque): JsonResponse
     {
         $f = $request->validate(['from' => ['nullable', 'date'], 'to' => ['nullable', 'date']]);
-        $from = $f['from'] ?? now()->startOfWeek()->toDateString();
-        $to = $f['to'] ?? now()->addDays(30)->toDateString();
+        $from = $f['from'] ?? now($mosque->timezone)->startOfWeek()->toDateString();
+        $to = $f['to'] ?? now($mosque->timezone)->addDays(30)->toDateString();
 
         $rows = $mosque->staffAssignments()->with('user:id,name')
             ->whereBetween('date', [$from, $to])->orderBy('date')->orderBy('id')->get();
