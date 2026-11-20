@@ -98,6 +98,11 @@ class TenancyAndMembersTest extends TestCase
         $this->postJson("/api/mosques/{$m->id}/members/invite", ['email' => 'a@example.test', 'role' => 'pengurus'])->assertCreated();
         $this->postJson("/api/mosques/{$m->id}/members/invite", ['email' => 'b@example.test', 'role' => 'pengurus'])
             ->assertUnprocessable();
+
+        // mencabut undangan membebaskan slot
+        $inv = $this->getJson("/api/mosques/{$m->id}/members")->json('invitations.0.id');
+        $this->deleteJson("/api/mosques/{$m->id}/invitations/{$inv}")->assertOk();
+        $this->postJson("/api/mosques/{$m->id}/members/invite", ['email' => 'b@example.test', 'role' => 'pengurus'])->assertCreated();
     }
 
     public function test_deactivate_frees_slot_but_rotation_is_limited(): void

@@ -75,6 +75,43 @@ class Mosque extends Model
         return $this->hasMany(FinanceTransaction::class);
     }
 
+    /** Lampiran transaksi (nama relasi dipakai oleh scoped route binding {attachment}). */
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(FinanceAttachment::class);
+    }
+
+    public function invitations(): HasMany
+    {
+        return $this->hasMany(MosqueInvitation::class);
+    }
+
+    public function events(): HasMany
+    {
+        return $this->hasMany(Event::class);
+    }
+
+    public function announcements(): HasMany
+    {
+        return $this->hasMany(Announcement::class);
+    }
+
+    public function staffAssignments(): HasMany
+    {
+        return $this->hasMany(StaffAssignment::class);
+    }
+
+    public function inventoryItems(): HasMany
+    {
+        return $this->hasMany(InventoryItem::class);
+    }
+
+    public function activeContentCount(): int
+    {
+        return $this->events()->where('status', 'active')->count()
+            + $this->announcements()->where('status', 'active')->count();
+    }
+
     public function subscription(): HasOne
     {
         return $this->hasOne(Subscription::class);

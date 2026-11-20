@@ -195,6 +195,8 @@ class FinanceTest extends TestCase
             'file' => UploadedFile::fake()->image('nota.jpg')->size(200),
         ], ['Accept' => 'application/json'])->assertCreated();
         $this->assertGreaterThan(0, $this->mosque->fresh()->storage_used_bytes);
+        $attId = $this->getJson($this->url("/transactions/{$id}"))->assertOk()->json('data.attachments.0.id');
+        $this->get($this->url("/attachments/{$attId}"))->assertOk()->assertDownload('nota.jpg');
 
         $this->post($this->url("/transactions/{$id}/attachments"), [
             'file' => UploadedFile::fake()->create('virus.exe', 10, 'application/x-msdownload'),

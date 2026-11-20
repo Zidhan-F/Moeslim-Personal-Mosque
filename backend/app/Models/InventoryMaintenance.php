@@ -1,0 +1,17 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class InventoryMaintenance extends Model
+{
+    protected $table = 'inventory_maintenance';
+
+    protected $guarded = ['id'];
+
+    protected function casts(): array
+    {
+        return ['date' => 'date:Y-m-d', 'cost' => 'integer'];
+    }
+}
