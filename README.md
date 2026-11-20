@@ -30,8 +30,11 @@ cd apps/masjid_display && flutter run --dart-define=API_BASE_URL=http://10.0.2.2
 
 ## Tampilan
 
+Ilustrasi (masjid, Al-Qur'an di rehal, lentera, Ka'bah, perisai login, pemandangan masjid TV, ornamen)
+digambar ulang sebagai vektor mengikuti paket visualisasi — sumber & cara render di `tools/illustrations/`.
+
 Tangkapan layar hasil render (font & warna brand) ada di `docs/brand/screenshots/`:
-`personal/` (Beranda, Al-Qur'an, Mushaf, Murottal, 7 Irama, Jadwal, Kiblat, Tasbih, Catatan Ibadah),
+`personal/` (Onboarding, Beranda, Al-Qur'an, Mushaf, Murottal, 7 Irama, Doa, Jadwal, Kiblat, Tasbih, Catatan Ibadah),
 `mosque/` (Pilih Peran, Registrasi, Login/Aktivasi, Dashboard, Keuangan, Tambah/Riwayat Transaksi,
 Laporan, Pengurus & Role, Agenda, Petugas, Inventaris, Konfigurasi TV, Konten, Akun) dan
 `tv/` (Layar Utama, fase Iqamah, Informasi Jamaah, tema Terang & Gelap).

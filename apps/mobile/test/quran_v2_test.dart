@@ -8,7 +8,15 @@ import 'helpers.dart';
 final manifest = AudioManifest.fromJson({
   'version': 1,
   'recitations': [
-    {'id': 'm', 'qari': 'Qari M', 'kind': 'murattal', 'base_url': 'https://cdn.test/m', 'license': 'L', 'attribution': 'Qari M — uji', 'surahs': 'all'},
+    {
+      'id': 'm',
+      'qari': 'Qari M',
+      'kind': 'murattal',
+      'base_url': 'https://cdn.test/m',
+      'license': 'L',
+      'attribution': 'Qari M — uji',
+      'surahs': 'all',
+    },
   ],
 });
 
@@ -50,7 +58,11 @@ void main() {
     await tester.tap(find.byKey(const Key('murottal-speed')));
     await tester.pumpAndSettle();
     expect(engine.speed, 1.25);
-    await tester.scrollUntilVisible(find.byKey(const Key('playlist-3')), 200, scrollable: find.byType(Scrollable).first);
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('playlist-3')),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(find.byKey(const Key('playlist-3')));
     await tester.pumpAndSettle();
     expect(engine.calls.last.first.toString(), 'https://cdn.test/m/003001.mp3');

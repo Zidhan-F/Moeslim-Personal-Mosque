@@ -118,32 +118,44 @@ class _TasbihPageState extends ConsumerState<TasbihPage> {
                 ? ListView(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     children: [
-                      Center(
-                        child: SizedBox.square(
-                          dimension: 230,
-                          child: CustomPaint(
-                            painter: _RingPainter(
-                              progress: shown / _target,
-                              track: scheme.primary.withValues(alpha: .12),
-                              color: scheme.primary,
+                      Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          const Positioned.fill(
+                            child: BrandArt(
+                              BrandIllustration.tasbihSide,
+                              fit: BoxFit.fitWidth,
+                              alignment: Alignment.bottomCenter,
                             ),
-                            child: Center(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text('Target Dzikir', style: t.bodySmall),
-                                  Text('$_target kali', style: t.labelLarge),
-                                  Text(
-                                    '$shown',
-                                    key: const Key('tasbih-count'),
-                                    style: t.displayMedium?.copyWith(fontWeight: FontWeight.w800),
+                          ),
+                          Center(
+                            child: SizedBox.square(
+                              dimension: 230,
+                              child: CustomPaint(
+                                painter: _RingPainter(
+                                  progress: shown / _target,
+                                  track: scheme.primary.withValues(alpha: .12),
+                                  color: scheme.primary,
+                                ),
+                                child: Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text('Target Dzikir', style: t.bodySmall),
+                                      Text('$_target kali', style: t.labelLarge),
+                                      Text(
+                                        '$shown',
+                                        key: const Key('tasbih-count'),
+                                        style: t.displayMedium?.copyWith(fontWeight: FontWeight.w800),
+                                      ),
+                                      Text('/ $_target • putaran ${_count ~/ _target}', style: t.bodySmall),
+                                    ],
                                   ),
-                                  Text('/ $_target • putaran ${_count ~/ _target}', style: t.bodySmall),
-                                ],
+                                ),
                               ),
                             ),
                           ),
-                        ),
+                        ],
                       ),
                       Text(
                         _dzikir.arabic,

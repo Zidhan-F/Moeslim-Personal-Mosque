@@ -20,6 +20,7 @@ dev_dependencies:
 flutter:
   assets:
     - assets/logo/
+    - assets/illustrations/
   fonts:
     - family: Inter
       fonts:

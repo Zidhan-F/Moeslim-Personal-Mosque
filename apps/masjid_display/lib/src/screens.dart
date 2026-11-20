@@ -589,91 +589,48 @@ class _IqamahCard extends StatelessWidget {
   }
 }
 
-/// Ilustrasi masjid bergaya (kubah + menara) dalam bingkai lengkung emas — pengganti foto.
+/// Foto/ilustrasi masjid dalam bingkai lengkung berpinggiran emas (sisi kanan layar utama).
 class _MosqueIllustration extends StatelessWidget {
   const _MosqueIllustration();
 
   @override
   Widget build(BuildContext context) => ExcludeSemantics(
-    child: CustomPaint(painter: _MosquePainter(), size: Size.infinite),
+    child: CustomPaint(
+      key: const Key('tv-mosque-art'),
+      foregroundPainter: _ArchBorderPainter(),
+      child: ClipPath(
+        clipper: _ArchClipper(),
+        child: const BrandArt(BrandIllustration.tvMosque, fit: BoxFit.cover, alignment: Alignment.bottomCenter),
+      ),
+    ),
   );
 }
 
-class _MosquePainter extends CustomPainter {
+Path _archPath(Size size) {
+  final w = size.width, h = size.height;
+  return Path()
+    ..moveTo(w * .18, 0)
+    ..lineTo(w - 24, 0)
+    ..quadraticBezierTo(w, 0, w, 24)
+    ..lineTo(w, h - 24)
+    ..quadraticBezierTo(w, h, w - 24, h)
+    ..lineTo(0, h)
+    ..quadraticBezierTo(w * .02, h * .25, w * .18, 0)
+    ..close();
+}
+
+class _ArchClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) => _archPath(size);
+
+  @override
+  bool shouldReclip(_ArchClipper old) => false;
+}
+
+class _ArchBorderPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width, h = size.height;
-    // Bingkai lengkung: tepi kiri melengkung seperti mockup.
-    final frame = Path()
-      ..moveTo(w * .18, 0)
-      ..lineTo(w, 0)
-      ..lineTo(w, h)
-      ..lineTo(0, h)
-      ..quadraticBezierTo(w * .02, h * .25, w * .18, 0)
-      ..close();
-    final rrect = RRect.fromRectAndRadius(Offset.zero & size, const Radius.circular(24));
-    canvas.save();
-    canvas.clipRRect(rrect);
-    canvas.clipPath(frame);
-    canvas.drawRect(
-      Offset.zero & size,
-      Paint()
-        ..shader = const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFFBFE3F2), Color(0xFFF4F1E4)],
-        ).createShader(Offset.zero & size),
-    );
-    final ground = h * .82;
-    final body = Paint()..color = const Color(0xFFFBF8EF);
-    final shade = Paint()..color = const Color(0xFFE6DFC9);
-    final goldP = Paint()..color = _gold;
-    final cx = w * .58;
-    // Menara.
-    for (final mx in [w * .3, w * .86]) {
-      final mw = w * .045;
-      canvas.drawRect(Rect.fromLTWH(mx - mw / 2, h * .2, mw, ground - h * .2), body);
-      canvas.drawRect(Rect.fromLTWH(mx - mw / 2, h * .2, mw * .3, ground - h * .2), shade);
-      canvas.drawRect(Rect.fromLTWH(mx - mw * .8, h * .38, mw * 1.6, h * .025), shade);
-      canvas.drawCircle(Offset(mx, h * .19), mw * .6, goldP);
-      canvas.drawRect(Rect.fromLTWH(mx - 1.5, h * .1, 3, h * .07), goldP);
-    }
-    // Bangunan utama + kubah.
-    canvas.drawRect(Rect.fromLTWH(w * .36, h * .55, w * .45, ground - h * .55), body);
-    canvas.drawRect(Rect.fromLTWH(w * .36, h * .55, w * .45, h * .03), shade);
-    final dome = Path()
-      ..moveTo(cx - w * .16, h * .56)
-      ..cubicTo(cx - w * .17, h * .3, cx - w * .03, h * .24, cx, h * .2)
-      ..cubicTo(cx + w * .03, h * .24, cx + w * .17, h * .3, cx + w * .16, h * .56)
-      ..close();
-    canvas.drawPath(dome, body);
-    canvas.drawPath(
-      dome,
-      Paint()
-        ..color = shade.color
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3,
-    );
-    canvas.drawRect(Rect.fromLTWH(cx - 2, h * .1, 4, h * .1), goldP);
-    canvas.drawCircle(Offset(cx, h * .1), 7, goldP);
-    // Pintu & jendela lengkung.
-    final arch = Paint()..color = const Color(0xFF9DB8AE);
-    for (var i = 0; i < 5; i++) {
-      final ax = w * .39 + i * w * .085;
-      final r = Rect.fromLTWH(ax, h * .64, w * .045, ground - h * .64 - 6);
-      canvas.drawRRect(
-        RRect.fromRectAndCorners(r, topLeft: Radius.circular(r.width / 2), topRight: Radius.circular(r.width / 2)),
-        arch,
-      );
-    }
-    // Tanah & pepohonan.
-    canvas.drawRect(Rect.fromLTWH(0, ground, w, h - ground), Paint()..color = const Color(0xFF6FAE7E));
-    final tree = Paint()..color = const Color(0xFF2F7A57);
-    for (final tx in [.08, .2, .93]) {
-      canvas.drawCircle(Offset(w * tx, ground - h * .05), h * .07, tree);
-    }
-    canvas.restore();
-    // Garis emas di tepi lengkung.
     canvas.drawPath(
       Path()
         ..moveTo(w * .18, 0)
@@ -686,7 +643,7 @@ class _MosquePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_MosquePainter old) => false;
+  bool shouldRepaint(_ArchBorderPainter old) => false;
 }
 
 /// Pola bintang delapan halus untuk latar.

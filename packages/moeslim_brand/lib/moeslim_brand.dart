@@ -5,5 +5,6 @@
 library;
 
 export 'src/colors.dart';
+export 'src/illustration.dart';
 export 'src/logo.dart';
 export 'src/theme.dart';

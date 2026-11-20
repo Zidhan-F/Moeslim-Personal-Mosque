@@ -133,7 +133,11 @@ class _Greeting extends StatelessWidget {
             ],
           ),
         ),
-        const BrandLogo(variant: BrandLogoVariant.symbol, height: 56, onDark: true),
+        const SizedBox(
+          width: 150,
+          height: 84,
+          child: BrandArt(BrandIllustration.skyline, fit: BoxFit.contain, alignment: Alignment.bottomRight),
+        ),
       ],
     ),
   );

@@ -47,7 +47,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.widget<Text>(find.byKey(const Key('next-prayer'))).data, 'Ashar');
     expect(find.descendant(of: find.byKey(const Key('row-Subuh')), matching: find.byIcon(Icons.check)), findsOneWidget);
-    expect(find.descendant(of: find.byKey(const Key('row-Ashar')), matching: find.byIcon(Icons.play_arrow)), findsOneWidget);
+    expect(
+      find.descendant(of: find.byKey(const Key('row-Ashar')), matching: find.byIcon(Icons.play_arrow)),
+      findsOneWidget,
+    );
     await tester.tap(find.byKey(const Key('weekly-schedule')));
     await tester.pumpAndSettle();
     expect(find.byType(DataTable), findsOneWidget);

@@ -119,7 +119,7 @@ class _SurahTab extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const BrandLogo(variant: BrandLogoVariant.symbol, height: 72, onDark: false),
+                    const BrandArt(BrandIllustration.heroQuran, height: 104),
                   ],
                 ),
               ),

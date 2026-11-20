@@ -118,7 +118,7 @@ class _FinanceTabState extends ConsumerState<FinanceTab> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
           children: [
-            MosqueBanner(overline: 'Kas Masjid', title: ctx.name, subtitle: ctx.city, icon: Icons.account_balance),
+            MosqueBanner(overline: 'Kas Masjid', title: ctx.name, subtitle: ctx.city),
             AsyncBody(
               value: summary,
               onRetry: () => ref.invalidate(financeSummaryProvider(key)),

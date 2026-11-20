@@ -68,11 +68,15 @@ void main() {
 
     await tester.enterText(find.byKey(const Key('email')), 'b@x.id');
     await tester.enterText(find.byKey(const Key('password')), 'salah');
+    await tester.ensureVisible(find.byKey(const Key('submit')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('submit')));
     await tester.pumpAndSettle();
     expect(find.text('Email atau kata sandi salah.'), findsOneWidget);
 
     await tester.enterText(find.byKey(const Key('password')), 'benar-sekali-123');
+    await tester.ensureVisible(find.byKey(const Key('submit')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('submit')));
     await tester.pumpAndSettle();
 

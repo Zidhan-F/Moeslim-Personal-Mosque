@@ -53,8 +53,27 @@ class QiblaPage extends ConsumerWidget {
               dimension: 300,
               child: Semantics(
                 label: 'Kompas kiblat, ${degreeId(bearing)} dari utara',
-                child: CustomPaint(
-                  painter: CompassPainter(qibla: bearing, heading: heading),
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: CustomPaint(
+                        painter: CompassPainter(qibla: bearing, heading: heading),
+                      ),
+                    ),
+                    // Ka'bah di ujung jarum (arah kiblat), ilustrasi brand.
+                    Builder(
+                      builder: (_) {
+                        final a = (bearing - (heading ?? 0) - 90) * math.pi / 180;
+                        const c = 150.0, r = 150.0 - 22 - 30;
+                        return Positioned(
+                          key: const Key('compass-kaaba'),
+                          left: c + math.cos(a) * r - 22,
+                          top: c + math.sin(a) * r - 24,
+                          child: const BrandArt(BrandIllustration.kaaba, width: 44, height: 44),
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -73,7 +92,7 @@ class QiblaPage extends ConsumerWidget {
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  const _KaabaIcon(size: 40),
+                  const BrandArt(BrandIllustration.kaaba, width: 52, height: 52),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -114,7 +133,7 @@ class QiblaPage extends ConsumerWidget {
               subtitle: const Text(
                 'Putar ponsel membentuk angka 8 untuk mengkalibrasi akurasi kompas. Akurasi sensor berbeda antar perangkat.',
               ),
-              trailing: const Icon(Icons.screen_rotation_alt),
+              trailing: const BrandArt(BrandIllustration.calibrate, width: 72),
               isThreeLine: true,
             ),
           ),
@@ -209,30 +228,8 @@ class CompassPainter extends CustomPainter {
       ..close();
     canvas.drawPath(needle, Paint()..color = BrandColors.gold);
     canvas.drawCircle(c, 6, Paint()..color = BrandColors.cream);
-
-    final k = c + dir * (r - 30);
-    final kaaba = Rect.fromCenter(center: k, width: 26, height: 26);
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(kaaba, const Radius.circular(3)),
-      Paint()..color = const Color(0xFF111111),
-    );
-    canvas.drawRect(Rect.fromLTWH(kaaba.left, kaaba.top + 6, kaaba.width, 4), Paint()..color = BrandColors.gold);
   }
 
   @override
   bool shouldRepaint(CompassPainter old) => old.qibla != qibla || old.heading != heading;
-}
-
-class _KaabaIcon extends StatelessWidget {
-  final double size;
-  const _KaabaIcon({required this.size});
-
-  @override
-  Widget build(BuildContext context) => Container(
-    width: size,
-    height: size,
-    decoration: BoxDecoration(color: const Color(0xFF111111), borderRadius: BorderRadius.circular(6)),
-    alignment: const Alignment(0, -.45),
-    child: Container(height: size * .14, color: BrandColors.gold),
-  );
 }

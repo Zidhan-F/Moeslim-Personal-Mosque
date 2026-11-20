@@ -91,7 +91,7 @@ class PrayerPage extends ConsumerWidget {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              OrnamentCard(
+              ArchHeader(
                 child: Column(
                   children: [
                     Text(longDate(status.now), style: t.titleMedium),

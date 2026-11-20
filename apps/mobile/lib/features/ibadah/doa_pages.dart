@@ -48,29 +48,11 @@ class _DoaListPageState extends ConsumerState<DoaListPage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          PatternBanner(
-            child: Row(
-              children: [
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Kumpulan Doa',
-                        style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Doa-doa yang diabadikan dalam Al-Qur\'an, lengkap dengan teks Arab dan terjemahan Kemenag.',
-                        style: TextStyle(color: BrandColors.cream),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(Icons.volunteer_activism, size: 48, color: BrandColors.gold.withValues(alpha: .9)),
-              ],
-            ),
-          ),
+          const BrandArt(BrandIllustration.heroQuran, height: 190),
+          const SizedBox(height: 8),
+          Text('Kumpulan Doa', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+          const SizedBox(height: 2),
+          const Text('Doa-doa yang diabadikan dalam Al-Qur\'an, lengkap dengan teks Arab dan terjemahan Kemenag.'),
           const SizedBox(height: 12),
           TextField(
             key: const Key('doa-search'),
@@ -127,7 +109,7 @@ class DoaDetailPage extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          OrnamentCard(
+          ArchHeader(
             child: Column(
               children: [
                 Container(

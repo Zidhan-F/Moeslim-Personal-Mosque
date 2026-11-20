@@ -5,6 +5,7 @@ import 'package:personal_core/personal_core.dart';
 
 import '../../ui/components.dart';
 import 'masjid_api.dart';
+import 'mosque_providers.dart';
 import 'mosque_shell.dart';
 import 'session.dart';
 
@@ -53,47 +54,53 @@ class MosqueLandingPage extends StatelessWidget {
         Navigator.of(context).push(MaterialPageRoute(builder: (_) => LoginPage(initialTab: tab)));
     return Scaffold(
       appBar: AppBar(),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+      extendBodyBehindAppBar: false,
+      body: Stack(
         children: [
-          Text('Pilih Peran di Moeslim PM', style: t.headlineSmall, textAlign: TextAlign.center),
-          const SizedBox(height: 6),
-          const Text(
-            'Tentukan modul yang ingin Anda gunakan. Anda dapat beralih kapan saja.',
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 20),
-          _RoleCard(
-            icon: Icons.person_outline,
-            title: 'Moeslim Personal',
-            body: 'Ibadah harian, Al-Qur\'an, doa, dan kebutuhan pribadi Muslim. Gratis tanpa akun.',
-            selected: false,
-            onTap: () => Navigator.of(context).popUntil((r) => r.isFirst),
-          ),
-          const SizedBox(height: 12),
-          const _RoleCard(
-            icon: Icons.mosque,
-            title: 'Moeslim Mosque',
-            body: 'Kelola masjid: kas, kegiatan, petugas, pengurus, dan TV Display. Rp59.000/bulan per masjid (uji coba 30 hari).',
-            selected: true,
-          ),
-          const SizedBox(height: 24),
-          const Center(child: BrandLogo(variant: BrandLogoVariant.stacked, height: 120)),
-          const SizedBox(height: 24),
-          FilledButton.icon(
-            key: const Key('register-mosque-start'),
-            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(54), shape: const StadiumBorder()),
-            onPressed: () => openLogin(1),
-            icon: const Icon(Icons.add_home_work_outlined),
-            label: const Text('Daftarkan Masjid'),
-          ),
-          const SizedBox(height: 12),
-          Center(
-            child: TextButton(
-              key: const Key('login-admin-start'),
-              onPressed: () => openLogin(0),
-              child: const Text('Sudah punya akses masjid? Aktifkan atau Login Admin'),
-            ),
+          const Positioned(top: 0, left: 0, child: BrandArt(BrandIllustration.cornerLattice, width: 170, opacity: .8)),
+          ListView(
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+            children: [
+              Text('Pilih Peran di Moeslim PM', style: t.headlineSmall, textAlign: TextAlign.center),
+              const SizedBox(height: 6),
+              const Text(
+                'Tentukan modul yang ingin Anda gunakan. Anda dapat beralih kapan saja.',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              _RoleCard(
+                icon: Icons.person_outline,
+                title: 'Moeslim Personal',
+                body: 'Ibadah harian, Al-Qur\'an, doa, dan kebutuhan pribadi Muslim. Gratis tanpa akun.',
+                selected: false,
+                onTap: () => Navigator.of(context).popUntil((r) => r.isFirst),
+              ),
+              const SizedBox(height: 12),
+              const _RoleCard(
+                icon: Icons.mosque,
+                title: 'Moeslim Mosque',
+                body: 'Kelola masjid: kas, kegiatan, petugas, pengurus, dan TV Display. Rp59.000/bulan per masjid (uji coba 30 hari).',
+                selected: true,
+              ),
+              const SizedBox(height: 24),
+              const BrandArt(BrandIllustration.mosqueCircle, key: Key('landing-art'), height: 230),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                key: const Key('register-mosque-start'),
+                style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(54), shape: const StadiumBorder()),
+                onPressed: () => openLogin(1),
+                icon: const Icon(Icons.add_home_work_outlined),
+                label: const Text('Daftarkan Masjid'),
+              ),
+              const SizedBox(height: 12),
+              Center(
+                child: TextButton(
+                  key: const Key('login-admin-start'),
+                  onPressed: () => openLogin(0),
+                  child: const Text('Sudah punya akses masjid? Aktifkan atau Login Admin'),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -197,7 +204,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          const Center(child: Icon(Icons.verified_user, size: 72, color: BrandColors.emerald)),
+          const BrandArt(BrandIllustration.loginShield, key: Key('login-art'), height: 170),
           const SizedBox(height: 8),
           Text('Akses Admin Moeslim Mosque', style: t.titleLarge, textAlign: TextAlign.center),
           const Text(
@@ -399,21 +406,9 @@ class _RegisterMosquePageState extends ConsumerState<RegisterMosquePage> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          const PatternBanner(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Daftarkan Masjid Anda\ndi Moeslim PM',
-                  style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Buat profil masjid dan mulai kelola operasional secara digital.',
-                  style: TextStyle(color: BrandColors.cream),
-                ),
-              ],
-            ),
+          const MosqueBanner(
+            title: 'Daftarkan Masjid Anda di Moeslim PM',
+            subtitle: 'Buat profil masjid dan mulai kelola operasional secara digital.',
           ),
           const SizedBox(height: 16),
           TextField(

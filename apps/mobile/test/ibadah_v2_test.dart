@@ -24,7 +24,11 @@ void main() {
     await tester.tap(find.byKey(const Key('tasbih-minus')));
     await tester.pumpAndSettle();
     expect(tester.widget<Text>(find.byKey(const Key('tasbih-count'))).data, '1');
-    await tester.scrollUntilVisible(find.byKey(const Key('edit-target')), 150, scrollable: find.byType(Scrollable).first);
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('edit-target')),
+      150,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(find.byKey(const Key('edit-target')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('99 kali'));
@@ -54,7 +58,10 @@ void main() {
     await pumpApp(
       tester,
       quran: FakeQuranSource({
-        2: [for (var i = 1; i <= 286; i++) Ayah(2, i, 'نص $i', translation: i == 201 ? 'Ya Tuhan kami, berilah kami kebaikan di dunia' : 'teks $i')],
+        2: [
+          for (var i = 1; i <= 286; i++)
+            Ayah(2, i, 'نص $i', translation: i == 201 ? 'Ya Tuhan kami, berilah kami kebaikan di dunia' : 'teks $i'),
+        ],
       }),
     );
     await open(tester, const DoaListPage());

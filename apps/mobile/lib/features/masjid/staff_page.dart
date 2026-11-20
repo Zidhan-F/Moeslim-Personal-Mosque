@@ -93,7 +93,6 @@ class _StaffPageState extends ConsumerState<StaffPage> {
           const MosqueBanner(
             title: 'Jadwal Petugas Masjid',
             subtitle: 'Atur jadwal imam, muadzin, dan khatib secara mingguan.',
-            icon: Icons.calendar_month,
           ),
           const SizedBox(height: 8),
           Row(

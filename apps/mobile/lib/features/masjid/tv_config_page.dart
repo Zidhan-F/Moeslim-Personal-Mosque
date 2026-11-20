@@ -39,10 +39,14 @@ class TvConfigPage extends ConsumerWidget {
               margin: EdgeInsets.zero,
               child: ListTile(
                 leading: Container(
-                  width: 52,
-                  height: 40,
+                  width: 64,
+                  height: 44,
+                  padding: const EdgeInsets.all(3),
                   decoration: BoxDecoration(color: BrandColors.deep, borderRadius: BorderRadius.circular(6)),
-                  child: const Icon(Icons.mosque, color: BrandColors.gold),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(3),
+                    child: const BrandArt(BrandIllustration.tvMosque, fit: BoxFit.cover),
+                  ),
                 ),
                 title: const Text('Moeslim Mosque TV', style: TextStyle(fontWeight: FontWeight.w700)),
                 subtitle: Text([ctx.name, ?ctx.city].join(' • ')),
@@ -100,12 +104,12 @@ class TvConfigPage extends ConsumerWidget {
                       child: Column(
                         children: [
                           ListTile(
-                            leading: Icon(Icons.access_time, color: BrandColors.emerald),
+                            leading: _Thumb(BrandIllustration.tvMosque),
                             title: Text('Layar Utama Masjid'),
                             subtitle: Text('Jam, jadwal salat, hitung mundur iqamah'),
                           ),
                           ListTile(
-                            leading: Icon(Icons.info_outline, color: BrandColors.emerald),
+                            leading: _Thumb(BrandIllustration.heroQuran),
                             title: Text('Informasi Jamaah'),
                             subtitle: Text('Agenda, pengumuman, rekap kas (bila diizinkan)'),
                           ),
@@ -363,7 +367,7 @@ class _ThemeCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
           decoration: BoxDecoration(
             color: bg,
             borderRadius: BorderRadius.circular(14),
@@ -374,7 +378,18 @@ class _ThemeCard extends StatelessWidget {
           ),
           child: Column(
             children: [
-              Icon(selected ? Icons.check_circle : Icons.mosque, color: selected ? BrandColors.gold : fg),
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const BrandArt(BrandIllustration.mosqueBanner, height: 50),
+                  if (selected)
+                    const Positioned(
+                      right: -6,
+                      top: -6,
+                      child: Icon(Icons.check_circle, color: BrandColors.gold, size: 22),
+                    ),
+                ],
+              ),
               const SizedBox(height: 4),
               Text(
                 title,
@@ -387,4 +402,20 @@ class _ThemeCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _Thumb extends StatelessWidget {
+  final BrandIllustration art;
+  const _Thumb(this.art);
+
+  @override
+  Widget build(BuildContext context) => ClipRRect(
+    borderRadius: BorderRadius.circular(8),
+    child: Container(
+      width: 64,
+      height: 42,
+      color: BrandColors.emerald,
+      child: BrandArt(art, fit: BoxFit.cover),
+    ),
+  );
 }

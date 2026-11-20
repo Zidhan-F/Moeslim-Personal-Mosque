@@ -59,11 +59,7 @@ class _MurottalPageState extends ConsumerState<MurottalPage> {
           PatternBanner(
             child: Row(
               children: [
-                const CircleAvatar(
-                  radius: 34,
-                  backgroundColor: BrandColors.cream,
-                  child: Icon(Icons.record_voice_over, color: BrandColors.emerald, size: 34),
-                ),
+                const BrandArt(BrandIllustration.qariBadge, width: 84, height: 84),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(

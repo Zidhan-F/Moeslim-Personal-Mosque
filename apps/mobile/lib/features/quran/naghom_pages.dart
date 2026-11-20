@@ -48,7 +48,7 @@ class NaghomCatalogPage extends ConsumerWidget {
                     ],
                   ),
                 ),
-                Icon(Icons.graphic_eq, size: 56, color: BrandColors.gold.withValues(alpha: .95)),
+                const BrandArt(BrandIllustration.naghomLantern, height: 118),
               ],
             ),
           ),

@@ -4,7 +4,6 @@ import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:personal_core/personal_core.dart';
 
 import '../../core/providers.dart';
-import '../../ui/components.dart';
 
 /// Sambutan pertama kali: 3 langkah, dapat dilewati. Tidak meminta akun apa pun.
 class OnboardingPage extends ConsumerStatefulWidget {
@@ -73,23 +72,14 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Center(
-                          child: Container(
-                            width: 240,
-                            height: 240,
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: RadialGradient(colors: [Color(0xFFE7F3EE), Color(0x00E7F3EE)]),
-                            ),
-                            child: CustomPaint(
-                              painter: IslamicPatternPainter(color: BrandColors.gold.withValues(alpha: .14), cell: 30),
-                              child: Center(
-                                child: BrandLogo(
-                                  variant: i == 0 ? BrandLogoVariant.stacked : BrandLogoVariant.symbol,
-                                  height: 140,
-                                  onDark: false,
-                                ),
-                              ),
-                            ),
+                          child: BrandArt(
+                            const [
+                              BrandIllustration.heroQuran,
+                              BrandIllustration.mosqueCircle,
+                              BrandIllustration.naghomLantern,
+                            ][i],
+                            key: Key('onboarding-art-$i'),
+                            height: 290,
                           ),
                         ),
                         const SizedBox(height: 28),

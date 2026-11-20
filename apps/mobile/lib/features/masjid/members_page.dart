@@ -80,7 +80,6 @@ class _MembersPageState extends ConsumerState<MembersPage> {
               const MosqueBanner(
                 title: 'Manajemen Pengurus',
                 subtitle: 'Atur daftar pengurus, peran, dan hak akses aplikasi operasional masjid.',
-                icon: Icons.groups,
               ),
               AsyncBody(value: data, onRetry: () => ref.invalidate(membersProvider(widget.ctx.id)), data: _members),
             ] else

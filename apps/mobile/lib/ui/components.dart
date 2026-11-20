@@ -94,6 +94,35 @@ class OrnamentCard extends StatelessWidget {
   }
 }
 
+/// Kepala halaman berornamen: lengkung krem berbingkai emas di atas kisi hijau, siluet masjid emas tipis
+/// (Jadwal Salat, Detail Doa, Mushaf) — sesuai visualisasi.
+class ArchHeader extends StatelessWidget {
+  final Widget child;
+  final EdgeInsets padding;
+  const ArchHeader({super.key, required this.child, this.padding = const EdgeInsets.fromLTRB(28, 46, 28, 22)});
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: dark
+                ? const ColoredBox(color: BrandColors.nightCard)
+                : const BrandArt(BrandIllustration.archHeader, fit: BoxFit.fill),
+          ),
+          Padding(
+            padding: padding,
+            child: Center(child: child),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// Nomor dalam bingkai oktagon emas (nomor surah/ayat).
 class OctagonNumber extends StatelessWidget {
   final int number;

@@ -96,7 +96,7 @@ class _SurahPageState extends ConsumerState<SurahPage> {
       onPressed: canPlay ? () => ref.read(quranPlayerProvider.notifier).playAyah(ayah) : null,
     );
 
-    final header = OrnamentCard(
+    final header = ArchHeader(
       key: const Key('surah-header'),
       child: Column(
         children: [

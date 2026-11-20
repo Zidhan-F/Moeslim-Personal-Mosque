@@ -183,23 +183,16 @@ class MosqueBanner extends StatelessWidget {
   final String? overline;
   final String title;
   final String? subtitle;
-  final IconData icon;
   final Widget? trailing;
-  const MosqueBanner({
-    super.key,
-    this.overline,
-    required this.title,
-    this.subtitle,
-    this.icon = Icons.mosque,
-    this.trailing,
-  });
+  const MosqueBanner({super.key, this.overline, required this.title, this.subtitle, this.trailing});
 
   @override
   Widget build(BuildContext context) => PatternBanner(
-    padding: const EdgeInsets.all(18),
+    padding: const EdgeInsets.fromLTRB(18, 16, 6, 16),
     child: Row(
       children: [
         Expanded(
+          flex: 11,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -216,7 +209,10 @@ class MosqueBanner extends StatelessWidget {
           ),
         ),
         ?trailing,
-        Icon(icon, color: BrandColors.gold, size: 56),
+        const Expanded(
+          flex: 9,
+          child: BrandArt(BrandIllustration.mosqueBanner, height: 104, alignment: Alignment.bottomRight),
+        ),
       ],
     ),
   );
