@@ -35,13 +35,12 @@ final manifest = AudioManifest.fromJson({
 });
 
 void main() {
-  testWidgets('Beranda menampilkan 7 Irama sebagai fitur andalan di bagian atas', (tester) async {
+  testWidgets('Beranda menampilkan 7 Irama sebagai fitur andalan', (tester) async {
     await pumpApp(tester, manifest: manifest);
     final hero = find.byKey(const Key('naghom-hero'));
+    await tester.scrollUntilVisible(hero, 200, scrollable: find.byType(Scrollable).first);
     expect(hero, findsOneWidget);
     expect(find.descendant(of: hero, matching: find.text('7 Irama Al-Qur\'an')), findsOneWidget);
-    // Hero berada di atas kartu jadwal sholat
-    expect(tester.getTopLeft(hero).dy, lessThan(tester.getTopLeft(find.byKey(const Key('countdown'))).dy));
     for (final s in naghomStyles) {
       await tester.scrollUntilVisible(
         find.byKey(Key('hero-${s.slug}')),
@@ -55,6 +54,7 @@ void main() {
     final engine = FakeAudioEngine();
     await pumpApp(tester, manifest: manifest, engine: engine);
     final hero = find.byKey(const Key('naghom-hero'));
+    await tester.scrollUntilVisible(hero, 200, scrollable: find.byType(Scrollable).first);
     await tester.scrollUntilVisible(
       find.byKey(const Key('hero-rast')),
       120,
@@ -89,6 +89,7 @@ void main() {
   testWidgets('Sika memakai istilah "jenis nada" sesuai materi', (tester) async {
     await pumpApp(tester, manifest: manifest);
     final hero = find.byKey(const Key('naghom-hero'));
+    await tester.scrollUntilVisible(hero, 200, scrollable: find.byType(Scrollable).first);
     await tester.scrollUntilVisible(
       find.byKey(const Key('hero-sika')),
       120,

@@ -20,7 +20,7 @@ Future<void> openFatihah(WidgetTester tester, {InMemoryStore? store}) async {
       1: [_ayah],
     }),
   );
-  await tester.tap(find.text('Quran').last);
+  await tester.tap(find.text("Al-Qur'an").last);
   await tester.pump();
   await tester.tap(find.text('Al-Fatihah'));
   await tester.pumpAndSettle();

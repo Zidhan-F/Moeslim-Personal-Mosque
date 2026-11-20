@@ -18,6 +18,11 @@ class PersonalSettings {
   /// Warnai teks Al-Qur'an sesuai hukum tajwid (bila dataset anotasi tersedia).
   final bool tajweedColors;
 
+  /// Nama panggilan untuk sapaan di Beranda (opsional, hanya di perangkat).
+  final String? displayName;
+  final bool onboardingDone;
+  final int tilawahTargetPages;
+
   const PersonalSettings({
     required this.location,
     this.useDeviceLocation = false,
@@ -29,6 +34,9 @@ class PersonalSettings {
     this.fontScale = 1.0,
     this.notificationsEnabled = true,
     this.tajweedColors = true,
+    this.displayName,
+    this.onboardingDone = false,
+    this.tilawahTargetPages = 20,
   });
 
   static final PersonalSettings defaults =
@@ -50,6 +58,9 @@ class PersonalSettings {
     double? fontScale,
     bool? notificationsEnabled,
     bool? tajweedColors,
+    String? displayName,
+    bool? onboardingDone,
+    int? tilawahTargetPages,
   }) =>
       PersonalSettings(
         location: location ?? this.location,
@@ -62,6 +73,9 @@ class PersonalSettings {
         fontScale: fontScale ?? this.fontScale,
         notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
         tajweedColors: tajweedColors ?? this.tajweedColors,
+        displayName: displayName ?? this.displayName,
+        onboardingDone: onboardingDone ?? this.onboardingDone,
+        tilawahTargetPages: tilawahTargetPages ?? this.tilawahTargetPages,
       );
 
   Map<String, Object> toJson() => {
@@ -75,6 +89,9 @@ class PersonalSettings {
         'fontScale': fontScale,
         'notificationsEnabled': notificationsEnabled,
         'tajweedColors': tajweedColors,
+        if (displayName != null) 'displayName': displayName!,
+        'onboardingDone': onboardingDone,
+        'tilawahTargetPages': tilawahTargetPages,
       };
 
   factory PersonalSettings.fromJson(Map<String, dynamic> j) {
@@ -96,6 +113,9 @@ class PersonalSettings {
       fontScale: (j['fontScale'] as num?)?.toDouble() ?? 1.0,
       notificationsEnabled: j['notificationsEnabled'] as bool? ?? true,
       tajweedColors: j['tajweedColors'] as bool? ?? true,
+      displayName: j['displayName'] as String?,
+      onboardingDone: j['onboardingDone'] as bool? ?? false,
+      tilawahTargetPages: (j['tilawahTargetPages'] as num?)?.toInt() ?? 20,
     );
   }
 }

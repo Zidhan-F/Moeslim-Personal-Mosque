@@ -29,7 +29,7 @@ final manifest = AudioManifest.fromJson({
 });
 
 Future<void> openSurah(WidgetTester tester, String name) async {
-  await tester.tap(find.text('Quran').last);
+  await tester.tap(find.text("Al-Qur'an").last);
   await tester.pump();
   await tester.scrollUntilVisible(find.text(name), 300, scrollable: find.byType(Scrollable).first);
   await tester.tap(find.text(name));

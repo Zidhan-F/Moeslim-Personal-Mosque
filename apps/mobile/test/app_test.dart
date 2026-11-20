@@ -2,6 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:personal_core/personal_core.dart';
 
+import 'package:moeslim_mobile/features/ibadah/ibadah_page.dart';
+import 'package:moeslim_mobile/features/ibadah/qibla_page.dart';
+
 import 'helpers.dart';
 
 void main() {
@@ -9,7 +12,7 @@ void main() {
     await pumpApp(tester);
     expect(find.text('Menuju Ashar'), findsOneWidget);
     final countdown = tester.widget<Text>(find.byKey(const Key('countdown')));
-    expect(countdown.data, matches(RegExp(r'^03:\d\d:\d\d$')));
+    expect(countdown.data, matches(RegExp(r'^03:\d\d:\d\d lagi$')));
     expect(find.textContaining('Jakarta'), findsWidgets);
   });
 
@@ -18,21 +21,26 @@ void main() {
     expect(find.text('Menuju Subuh'), findsOneWidget);
   });
 
-  testWidgets('navigasi lima menu', (tester) async {
+  testWidgets('navigasi lima menu sesuai desain', (tester) async {
     await pumpApp(tester);
-    for (final label in ['Beranda', 'Quran', 'Sholat', 'Ibadah', 'Lainnya']) {
+    for (final label in ['Beranda', "Al-Qur'an", 'Ibadah', 'Masjid', 'Profil']) {
       expect(find.widgetWithText(NavigationDestination, label), findsOneWidget);
     }
-    await tester.tap(find.text('Quran').last);
-    await tester.pump();
+    await tester.tap(find.text("Al-Qur'an").last);
+    await tester.pumpAndSettle();
     expect(find.text('Al-Fatihah'), findsOneWidget);
 
-    await tester.tap(find.text('Sholat').last);
-    await tester.pump();
-    expect(find.text('Jadwal Sholat'), findsOneWidget);
+    await tester.tap(find.text('Ibadah').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Ibadah Harian'), findsOneWidget);
 
-    await tester.tap(find.text('Lainnya').last);
-    await tester.pump();
+    await tester.tap(find.text('Masjid').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Masjid Diikuti'), findsOneWidget);
+
+    await tester.tap(find.text('Profil').last);
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Moeslim Mosque'), 200, scrollable: find.byType(Scrollable).first);
     expect(find.text('Moeslim Mosque'), findsOneWidget);
   });
 
@@ -55,9 +63,18 @@ void main() {
     await pumpApp(tester);
     await tester.tap(find.text('Ibadah').last);
     await tester.pump();
-    await tester.tap(find.text('Arah Kiblat'));
+    final tile = find.descendant(of: find.byType(IbadahPage), matching: find.text('Arah Kiblat'));
+    await tester.scrollUntilVisible(
+      tile,
+      200,
+      scrollable: find.descendant(of: find.byType(IbadahPage), matching: find.byType(Scrollable)),
+    );
+    await tester.ensureVisible(tile); // hindari tertutup bilah navigasi bawah
     await tester.pumpAndSettle();
-    expect(find.textContaining('295.'), findsOneWidget);
+    await tester.tap(tile);
+    await tester.pumpAndSettle();
+    expect(find.byType(QiblaPage), findsOneWidget);
+    expect(tester.widget<Text>(find.byKey(const Key('qibla-bearing'))).data, startsWith('295,'));
     expect(find.textContaining('Sensor kompas tidak tersedia'), findsOneWidget);
   });
 

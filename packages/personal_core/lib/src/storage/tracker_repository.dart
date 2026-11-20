@@ -15,6 +15,15 @@ enum TrackerItem {
   static const prayers = [subuh, dzuhur, ashar, maghrib, isya];
 }
 
+class TrackerDay {
+  final DateTime day;
+  final Set<TrackerItem> items;
+  final int tilawahPages;
+  const TrackerDay(this.day, this.items, this.tilawahPages);
+
+  double get progress => items.length / TrackerItem.values.length;
+}
+
 /// Checklist ibadah harian, disimpan per tanggal (yyyy-mm-dd).
 class TrackerRepository {
   static const _key = 'tracker';
@@ -58,5 +67,47 @@ class TrackerRepository {
       d = d.subtract(const Duration(days: 1));
     }
     return streak;
+  }
+
+  Future<int> tilawahPages(DateTime d) async {
+    final j = await _store.readJson('tilawah');
+    return j is Map ? ((j[dayKey(d)] as num?)?.toInt() ?? 0) : 0;
+  }
+
+  Future<int> addTilawahPages(DateTime d, int pages) async {
+    final j = await _store.readJson('tilawah');
+    final all = j is Map ? Map<String, dynamic>.from(j) : <String, dynamic>{};
+    final next = (((all[dayKey(d)] as num?)?.toInt() ?? 0) + pages).clamp(0, 604);
+    all[dayKey(d)] = next;
+    await _store.writeJson('tilawah', all);
+    return next;
+  }
+
+  /// Tujuh hari terakhir (berakhir di [until]), dari terlama ke terbaru.
+  Future<List<TrackerDay>> week(DateTime until) async {
+    final end = DateTime(until.year, until.month, until.day);
+    return [
+      for (var i = 6; i >= 0; i--)
+        await () async {
+          final d = DateTime(end.year, end.month, end.day - i);
+          return TrackerDay(d, await day(d), await tilawahPages(d));
+        }(),
+    ];
+  }
+
+  /// Rekor beruntun sholat lengkap dalam 365 hari terakhir.
+  Future<int> bestPrayerStreak(DateTime until) async {
+    var best = 0, run = 0;
+    final end = DateTime(until.year, until.month, until.day);
+    for (var i = 365; i >= 0; i--) {
+      final items = await day(DateTime(end.year, end.month, end.day - i));
+      if (TrackerItem.prayers.every(items.contains)) {
+        run++;
+        if (run > best) best = run;
+      } else {
+        run = 0;
+      }
+    }
+    return best;
   }
 }

@@ -102,8 +102,13 @@ void main() {
     final log = <http.Request>[];
     final tokens = MemoryTokenStore();
     await pumpApp(tester, client: fakeBackend(log), tokens: tokens);
-    await tester.tap(find.text('Lainnya').last);
+    await tester.tap(find.text('Profil').last);
     await tester.pump();
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('masjid-entry')),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(find.byKey(const Key('masjid-entry')));
     await tester.pumpAndSettle();
 

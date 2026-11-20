@@ -32,7 +32,7 @@ void main() {
         ],
       }),
     );
-    await tester.tap(find.text('Lainnya').last);
+    await tester.tap(find.text('Profil').last);
     await tester.pump();
     await tester.scrollUntilVisible(
       find.byKey(const Key('about-licenses')),

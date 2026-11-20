@@ -27,6 +27,14 @@ class TasbihRepository {
     return next;
   }
 
+  Future<int> decrement(String id) async {
+    final all = await _all();
+    final next = (((all['$id.count'] as num?)?.toInt() ?? 0) - 1).clamp(0, 1 << 30);
+    all['$id.count'] = next;
+    await _store.writeJson(_key, all);
+    return next;
+  }
+
   Future<void> reset(String id) async {
     final all = await _all()
       ..['$id.count'] = 0;

@@ -3,7 +3,10 @@
 /// (lihat `tool/import_quran.dart`).
 library;
 
+import 'quran_meta.dart';
 import 'tajweed.dart';
+
+export 'quran_meta.dart';
 
 class Surah {
   final int number;
@@ -14,6 +17,9 @@ class Surah {
   const Surah(this.number, this.name, this.ayahCount, this.makkiyah);
 
   String get revelation => makkiyah ? 'Makkiyah' : 'Madaniyah';
+
+  /// Nama Arab surah (dari dataset, lihat quran_meta.dart).
+  String get arabicName => surahArabicNames[number - 1];
 }
 
 class Ayah {
@@ -214,3 +220,13 @@ const List<Surah> surahs = [
   Surah(113, 'Al-Falaq', 5, true),
   Surah(114, 'An-Nas', 6, true),
 ];
+
+/// Nomor juz (1..30) untuk ayat [surah]:[ayah].
+int juzOf(int surah, int ayah) {
+  var juz = 1;
+  for (var i = 0; i < juzStarts.length; i++) {
+    final (s, a) = juzStarts[i];
+    if (surah > s || (surah == s && ayah >= a)) juz = i + 1;
+  }
+  return juz;
+}

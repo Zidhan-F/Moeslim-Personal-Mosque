@@ -7,7 +7,8 @@ import 'core/theme.dart';
 import 'features/home/home_page.dart';
 import 'features/ibadah/ibadah_page.dart';
 import 'features/more/more_page.dart';
-import 'features/prayer/prayer_page.dart';
+import 'features/more/followed_mosques_page.dart';
+import 'features/onboarding/onboarding_page.dart';
 import 'features/quran/quran_page.dart';
 
 class MoeslimApp extends ConsumerWidget {
@@ -30,12 +31,14 @@ class MoeslimApp extends ConsumerWidget {
         data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(s?.fontScale ?? 1.0)),
         child: child!,
       ),
-      home: const HomeShell(),
+      home: s == null
+          ? const Scaffold(body: Center(child: CircularProgressIndicator()))
+          : (s.onboardingDone ? const HomeShell() : const OnboardingPage()),
     );
   }
 }
 
-/// Navigasi utama Personal: maksimal lima menu (Blueprint §02).
+/// Navigasi utama Moeslim Personal (maks. 5 menu): Beranda, Al-Qur'an, Ibadah, Masjid, Profil.
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
 
@@ -51,8 +54,8 @@ class _HomeShellState extends State<HomeShell> {
     final pages = [
       HomePage(onNavigate: (i) => setState(() => _index = i)),
       const QuranPage(),
-      const PrayerPage(),
       const IbadahPage(),
+      const FollowedMosquesPage(asTab: true),
       const MorePage(),
     ];
     return Scaffold(
@@ -65,19 +68,15 @@ class _HomeShellState extends State<HomeShell> {
           NavigationDestination(
             icon: Icon(Icons.menu_book_outlined),
             selectedIcon: Icon(Icons.menu_book),
-            label: 'Quran',
+            label: "Al-Qur'an",
           ),
+          NavigationDestination(icon: Icon(Icons.mosque_outlined), selectedIcon: Icon(Icons.mosque), label: 'Ibadah'),
           NavigationDestination(
-            icon: Icon(Icons.schedule_outlined),
-            selectedIcon: Icon(Icons.schedule),
-            label: 'Sholat',
+            icon: Icon(Icons.location_city_outlined),
+            selectedIcon: Icon(Icons.location_city),
+            label: 'Masjid',
           ),
-          NavigationDestination(
-            icon: Icon(Icons.self_improvement_outlined),
-            selectedIcon: Icon(Icons.self_improvement),
-            label: 'Ibadah',
-          ),
-          NavigationDestination(icon: Icon(Icons.more_horiz), label: 'Lainnya'),
+          NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profil'),
         ],
       ),
     );

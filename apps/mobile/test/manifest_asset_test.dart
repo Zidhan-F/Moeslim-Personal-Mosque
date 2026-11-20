@@ -22,7 +22,9 @@ void main() {
   });
 
   test('katalog bawaan: murattal tersedia untuk seluruh 114 surah', () {
-    final m = AudioManifest.fromJson(jsonDecode(File('assets/audio/manifest.json').readAsStringSync()) as Map<String, dynamic>);
+    final m = AudioManifest.fromJson(
+      jsonDecode(File('assets/audio/manifest.json').readAsStringSync()) as Map<String, dynamic>,
+    );
     final murattal = m.recitations.where((r) => r.isMurattal).toList();
     expect(murattal.length, greaterThanOrEqualTo(1));
     for (var s = 1; s <= 114; s++) {
@@ -59,7 +61,7 @@ void main() {
         ],
       }),
     );
-    await tester.tap(find.text('Quran').last);
+    await tester.tap(find.text("Al-Qur'an").last);
     await tester.pump();
     await tester.tap(find.byKey(const Key('naghom-entry')));
     await tester.pumpAndSettle();

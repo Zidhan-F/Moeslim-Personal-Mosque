@@ -20,11 +20,14 @@ void main() {
     expect((await src.load(1))!.first.translation, startsWith('Dengan menyebut nama Allah'));
     expect((await src.load(114))!.last.translation, isNotEmpty);
     expect((await src.load(2))!.first.text, isNot(startsWith('\u0628\u0650\u0633\u0652\u0645\u0650')));
-    expect((await src.load(1))!.first.text, startsWith('\u0628\u0650\u0633\u0652\u0645\u0650')); // Al-Fatihah: basmalah = ayat 1
+    expect(
+      (await src.load(1))!.first.text,
+      startsWith('\u0628\u0650\u0633\u0652\u0645\u0650'),
+    ); // Al-Fatihah: basmalah = ayat 1
   });
 
   Future<void> openSurah(WidgetTester tester, String name) async {
-    await tester.tap(find.text('Quran').last);
+    await tester.tap(find.text("Al-Qur'an").last);
     await tester.pump();
     await tester.scrollUntilVisible(find.text(name), 300, scrollable: find.byType(Scrollable).first);
     await tester.tap(find.text(name));
@@ -62,7 +65,7 @@ void main() {
 
   testWidgets("Tentang & Lisensi mencantumkan sumber teks Al-Qur'an (Tanzil)", (tester) async {
     await pumpApp(tester);
-    await tester.tap(find.text('Lainnya').last);
+    await tester.tap(find.text('Profil').last);
     await tester.pump();
     await tester.scrollUntilVisible(
       find.byKey(const Key('about-licenses')),
@@ -71,9 +74,17 @@ void main() {
     );
     await tester.tap(find.byKey(const Key('about-licenses')));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.textContaining('Tanzil Quran Text'), 200, scrollable: find.byType(Scrollable).first);
+    await tester.scrollUntilVisible(
+      find.textContaining('Tanzil Quran Text'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.textContaining('Tanzil'), findsWidgets);
-    await tester.scrollUntilVisible(find.textContaining('Font mushaf: Amiri Quran'), 200, scrollable: find.byType(Scrollable).first);
+    await tester.scrollUntilVisible(
+      find.textContaining('Font mushaf: Amiri Quran'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.textContaining('Amiri Quran'), findsWidgets);
     expect(find.textContaining('Kementerian Agama RI'), findsWidgets);
   });

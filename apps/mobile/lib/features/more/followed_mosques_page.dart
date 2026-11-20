@@ -9,13 +9,15 @@ import '../masjid/session.dart';
 final _followedProvider = FutureProvider.autoDispose((ref) => ref.watch(favoriteMosqueRepoProvider).all());
 
 class FollowedMosquesPage extends ConsumerWidget {
-  const FollowedMosquesPage({super.key});
+  /// true bila ditampilkan sebagai tab utama "Masjid" (tanpa tombol kembali).
+  final bool asTab;
+  const FollowedMosquesPage({super.key, this.asTab = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final followed = ref.watch(_followedProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Masjid Diikuti')),
+      appBar: AppBar(title: const Text('Masjid Diikuti'), centerTitle: true, automaticallyImplyLeading: !asTab),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Cari masjid',
         child: const Icon(Icons.search),
@@ -28,7 +30,15 @@ class FollowedMosquesPage extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('$e')),
         data: (list) => list.isEmpty
-            ? const Center(child: Text('Belum mengikuti masjid. Ketuk ikon cari.'))
+            ? const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(32),
+                  child: Text(
+                    'Ikuti masjid di sekitar Anda untuk melihat agenda kajian dan pengumuman publiknya — gratis, tanpa akun. Ketuk ikon cari.',
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              )
             : ListView(
                 children: [
                   for (final m in list)

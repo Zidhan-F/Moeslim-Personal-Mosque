@@ -14,9 +14,9 @@ Iterable<String> _visibleTexts(WidgetTester tester) sync* {
 }
 
 void main() {
-  testWidgets('layar fitur Personal (Beranda, Quran, Sholat, Ibadah) bebas unsur berbayar', (tester) async {
+  testWidgets("layar fitur Personal (Beranda, Al-Qur'an, Ibadah, Masjid) bebas unsur berbayar", (tester) async {
     await pumpApp(tester);
-    for (final tab in ['Beranda', 'Quran', 'Sholat', 'Ibadah']) {
+    for (final tab in ['Beranda', "Al-Qur'an", 'Ibadah', 'Masjid']) {
       await tester.tap(find.text(tab).last);
       await tester.pump();
       for (final t in _visibleTexts(tester)) {
@@ -25,10 +25,15 @@ void main() {
     }
   });
 
-  testWidgets('Mosque hanya muncul sebagai fitur tambahan opsional di menu Lainnya', (tester) async {
+  testWidgets('Mosque hanya muncul sebagai fitur tambahan opsional di Profil & pengalih core', (tester) async {
     await pumpApp(tester);
-    await tester.tap(find.text('Lainnya').last);
+    await tester.tap(find.text('Profil').last);
     await tester.pump();
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('masjid-entry')),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Fitur tambahan (opsional)'), findsOneWidget);
     final entry = find.byKey(const Key('masjid-entry'));
     expect(find.descendant(of: entry, matching: find.text('Moeslim Mosque')), findsOneWidget);

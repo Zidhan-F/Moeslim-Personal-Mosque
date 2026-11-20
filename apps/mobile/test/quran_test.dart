@@ -7,7 +7,7 @@ import 'helpers.dart';
 void main() {
   testWidgets('tanpa dataset, surah menampilkan pesan impor sumber resmi', (tester) async {
     await pumpApp(tester);
-    await tester.tap(find.text('Quran').last);
+    await tester.tap(find.text("Al-Qur'an").last);
     await tester.pump();
     await tester.tap(find.text('Al-Fatihah'));
     await tester.pumpAndSettle();
@@ -26,7 +26,7 @@ void main() {
         ],
       }),
     );
-    await tester.tap(find.text('Quran').last);
+    await tester.tap(find.text("Al-Qur'an").last);
     await tester.pump();
     await tester.tap(find.text('Al-Fatihah'));
     await tester.pumpAndSettle();
@@ -39,7 +39,7 @@ void main() {
   testWidgets('modul naghom: 7 irama dan tandai selesai', (tester) async {
     final store = InMemoryStore();
     await pumpApp(tester, store: store);
-    await tester.tap(find.text('Quran').last);
+    await tester.tap(find.text("Al-Qur'an").last);
     await tester.pump();
     await tester.tap(find.byKey(const Key('naghom-entry')));
     await tester.pumpAndSettle();

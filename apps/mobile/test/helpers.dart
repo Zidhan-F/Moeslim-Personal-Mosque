@@ -84,10 +84,16 @@ Future<ProviderContainer> pumpApp(
   AudioManifest? manifest,
   AudioEngine? engine,
   OfflineAudioStore? offline,
+  bool showOnboarding = false,
 }) async {
+  store ??= InMemoryStore();
+  if (!showOnboarding) {
+    final repo = SettingsRepository(store);
+    await repo.save((await repo.load()).copyWith(onboardingDone: true));
+  }
   final container = ProviderContainer(
     overrides: [
-      storeProvider.overrideWithValue(store ?? InMemoryStore()),
+      storeProvider.overrideWithValue(store),
       nowProvider.overrideWith((ref) => Stream.value(now ?? fixedNow)),
       headingProvider.overrideWith((ref) => Stream.value(null)),
       quranSourceProvider.overrideWithValue(quran ?? FakeQuranSource()),

@@ -29,7 +29,7 @@ final manifest = AudioManifest.fromJson({
 });
 
 Future<void> openFatihah(WidgetTester tester) async {
-  await tester.tap(find.text('Quran').last);
+  await tester.tap(find.text("Al-Qur'an").last);
   await tester.pump();
   await tester.tap(find.text('Al-Fatihah'));
   await tester.pumpAndSettle();
@@ -100,7 +100,7 @@ void main() {
   testWidgets('contoh audio di modul Naghom memutar irama itu', (tester) async {
     final engine = FakeAudioEngine();
     await pumpApp(tester, manifest: manifest, engine: engine);
-    await tester.tap(find.text('Quran').last);
+    await tester.tap(find.text("Al-Qur'an").last);
     await tester.pump();
     await tester.tap(find.byKey(const Key('naghom-entry')));
     await tester.pumpAndSettle();
