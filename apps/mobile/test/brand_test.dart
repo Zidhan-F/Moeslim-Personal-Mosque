@@ -22,7 +22,11 @@ void main() {
     expect(card, findsOneWidget);
     for (final t in tester.widgetList<Text>(find.descendant(of: card, matching: find.byType(Text)))) {
       final color = t.style?.color ?? DefaultTextStyle.of(tester.element(find.byWidget(t))).style.color!;
-      expect(contrastRatio(Color.alphaBlend(color, BrandColors.emerald), BrandColors.emerald), greaterThanOrEqualTo(4.5), reason: '"${t.data}"');
+      expect(
+        contrastRatio(Color.alphaBlend(color, BrandColors.emerald), BrandColors.emerald),
+        greaterThanOrEqualTo(4.5),
+        reason: '"${t.data}"',
+      );
     }
   });
 

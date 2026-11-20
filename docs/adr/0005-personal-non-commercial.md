@@ -1,26 +1,34 @@
-# ADR 0005 — Moeslim Personal sepenuhnya non-komersial
+# ADR 0005 — Satu aplikasi: Moeslim Personal (gratis) + Moeslim Mosque (fitur tambahan berbayar)
 Status: diterima (keputusan pemilik produk)
 
 ## Keputusan
-Moeslim Personal **bukan produk komersial**: gratis selamanya, tanpa iklan, tanpa pembelian dalam
-aplikasi, tanpa fitur berbayar/premium, tanpa penjualan atau pelacakan data pengguna. Hanya
-**Moeslim Masjid** yang berbayar (Rp59.000/bulan/masjid).
+**Satu aplikasi** dengan dua bagian:
+1. **Moeslim Personal — aplikasi utama.** Gratis, mandiri, dan **non-komersial**: tanpa iklan, tanpa
+   pembelian, tanpa fitur premium, tanpa akun, tanpa penjualan/pelacakan data. Semua fitur Personal
+   (jadwal sholat, Al-Qur'an, 7 Irama Naghom, audio, tajwid, tasbih, tracker, kiblat, kalender, masjid
+   yang diikuti) berfungsi penuh tanpa pernah menyentuh Mosque.
+2. **Moeslim Mosque — fitur tambahan opsional** untuk pengurus masjid (kas, agenda, petugas, inventaris,
+   TV Display). Berbayar Rp59.000/bulan per masjid **hanya bila dipakai**. Pengguna yang tidak
+   memakainya tidak terdampak apa pun.
 
-## Konsekuensi
-1. **Lisensi konten.** Konten berlisensi non-komersial (mis. rekaman murattal/tilawah publik, dataset
-   anotasi tajwid, teks/terjemahan dengan syarat non-komersial) boleh dipakai di Personal **dengan atribusi**
-   dan sesuai ketentuan masing-masing. Konten ini **tidak boleh** dipakai di Moeslim Masjid atau TV Display.
-2. **Atribusi wajib tampil** di aplikasi: halaman *Tentang & Lisensi* menampilkan pernyataan non-komersial
-   dan atribusi tiap rekaman dari katalog; dataset teks mencantumkan `SOURCE.md`.
-3. **Tanpa SDK iklan/analytics pihak ketiga** di aplikasi Personal.
-4. **Pemisahan dari produk berbayar.** Alur langganan/pendaftaran Moeslim Masjid tidak semestinya berada
-   di dalam aplikasi Personal (lihat bagian "Keputusan terbuka").
+## Aturan produk (diuji otomatis)
+- Layar fitur Personal (Beranda, Quran, Sholat, Ibadah) **tidak memuat** harga, ajakan berlangganan,
+  premium, atau iklan (`test/personal_free_test.dart`).
+- Pintu masuk Mosque **hanya** di menu *Lainnya → Fitur tambahan (opsional) → Moeslim Mosque*,
+  dengan keterangan bahwa layanan ini tidak diperlukan untuk fitur Personal.
+- Fitur Personal tidak pernah mensyaratkan login.
 
-## Catatan risiko
-Sebagian pemberi lisensi menilai "non-komersial" dari **entitas penerbit**, bukan hanya dari aplikasinya.
-Karena pengembang yang sama juga menjual Moeslim Masjid, untuk sumber dengan syarat yang tidak jelas
-tetap mintalah konfirmasi tertulis bahwa pemakaian di aplikasi gratis non-komersial diperbolehkan.
+## Konsekuensi teknis & legal
+1. **Pembayaran.** Karena langganan Mosque dijual di dalam aplikasi Android, berlaku kebijakan Google Play
+   Billing (atau program alternatif yang sah). Seluruh pembayaran hanya di alur Mosque.
+2. **Lisensi konten non-komersial.** Konten berlisensi non-komersial (rekaman tilawah publik, dataset
+   tajwid, teks/terjemahan) hanya dipakai di fitur Personal dengan atribusi (halaman *Tentang & Lisensi*)
+   dan tidak dipakai di Mosque/TV Display. **Namun aplikasi yang sama juga memuat layanan berbayar**, dan
+   sebagian pemberi lisensi menilai status komersial per aplikasi/penerbit. Untuk setiap sumber
+   non-komersial, **minta konfirmasi tertulis** bahwa pemakaian di fitur gratis dalam aplikasi yang juga
+   menyediakan layanan berbayar opsional diperbolehkan; utamakan sumber dengan izin eksplisit atau
+   lisensi yang mengizinkan pemakaian komersial dengan atribusi.
+3. **Tanpa SDK iklan/analytics pihak ketiga** di aplikasi.
 
-## Keputusan terbuka
-Klien pengurus Moeslim Masjid saat ini masih menjadi menu di `apps/mobile`. Rekomendasi: pisahkan menjadi
-aplikasi tersendiri (`apps/masjid_admin`), sehingga aplikasi Personal tidak memuat alur berbayar sama sekali.
+## Alternatif yang ditolak
+Memisah menjadi dua aplikasi — ditolak pemilik produk: Mosque adalah fitur tambahan di aplikasi utama.

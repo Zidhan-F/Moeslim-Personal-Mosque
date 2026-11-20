@@ -7,7 +7,7 @@ import 'dashboard_page.dart';
 import 'masjid_api.dart';
 import 'session.dart';
 
-/// Pintu masuk Moeslim Masjid: login → verifikasi email → daftar masjid → dashboard.
+/// Pintu masuk fitur tambahan Moeslim Mosque: login → verifikasi email → daftar masjid → dashboard.
 class MasjidHomePage extends ConsumerWidget {
   const MasjidHomePage({super.key});
 
@@ -17,7 +17,7 @@ class MasjidHomePage extends ConsumerWidget {
     return session.when(
       loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (e, _) => Scaffold(
-        appBar: AppBar(title: const Text('Moeslim Masjid')),
+        appBar: AppBar(title: const Text('Moeslim Mosque')),
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -73,14 +73,15 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Moeslim Masjid')),
+      appBar: AppBar(title: const Text('Moeslim Mosque')),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
           const Center(child: BrandLogo(variant: BrandLogoVariant.stacked, height: 120)),
           const SizedBox(height: 8),
           const Text(
-            'Kelola kas, agenda, petugas, dan TV Display masjid bersama hingga 5 pengurus. Rp59.000/bulan, seluruh fitur.',
+            'Fitur tambahan untuk pengurus masjid: kelola kas, agenda, petugas, dan TV Display bersama hingga 5 pengurus. '
+            'Berlangganan Rp59.000/bulan per masjid (uji coba 30 hari). Fitur Personal tetap gratis tanpa akun.',
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),

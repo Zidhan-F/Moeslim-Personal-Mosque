@@ -55,8 +55,9 @@ class AboutLicensesPage extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           const Text(
-            'Moeslim Masjid (layanan manajemen masjid berbayar) adalah produk terpisah dan tidak memakai '
-            'konten berlisensi non-komersial dari aplikasi ini.',
+            'Moeslim Mosque adalah fitur tambahan opsional untuk pengurus masjid yang berbayar per masjid. '
+            'Fitur ini terpisah dari fitur Personal, tidak memakai konten berlisensi non-komersial, dan '
+            'tidak diperlukan untuk memakai Moeslim Personal.',
             style: TextStyle(fontSize: 12),
           ),
         ],

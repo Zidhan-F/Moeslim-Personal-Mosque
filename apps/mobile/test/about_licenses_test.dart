@@ -6,17 +6,39 @@ import 'helpers.dart';
 
 void main() {
   testWidgets('Tentang & Lisensi: pernyataan non-komersial dan atribusi tiap rekaman', (tester) async {
-    await pumpApp(tester,
-        manifest: AudioManifest.fromJson({
-          'version': 1,
-          'recitations': [
-            {'id': 'a', 'qari': 'Qari A', 'naghom': 'rast', 'base_url': 'https://c/a', 'license': 'CC BY-NC 4.0', 'attribution': 'Rekaman Qari A — sumber X', 'surahs': [1]},
-            {'id': 'b', 'qari': 'Qari B', 'kind': 'murattal', 'base_url': 'https://c/b', 'license': 'Izin non-komersial tertulis', 'attribution': 'Qari B', 'surahs': 'all'},
-          ],
-        }));
+    await pumpApp(
+      tester,
+      manifest: AudioManifest.fromJson({
+        'version': 1,
+        'recitations': [
+          {
+            'id': 'a',
+            'qari': 'Qari A',
+            'naghom': 'rast',
+            'base_url': 'https://c/a',
+            'license': 'CC BY-NC 4.0',
+            'attribution': 'Rekaman Qari A — sumber X',
+            'surahs': [1],
+          },
+          {
+            'id': 'b',
+            'qari': 'Qari B',
+            'kind': 'murattal',
+            'base_url': 'https://c/b',
+            'license': 'Izin non-komersial tertulis',
+            'attribution': 'Qari B',
+            'surahs': 'all',
+          },
+        ],
+      }),
+    );
     await tester.tap(find.text('Lainnya').last);
     await tester.pump();
-    await tester.scrollUntilVisible(find.byKey(const Key('about-licenses')), 200, scrollable: find.byType(Scrollable).first);
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('about-licenses')),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(find.byKey(const Key('about-licenses')));
     await tester.pumpAndSettle();
 

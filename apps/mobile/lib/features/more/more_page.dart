@@ -25,11 +25,19 @@ class MorePage extends ConsumerWidget {
             subtitle: const Text('Agenda & pengumuman publik, tanpa akun'),
             onTap: () => push(const FollowedMosquesPage()),
           ),
+          const Divider(),
+          // Mosque = fitur tambahan opsional untuk pengurus masjid (berbayar bila dipakai).
+          // Seluruh fitur Personal tetap gratis, mandiri, dan tidak memerlukan akun (ADR 0005).
+          const ListTile(title: Text('Fitur tambahan (opsional)'), dense: true),
           ListTile(
             key: const Key('masjid-entry'),
             leading: const Icon(Icons.mosque),
-            title: const Text('Moeslim Masjid (pengurus)'),
-            subtitle: const Text('Login pengurus untuk kas, agenda, dan TV Display'),
+            title: const Text('Moeslim Mosque'),
+            subtitle: const Text(
+              'Untuk pengurus masjid: kas, agenda, petugas & TV Display. Layanan berbayar per masjid — '
+              'tidak diperlukan untuk fitur Personal.',
+            ),
+            isThreeLine: true,
             onTap: () => push(const MasjidHomePage()),
           ),
           const Divider(),

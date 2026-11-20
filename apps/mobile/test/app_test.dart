@@ -33,7 +33,7 @@ void main() {
 
     await tester.tap(find.text('Lainnya').last);
     await tester.pump();
-    expect(find.text('Moeslim Masjid (pengurus)'), findsOneWidget);
+    expect(find.text('Moeslim Mosque'), findsOneWidget);
   });
 
   testWidgets('tasbih menghitung dan menyimpan ke penyimpanan lokal', (tester) async {

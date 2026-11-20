@@ -3,12 +3,15 @@
 Sumber: *Product Blueprint v1.0* (dokumen konsep) + revisi arsitek v1.1. Dokumen ini
 adalah spesifikasi yang mengikat implementasi di repo ini.
 
-## 1. Dua core
+## 1. Dua core dalam satu aplikasi
+Satu aplikasi: **Moeslim Personal** adalah aplikasi utama (gratis, non-komersial); **Moeslim Mosque** adalah
+fitur tambahan opsional untuk pengurus masjid yang berbayar hanya bila dipakai (ADR 0005).
+
 | Area | Moeslim Personal | Moeslim Masjid |
 |---|---|---|
 | Pengguna | Individu, tanpa akun | DKM/takmir, wajib registrasi |
 | Koneksi | Offline-first | Cloud |
-| Harga | Gratis & **non-komersial** (tanpa iklan, tanpa pembelian; ADR 0005) | Rp59.000/bulan/masjid, semua fitur |
+| Harga | Gratis & **non-komersial** (tanpa iklan, tanpa pembelian; ADR 0005) | Fitur tambahan opsional: Rp59.000/bulan/masjid bila dipakai |
 | Data | Lokal di perangkat | PostgreSQL, terisolasi per masjid |
 | Akun | — | Maks. 5 pengurus aktif |
 | Display | — | Maks. 5 TV Display |
