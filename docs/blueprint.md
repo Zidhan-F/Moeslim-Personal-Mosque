@@ -8,7 +8,7 @@ adalah spesifikasi yang mengikat implementasi di repo ini.
 |---|---|---|
 | Pengguna | Individu, tanpa akun | DKM/takmir, wajib registrasi |
 | Koneksi | Offline-first | Cloud |
-| Harga | Gratis | Rp59.000/bulan/masjid, semua fitur |
+| Harga | Gratis & **non-komersial** (tanpa iklan, tanpa pembelian; ADR 0005) | Rp59.000/bulan/masjid, semua fitur |
 | Data | Lokal di perangkat | PostgreSQL, terisolasi per masjid |
 | Akun | — | Maks. 5 pengurus aktif |
 | Display | — | Maks. 5 TV Display |

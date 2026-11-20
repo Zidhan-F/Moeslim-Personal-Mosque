@@ -41,9 +41,11 @@ berlisensi untuk surah tersebut tampil nonaktif.
 
 ### Sumber Murattal yang sudah ada
 Koleksi publik seperti EveryAyah/QuranicAudio menyediakan murattal per ayat berformat `SSSAAA.mp3`
-dari banyak qari, sehingga `base_url`-nya dapat langsung didaftarkan **setelah ada izin tertulis** dari
-pemegang hak rekaman (qari/penerbit). Izin publik koleksi tersebut umumnya untuk penggunaan non-komersial;
-cantumkan ruang lingkup izin di `license` dan simpan dokumennya. Untuk ketersediaan offline dan
+dari banyak qari. Karena **Moeslim Personal non-komersial** (ADR 0005), rekaman dengan izin
+non-komersial dapat dipakai **sesuai ketentuan sumbernya dan dengan atribusi** yang tampil di halaman
+*Tentang & Lisensi*. Tetap baca syarat tiap koleksi/qari (sebagian melarang mirror atau mensyaratkan izin
+khusus) dan simpan bukti izinnya; untuk syarat yang ambigu, minta konfirmasi tertulis. Rekaman ini
+tidak boleh dipakai di produk berbayar Moeslim Masjid. Untuk ketersediaan offline dan
 keandalan, sebaiknya berkas di-mirror ke CDN Moeslim sesuai izin.
 - `surahs`: daftar nomor surah, atau `"all"`. Setiap surah yang dicantumkan **wajib lengkap per ayat**.
 - Entri tanpa `license` atau dengan `naghom` tidak dikenal **diabaikan** oleh aplikasi.

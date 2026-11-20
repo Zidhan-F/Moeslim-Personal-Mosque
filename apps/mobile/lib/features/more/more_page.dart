@@ -4,6 +4,7 @@ import 'package:personal_core/personal_core.dart';
 
 import '../../core/providers.dart';
 import '../masjid/masjid_home_page.dart';
+import 'about_licenses_page.dart';
 import 'followed_mosques_page.dart';
 
 class MorePage extends ConsumerWidget {
@@ -58,10 +59,12 @@ class MorePage extends ConsumerWidget {
             ),
           ],
           const Divider(),
-          const ListTile(
-            leading: Icon(Icons.privacy_tip),
-            title: Text('Privasi'),
-            subtitle: Text('Data ibadah pribadi (tasbih, tracker, bookmark) hanya tersimpan di perangkat ini.'),
+          ListTile(
+            key: const Key('about-licenses'),
+            leading: const Icon(Icons.volunteer_activism),
+            title: const Text('Tentang & Lisensi'),
+            subtitle: const Text('Gratis, non-komersial, tanpa iklan • atribusi sumber konten'),
+            onTap: () => push(const AboutLicensesPage()),
           ),
           const AboutListTile(applicationName: 'Moeslim', applicationVersion: '0.1.0', icon: Icon(Icons.info_outline)),
         ],

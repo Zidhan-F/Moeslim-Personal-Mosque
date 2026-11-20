@@ -29,8 +29,9 @@ Pengaman: aturan tak dikenal dilaporkan; impor **dibatalkan** bila ada posisi di
 ## Yang perlu ditetapkan penelaah
 1. **Edisi teks**: anotasi harus dibuat untuk edisi yang sama. Mushaf Standar Indonesia (Kemenag) berbeda
    konvensi penulisan dengan mushaf Madinah/Tanzil, sehingga anotasi untuk Tanzil tidak otomatis cocok.
-   Contoh dataset terbuka untuk teks Tanzil: proyek `quran-tajweed` (cpfair, CC BY 4.0) — periksa lisensi
-   dan cocokkan edisinya sebelum dipakai.
+   Contoh dataset terbuka untuk teks Tanzil: proyek `quran-tajweed` (cpfair) — periksa lisensinya dan
+   cocokkan edisinya. Karena Moeslim Personal non-komersial (ADR 0005), dataset berlisensi terbuka/
+   non-komersial dapat dipakai dengan atribusi sesuai ketentuannya.
 2. **Palet warna**: satu sumber di `packages/personal_core/lib/src/content/tajweed.dart`; selaraskan dengan
    konvensi mushaf tajwid yang dirujuk agar pengguna tidak bingung.
 3. **Uji render** di perangkat: pastikan pewarnaan per huruf tidak memutus sambungan huruf Arab pada font
