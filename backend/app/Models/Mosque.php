@@ -1,0 +1,62 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+
+class Mosque extends Model
+{
+    use HasUlids;
+
+    /** Batas penggunaan wajar (FUP) paket tunggal. */
+    public const MAX_ACTIVE_MEMBERS = 5;
+    public const STORAGE_QUOTA_BYTES = 1024 * 1024 * 1024;
+    public const MAX_DISPLAYS = 5;
+    public const MONTHLY_TRANSACTION_SOFT_LIMIT = 10000;
+    public const MAX_ACTIVE_CONTENT = 500;
+    public const MAX_INVENTORY_ITEMS = 5000;
+
+    public const DEFAULT_SETTINGS = [
+        'pengurus_can_view_finance' => false,
+        'display_show_finance' => false,
+        'iqamah_minutes' => ['fajr' => 10, 'dhuhr' => 10, 'asr' => 10, 'maghrib' => 5, 'isha' => 10],
+        'prayer_adjustments' => ['fajr' => 0, 'dhuhr' => 0, 'asr' => 0, 'maghrib' => 0, 'isha' => 0],
+        'hijri_offset_days' => 0,
+    ];
+
+    protected $guarded = ['id', 'storage_used_bytes', 'needs_review', 'created_by'];
+
+    protected function casts(): array
+    {
+        return [
+            'settings' => 'array',
+            'needs_review' => 'boolean',
+            'latitude' => 'float',
+            'longitude' => 'float',
+            'storage_used_bytes' => 'integer',
+        ];
+    }
+
+    public function setting(string $key): mixed
+    {
+        return data_get(array_replace_recursive(self::DEFAULT_SETTINGS, $this->settings ?? []), $key);
+    }
+
+    public function members(): HasMany
+    {
+        return $this->hasMany(MosqueMember::class);
+    }
+
+    public function activeMembers(): HasMany
+    {
+        return $this->members()->where('status', 'active');
+    }
+
+    public function subscription(): HasOne
+    {
+        return $this->hasOne(Subscription::class);
+    }
+}
