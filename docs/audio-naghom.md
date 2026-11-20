@@ -1,8 +1,8 @@
 # Audio Murottal dengan Pilihan 7 Irama (Naghom)
 
-Pilihan bacaan di pemutar: **Murattal** (bacaan tartil standar, tanpa label irama) ditampilkan pertama,
-diikuti 7 irama. Murattal menjadi default bila preferensi pengguna tidak tersedia untuk surah tersebut,
-sehingga setiap surah tetap dapat diputar walau rekaman irama belum lengkap.
+**7 irama adalah fitur andalan.** Di pemutar, ke-7 irama tampil lebih dulu; **Murattal (tanpa irama)**
+ada di urutan terakhir sebagai cadangan. Prioritas pilihan saat membuka surah: irama yang dipilih dari
+halaman irama → preferensi terakhir pengguna → irama pertama yang tersedia → Murattal.
 
 Saat memutar Al-Qur'an **per surah atau per ayat**, pengguna memilih satu dari 7 irama
 (Bayyati, Hijaz, Shaba, Rast, Jiharkah, Sika, Nahawand). Irama yang belum memiliki rekaman

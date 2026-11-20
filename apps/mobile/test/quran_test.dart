@@ -47,7 +47,9 @@ void main() {
     expect(find.textContaining('0 dari 7'), findsOneWidget);
     await tester.tap(find.text('Rast'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('6 tingkat'), findsOneWidget);
+    expect(find.textContaining('6 tingkat'), findsWidgets);
+    await tester.scrollUntilVisible(find.text('Tandai sudah dipelajari'), 300, scrollable: find.byType(Scrollable).first);
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Tandai sudah dipelajari'));
     await tester.pumpAndSettle();
     expect(await NaghomProgressRepository(store).completed(), {'rast'});

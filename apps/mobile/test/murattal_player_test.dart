@@ -39,29 +39,29 @@ Future<void> openSurah(WidgetTester tester, String name) async {
 ChoiceChip chip(WidgetTester t, String key) => t.widget<ChoiceChip>(find.byKey(Key('naghom-$key')));
 
 void main() {
-  testWidgets('Murattal tampil pertama dan jadi pilihan default', (tester) async {
+  testWidgets('irama didahulukan sebagai default; Murattal di urutan terakhir', (tester) async {
     final engine = FakeAudioEngine();
     await pumpApp(tester, manifest: manifest, engine: engine);
     await openSurah(tester, 'Al-Fatihah');
-    expect(chip(tester, 'murattal').selected, isTrue);
+    expect(chip(tester, 'rast').selected, isTrue);
     final chips = tester.widgetList<ChoiceChip>(find.byType(ChoiceChip)).toList();
-    expect((chips.first.label as Text).data, 'Murattal');
-    final row = find.descendant(of: find.byKey(const Key('naghom-options')), matching: find.byType(Scrollable));
+    expect((chips.first.label as Text).data, 'Bayyati');
     for (final key in [murattalKey, ...naghomStyles.map((n) => n.slug)]) {
-      await tester.scrollUntilVisible(find.byKey(Key('naghom-$key')), 80, scrollable: row);
       expect(find.byKey(Key('naghom-$key')), findsOneWidget);
     }
 
     await tester.tap(find.byKey(const Key('play-surah')));
     await tester.pumpAndSettle();
-    expect(engine.calls.single.first.toString(), 'https://cdn.test/m/001001.mp3');
+    expect(engine.calls.single.first.toString(), 'https://cdn.test/r/001001.mp3');
   });
 
   testWidgets('pindah dari Murattal ke irama Rast melanjutkan ayat yang sama', (tester) async {
     final engine = FakeAudioEngine();
     final store = InMemoryStore();
+    await AudioPreferenceRepository(store).save(naghom: 'murattal', recitationId: 'm');
     await pumpApp(tester, manifest: manifest, engine: engine, store: store);
     await openSurah(tester, 'Al-Fatihah');
+    expect(chip(tester, 'murattal').selected, isTrue);
     await tester.tap(find.byKey(const Key('play-surah')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('naghom-rast')));

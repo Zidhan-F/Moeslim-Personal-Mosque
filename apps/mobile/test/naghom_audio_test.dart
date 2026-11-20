@@ -42,11 +42,6 @@ void main() {
     await pumpApp(tester, manifest: manifest);
     await openFatihah(tester);
     for (final s in naghomStyles) {
-      await tester.scrollUntilVisible(
-        find.byKey(Key('naghom-${s.slug}')),
-        80,
-        scrollable: find.descendant(of: find.byKey(const Key('naghom-options')), matching: find.byType(Scrollable)),
-      );
       expect(find.byKey(Key('naghom-${s.slug}')), findsOneWidget);
     }
     expect(chip(tester, 'rast').onSelected, isNotNull);

@@ -19,15 +19,14 @@ void main() {
     expect(manifest.recitations.last.optionKey, 'bayyati');
   });
 
-  test('pilihan bacaan: Murattal di depan 7 irama', () {
+  test('pilihan bacaan: 7 irama lalu Murattal sebagai cadangan', () {
     final o = manifest.optionsFor(2);
     expect(o.length, 8);
-    expect(o.first.key, murattalKey);
-    expect(o.first.label, 'Murattal');
-    expect(o.first.style, isNull);
-    expect(o.first.available, isTrue);
-    expect(o.skip(1).map((x) => x.key), naghomStyles.map((s) => s.slug));
-    expect(o[1].available, isFalse); // bayyati hanya surah 1
+    expect(o.last.key, murattalKey);
+    expect(o.last.style, isNull);
+    expect(o.last.available, isTrue);
+    expect(o.take(7).map((x) => x.key), naghomStyles.map((s) => s.slug));
+    expect(o.first.available, isFalse); // bayyati hanya surah 1
   });
 
   test('naghomOptionsFor tetap hanya 7 irama & murattal tidak dihitung sebagai irama', () {

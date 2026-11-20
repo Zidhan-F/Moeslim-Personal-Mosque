@@ -14,6 +14,17 @@ adalah spesifikasi yang mengikat implementasi di repo ini.
 | Display | — | Maks. 5 TV Display |
 
 ## 2. Personal (MVP)
+
+### Fitur andalan: 7 Jenis Irama (Naghom) Al-Qur'an
+Tampil paling atas di Beranda dan menjadi pilihan utama pemutar (Murattal hanya cadangan):
+- **Bayyati**: Memiliki 4 tingkat nada, berkarakter lembut, meliuk, dan sering digunakan pada awal atau akhir bacaan.
+- **Hijaz**: Berkarakter cepat, lincah (allegro), dengan variasi nada yang tajam.
+- **Shaba**: Berkarakter cepat, cenderung mendayu atau menggugah rasa haru, memiliki 4 tingkat nada.
+- **Rast**: Memiliki 6 tingkat nada yang ringan dan cepat, sering dipakai untuk azan atau imam shalat.
+- **Jiharkah**: Dimulai dengan suara lembut lalu meninggi (2 tingkat nada), sering dipakai saat takbiran.
+- **Sika**: Berkarakter tenang, lembut, dan khusyuk dengan 4 jenis nada.
+- **Nahawand**: Memiliki 5 tingkat nada yang cocok untuk ayat-ayat bernuansa sedih atau penuh perenungan.
+
 Jadwal sholat (metode dapat disetel, default Kemenag), countdown, penyesuaian menit;
 Al-Qur'an (dataset lokal hasil import sumber berlisensi — tidak ditulis tangan), bookmark,
 lanjut baca; kiblat; dzikir & tasbih (33/99/100/kustom); kalender Hijriah + koreksi lokal;

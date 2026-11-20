@@ -141,23 +141,29 @@ class AudioManifest {
           NaghomOption(style, recitations.where((r) => r.naghom == style.slug && r.covers(surah)).toList()),
       ];
 
-  /// Pilihan bacaan untuk surah: Murattal lebih dulu, lalu 7 irama sesuai urutan modul Naghom.
+  /// Pilihan bacaan untuk surah: 7 irama (fitur andalan) lebih dulu, Murattal sebagai cadangan di akhir.
   List<RecitationOption> optionsFor(int surah) => [
-        RecitationOption(
-          key: murattalKey,
-          label: 'Murattal',
-          description: 'Bacaan tartil standar, tempo sedang tanpa irama tertentu.',
-          style: null,
-          recitations: recitations.where((r) => r.isMurattal && r.covers(surah)).toList(),
-        ),
         for (final o in naghomOptionsFor(surah))
           RecitationOption(
             key: o.style.slug,
             label: o.style.name,
-            description: o.style.character,
+            description: o.style.summary,
             style: o.style,
             recitations: o.recitations,
           ),
+        RecitationOption(
+          key: murattalKey,
+          label: 'Murattal (tanpa irama)',
+          description: 'Bacaan tartil standar tanpa irama tertentu — cadangan bila irama belum tersedia.',
+          style: null,
+          recitations: recitations.where((r) => r.isMurattal && r.covers(surah)).toList(),
+        ),
+      ];
+
+  /// Nomor surah yang memiliki rekaman irama [slug].
+  List<int> surahsWithNaghom(String slug) => [
+        for (final s in quran.surahs)
+          if (recitations.any((r) => r.naghom == slug && r.covers(s.number))) s.number,
       ];
 
   bool murattalCovers(int surah) => recitations.any((r) => r.isMurattal && r.covers(surah));

@@ -125,7 +125,7 @@ class QuranPlayer extends Notifier<PlayerState> {
   }
 
   /// Siapkan pilihan untuk surah: pakai preferensi terakhir bila tersedia, jika tidak irama pertama yang ada.
-  Future<void> prepare(int surah) async {
+  Future<void> prepare(int surah, {String? prefer}) async {
     if (state.surah != null && state.surah != surah && state.playing) await _engine.stop();
     final manifest = await ref.read(audioManifestProvider.future);
     final options = manifest.optionsFor(surah);

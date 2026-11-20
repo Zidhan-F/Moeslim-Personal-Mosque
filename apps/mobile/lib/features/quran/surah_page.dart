@@ -11,7 +11,10 @@ import 'tajweed_view.dart';
 class SurahPage extends ConsumerStatefulWidget {
   final Surah surah;
   final int? initialAyah;
-  const SurahPage({super.key, required this.surah, this.initialAyah});
+
+  /// Pilihan bacaan yang diutamakan saat dibuka (mis. dari halaman irama).
+  final String? preferredOption;
+  const SurahPage({super.key, required this.surah, this.initialAyah, this.preferredOption});
 
   @override
   ConsumerState<SurahPage> createState() => _SurahPageState();
@@ -25,7 +28,9 @@ class _SurahPageState extends ConsumerState<SurahPage> {
     super.initState();
     _loadBookmarks();
     ref.read(quranProgressProvider).setLastRead(AyahRef(widget.surah.number, widget.initialAyah ?? 1));
-    Future.microtask(() => ref.read(quranPlayerProvider.notifier).prepare(widget.surah.number));
+    Future.microtask(
+      () => ref.read(quranPlayerProvider.notifier).prepare(widget.surah.number, prefer: widget.preferredOption),
+    );
   }
 
   Future<void> _loadBookmarks() async {

@@ -48,28 +48,26 @@ class _NaghomPlayerBarState extends ConsumerState<NaghomPlayerBar> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Pilih bacaan: Murattal atau irama (naghom)', style: Theme.of(context).textTheme.labelMedium),
-              SizedBox(
-                height: 44,
-                child: ListView(
-                  key: const Key('naghom-options'),
-                  scrollDirection: Axis.horizontal,
-                  children: [
-                    for (final o in options)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 6),
-                        child: Tooltip(
-                          message: o.available ? o.description : 'Rekaman ${o.label} untuk surah ini belum tersedia',
-                          child: ChoiceChip(
-                            key: Key('naghom-${o.key}'),
-                            label: Text(o.label),
-                            selected: o.key == player.naghom,
-                            onSelected: o.available ? (_) => ctl.selectNaghom(o.key) : null,
-                          ),
+              Text('Pilih irama (naghom)', style: Theme.of(context).textTheme.labelMedium),
+              Wrap(
+                key: const Key('naghom-options'),
+                spacing: 6,
+                runSpacing: 0,
+                children: [
+                  for (final o in options)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: Tooltip(
+                        message: o.available ? o.description : 'Rekaman ${o.label} untuk surah ini belum tersedia',
+                        child: ChoiceChip(
+                          key: Key('naghom-${o.key}'),
+                          label: Text(o.label),
+                          selected: o.key == player.naghom,
+                          onSelected: o.available ? (_) => ctl.selectNaghom(o.key) : null,
                         ),
                       ),
-                  ],
-                ),
+                    ),
+                ],
               ),
               if (selected == null)
                 const Padding(

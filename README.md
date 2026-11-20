@@ -3,6 +3,8 @@
 Monorepo ekosistem Moeslim: **Moeslim Personal** (gratis, tanpa akun, offline-first) dan
 **Moeslim Masjid** (cloud, multi-tenant, Rp59.000/bulan/masjid, maks. 5 pengurus & 5 TV Display).
 
+**Fitur andalan: 7 Jenis Irama (Naghom) Al-Qur'an** — Bayyati, Hijaz, Shaba, Rast, Jiharkah, Sika, Nahawand.
+
 | Path | Isi | Test |
 |---|---|---|
 | `backend/` | API Laravel 13 + PostgreSQL untuk Moeslim Masjid | `php artisan test` |

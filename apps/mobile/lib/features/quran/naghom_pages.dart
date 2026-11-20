@@ -4,6 +4,8 @@ import 'package:personal_core/personal_core.dart';
 
 import '../../core/providers.dart';
 import 'audio/audio_providers.dart';
+import 'naghom_theme.dart';
+import 'surah_page.dart';
 
 final _naghomStateProvider = FutureProvider.autoDispose((ref) async {
   final repo = ref.watch(naghomProgressProvider);
@@ -17,51 +19,78 @@ class NaghomCatalogPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(_naghomStateProvider).value;
     final done = state?.completed ?? const <String>{};
-    final manifest = ref.watch(audioManifestProvider).value ?? AudioManifest.empty;
-    int coverage(String slug) =>
-        surahs.where((su) => manifest.recitations.any((r) => r.naghom == slug && r.covers(su.number))).length;
     final fav = state?.favorites ?? const <String>{};
+    final manifest = ref.watch(audioManifestProvider).value ?? AudioManifest.empty;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('7 Irama Naghom')),
+      appBar: AppBar(title: const Text('7 Jenis Irama (Naghom) Al-Qur\'an')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Card(
-            color: Theme.of(context).colorScheme.tertiaryContainer,
-            child: const Padding(padding: EdgeInsets.all(12), child: Text(naghomDisclaimer)),
-          ),
-          const SizedBox(height: 8),
-          LinearProgressIndicator(value: done.length / naghomStyles.length),
+          LinearProgressIndicator(value: done.length / naghomStyles.length, minHeight: 8),
           Padding(
             padding: const EdgeInsets.all(4),
             child: Text('${done.length} dari ${naghomStyles.length} irama dipelajari'),
           ),
           for (final (i, s) in naghomStyles.indexed)
             Card(
-              child: ListTile(
-                leading: CircleAvatar(child: Text('${i + 1}')),
-                title: Text(s.name),
-                subtitle: Text(
-                  '${s.character}\nAudio: ${coverage(s.slug)}/114 surah',
-                  key: Key('coverage-${s.slug}'),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                isThreeLine: true,
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (fav.contains(s.slug)) const Icon(Icons.star, size: 18),
-                    if (done.contains(s.slug)) const Icon(Icons.check_circle, color: Colors.green),
-                  ],
-                ),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
                 onTap: () async {
                   await Navigator.of(context).push(MaterialPageRoute(builder: (_) => NaghomDetailPage(style: s)));
                   ref.invalidate(_naghomStateProvider);
                 },
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border(left: BorderSide(color: naghomColor(s.slug), width: 6)),
+                  ),
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: naghomColor(s.slug),
+                        foregroundColor: Colors.white,
+                        child: Text('${i + 1}'),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(child: Text(s.name, style: Theme.of(context).textTheme.titleMedium)),
+                                if (fav.contains(s.slug)) const Icon(Icons.star, size: 18),
+                                if (done.contains(s.slug)) const Icon(Icons.check_circle, color: Colors.green),
+                              ],
+                            ),
+                            Text(s.summary),
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                ToneLevels(levels: s.toneLevels, color: naghomColor(s.slug), height: 20),
+                                const SizedBox(width: 8),
+                                Text(s.toneLabel, style: const TextStyle(fontSize: 12)),
+                              ],
+                            ),
+                            Text(
+                              'Audio: ${manifest.surahsWithNaghom(s.slug).length}/114 surah',
+                              key: Key('coverage-${s.slug}'),
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
+          const Padding(
+            padding: EdgeInsets.all(8),
+            child: Text(naghomDisclaimer, style: TextStyle(fontSize: 12)),
+          ),
         ],
       ),
     );
@@ -104,10 +133,11 @@ class _NaghomDetailPageState extends ConsumerState<NaghomDetailPage> {
   @override
   Widget build(BuildContext context) {
     final s = widget.style;
+    final c = naghomColor(s.slug);
     final repo = ref.read(naghomProgressProvider);
     return Scaffold(
       appBar: AppBar(
-        title: Text(s.name),
+        title: Text('Irama ${s.name}'),
         actions: [
           IconButton(
             tooltip: 'Favorit',
@@ -122,14 +152,49 @@ class _NaghomDetailPageState extends ConsumerState<NaghomDetailPage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _Info('Karakter', s.character),
-          _Info(
-            'Tingkat nada',
-            s.toneLevels != null ? '${s.toneLevels} tingkat (menurut materi awal)' : 'Menunggu kurikulum final',
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(colors: [c, Color.lerp(c, Colors.black, .3)!]),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  s.name,
+                  style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  s.summary,
+                  key: const Key('naghom-summary'),
+                  style: const TextStyle(color: Colors.white, fontSize: 16),
+                ),
+                const SizedBox(height: 16),
+                ToneLevels(levels: s.toneLevels, color: Colors.white, height: 48),
+                const SizedBox(height: 6),
+                Text(
+                  s.toneLabel,
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
           ),
+          const SizedBox(height: 12),
+          _Info('Karakter', s.character),
           _Info('Penggunaan', s.usage),
           _SampleAudio(style: s),
           const SizedBox(height: 8),
+          FilledButton.icon(
+            key: const Key('listen-with-naghom'),
+            style: FilledButton.styleFrom(backgroundColor: c, padding: const EdgeInsets.all(16)),
+            icon: const Icon(Icons.headphones),
+            label: Text('Dengarkan Al-Qur\'an dengan irama ${s.name}'),
+            onPressed: () =>
+                Navigator.of(context).push(MaterialPageRoute(builder: (_) => NaghomSurahListPage(style: s))),
+          ),
+          const SizedBox(height: 12),
           TextField(
             controller: _note,
             maxLines: 3,
@@ -137,7 +202,7 @@ class _NaghomDetailPageState extends ConsumerState<NaghomDetailPage> {
             onChanged: (v) => repo.saveNote(s.slug, v),
           ),
           const SizedBox(height: 12),
-          FilledButton.icon(
+          OutlinedButton.icon(
             icon: Icon(_done ? Icons.check_circle : Icons.circle_outlined),
             label: Text(_done ? 'Sudah dipelajari' : 'Tandai sudah dipelajari'),
             onPressed: () async {
@@ -148,6 +213,59 @@ class _NaghomDetailPageState extends ConsumerState<NaghomDetailPage> {
           const SizedBox(height: 12),
           const Text(naghomDisclaimer, style: TextStyle(fontSize: 12)),
         ],
+      ),
+    );
+  }
+}
+
+/// Daftar surah yang dapat didengarkan dengan satu irama; membuka surah dengan irama itu terpilih.
+class NaghomSurahListPage extends ConsumerWidget {
+  final NaghomStyle style;
+  const NaghomSurahListPage({super.key, required this.style});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final manifest = ref.watch(audioManifestProvider);
+    return Scaffold(
+      appBar: AppBar(title: Text('Surah dengan irama ${style.name}')),
+      body: manifest.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('$e')),
+        data: (m) {
+          final list = m.surahsWithNaghom(style.slug);
+          if (list.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  'Rekaman irama ${style.name} sedang disiapkan bersama qari dan akan bertambah bertahap.',
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            );
+          }
+          return ListView(
+            children: [
+              Padding(padding: const EdgeInsets.all(16), child: Text('${list.length} surah tersedia')),
+              for (final n in list)
+                ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: naghomColor(style.slug),
+                    foregroundColor: Colors.white,
+                    child: Text('$n'),
+                  ),
+                  title: Text(surahs[n - 1].name),
+                  subtitle: Text('${surahs[n - 1].ayahCount} ayat'),
+                  trailing: const Icon(Icons.play_circle_outline),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => SurahPage(surah: surahs[n - 1], preferredOption: style.slug),
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
       ),
     );
   }

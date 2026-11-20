@@ -5,6 +5,7 @@ import 'package:shared_prayer/shared_prayer.dart';
 import '../../core/format.dart';
 import '../../core/providers.dart';
 import '../../core/theme.dart';
+import '../quran/naghom_hero.dart';
 
 class HomePage extends ConsumerWidget {
   final void Function(int tab) onNavigate;
@@ -25,6 +26,8 @@ class HomePage extends ConsumerWidget {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              const NaghomHero(),
+              const SizedBox(height: 16),
               _NextPrayerCard(status: s, city: settings?.location.name ?? '', hijri: hijri.toString()),
               const SizedBox(height: 16),
               _TodayTimes(status: s),
