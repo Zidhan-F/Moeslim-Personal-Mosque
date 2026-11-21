@@ -5,49 +5,47 @@ const manifestJson = {
   'version': 1,
   'recitations': [
     {
-      'id': 'qari-a-bayyati',
+      'id': 'qari-a',
       'qari': 'Qari A',
-      'naghom': 'bayyati',
-      'base_url': 'https://cdn.test/a/bayyati',
+      'kind': 'murattal',
+      'base_url': 'https://cdn.test/a/',
       'license': 'Izin tertulis 2026',
       'attribution': 'Rekaman Qari A',
       'surahs': [1, 112],
     },
     {
-      'id': 'qari-b-bayyati',
+      'id': 'qari-b',
       'qari': 'Qari B',
-      'naghom': 'bayyati',
-      'base_url': 'https://cdn.test/b/bayyati',
+      'kind': 'murattal',
+      'base_url': 'https://cdn.test/b',
       'license': 'CC BY-ND',
       'attribution': 'Rekaman Qari B',
       'surahs': 'all',
     },
+    // Katalog lama berisi entri irama: diabaikan.
     {
-      'id': 'qari-a-rast',
-      'qari': 'Qari A',
-      'naghom': 'rast',
-      'base_url': 'https://cdn.test/a/rast',
-      'license': 'Izin tertulis 2026',
-      'attribution': 'Rekaman Qari A',
-      'surahs': [1],
-    },
-    {
-      'id': 'rusak',
-      'naghom': 'tidak-dikenal',
+      'id': 'lama-irama',
+      'qari': 'X',
+      'naghom': 'bayyati',
       'base_url': 'x',
       'license': 'x',
-      'attribution': 'x',
-      'surahs': 'all',
-      'qari': 'x'
+      'attribution': 'x'
+    },
+    {
+      'id': 'jenis-salah',
+      'qari': 'X',
+      'kind': 'mujawwad',
+      'base_url': 'x',
+      'license': 'L',
+      'attribution': 'X'
     },
     {
       'id': 'tanpa-lisensi',
-      'naghom': 'hijaz',
+      'qari': 'X',
+      'kind': 'murattal',
       'base_url': 'x',
       'license': '',
-      'attribution': 'x',
-      'surahs': 'all',
-      'qari': 'x'
+      'attribution': 'x'
     },
   ],
 };
@@ -55,50 +53,36 @@ const manifestJson = {
 void main() {
   final manifest = AudioManifest.fromJson(manifestJson);
 
-  test('entri naghom tidak dikenal atau tanpa lisensi diabaikan', () {
-    expect(manifest.recitations.map((r) => r.id), ['qari-a-bayyati', 'qari-b-bayyati', 'qari-a-rast']);
+  test('hanya murattal berlisensi yang terbaca', () {
+    expect(manifest.recitations.map((r) => r.id), ['qari-a', 'qari-b']);
   });
 
-  test('pilihan 7 naghom per surah beserta ketersediaannya', () {
-    final options = manifest.naghomOptionsFor(1);
-    expect(options.map((o) => o.style.slug), naghomStyles.map((s) => s.slug));
-    expect(options.firstWhere((o) => o.style.slug == 'bayyati').recitations.length, 2);
-    expect(options.firstWhere((o) => o.style.slug == 'rast').available, isTrue);
-    expect(options.firstWhere((o) => o.style.slug == 'hijaz').available, isFalse);
-
-    final s2 = manifest.naghomOptionsFor(2);
-    expect(s2.firstWhere((o) => o.style.slug == 'rast').available, isFalse);
-    expect(s2.firstWhere((o) => o.style.slug == 'bayyati').recitations.single.id, 'qari-b-bayyati');
+  test('qari per surah & cakupan mushaf', () {
+    expect(manifest.recitationsFor(1).map((r) => r.id), ['qari-a', 'qari-b']);
+    expect(manifest.recitationsFor(2).map((r) => r.id), ['qari-b']);
+    expect(manifest.murattalCovers(114), isTrue);
+    expect(AudioManifest.empty.murattalCovers(1), isFalse);
   });
 
-  test('URL per ayat berformat SSSAAA.mp3', () {
+  test('URL per ayat berformat SSSAAA.mp3 (garis miring akhir dibuang)', () {
     final r = manifest.recitations.first;
-    expect(r.ayahUrl(1, 7), 'https://cdn.test/a/bayyati/001007.mp3');
-    expect(r.ayahUrl(112, 4), 'https://cdn.test/a/bayyati/112004.mp3');
+    expect(r.ayahUrl(1, 7), 'https://cdn.test/a/001007.mp3');
+    expect(r.ayahUrl(112, 4), 'https://cdn.test/a/112004.mp3');
   });
 
   test('playlist surah penuh dan rentang ayat', () {
     final r = manifest.recitations[1];
-    final full = r.playlist(112);
-    expect(full.map((t) => t.ayah), [1, 2, 3, 4]);
-    final range = r.playlist(2, fromAyah: 255, toAyah: 257);
-    expect(range.map((t) => t.ayah), [255, 256, 257]);
+    expect(r.playlist(112).map((t) => t.ayah), [1, 2, 3, 4]);
+    expect(r.playlist(2, fromAyah: 255, toAyah: 257).map((t) => t.ayah),
+        [255, 256, 257]);
     expect(() => r.playlist(1, fromAyah: 8), throwsRangeError);
-    expect(() => manifest.recitations.first.playlist(2), throwsArgumentError); // tidak mencakup surah 2
+    expect(() => manifest.recitations.first.playlist(2), throwsArgumentError);
   });
 
-  test('preferensi naghom & qari tersimpan lokal', () async {
+  test('preferensi qari tersimpan lokal', () async {
     final repo = AudioPreferenceRepository(InMemoryStore());
-    expect(await repo.naghom(), isNull);
-    await repo.save(naghom: 'rast', recitationId: 'qari-a-rast');
-    expect(await repo.naghom(), 'rast');
-    expect(await repo.recitationId(), 'qari-a-rast');
-  });
-
-  test('manifest kosong tetap memberi 7 opsi tidak tersedia', () {
-    final empty = AudioManifest.fromJson({'version': 1, 'recitations': []});
-    final o = empty.naghomOptionsFor(1);
-    expect(o.length, 7);
-    expect(o.every((x) => !x.available), isTrue);
+    expect(await repo.recitationId(), isNull);
+    await repo.save(recitationId: 'qari-b');
+    expect(await repo.recitationId(), 'qari-b');
   });
 }

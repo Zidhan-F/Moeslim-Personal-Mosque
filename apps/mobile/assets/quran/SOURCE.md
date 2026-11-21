@@ -19,4 +19,5 @@ kesesuaian dengan Mushaf Standar Indonesia oleh penelaah (lihat `docs/licensing/
 dari paket npm `tanzil` (`public/trans-id.txt`). Disertakan atas keputusan pemilik produk untuk fitur Personal
 yang gratis; izin tertulis Kemenag belum dikonfirmasi.
 
-Anotasi tajwid **belum** disertakan (lihat `docs/licensing/README.md`).
+Anotasi tajwid (`tj`) untuk seluruh 6.236 ayat dibuat oleh pengklasifikasi tajwid Moeslim PM
+(`packages/personal_core/tool/annotate_tajweed.dart`); teks & terjemahan tidak diubah. Lihat `docs/tajwid-warna.md`.

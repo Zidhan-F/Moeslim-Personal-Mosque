@@ -66,3 +66,26 @@ const List<City> indonesianCities = [
   City('Jayapura', 'Papua', -2.5337, 140.7181, 9),
   City('Merauke', 'Papua Selatan', -8.4932, 140.4018, 9),
 ];
+
+/// Cari kota Indonesia terdekat dari koordinat GPS [coords] dalam radius [maxDistanceKm].
+({City city, double distanceKm})? nearestIndonesianCity(Coordinates coords, {double maxDistanceKm = 120.0}) {
+  City? best;
+  var bestKm = double.infinity;
+  for (final city in indonesianCities) {
+    final km = distanceBetweenKm(coords, city.coordinates);
+    if (km < bestKm) {
+      bestKm = km;
+      best = city;
+    }
+  }
+  if (best == null || bestKm > maxDistanceKm) return null;
+  return (city: best, distanceKm: bestKm);
+}
+
+/// Format label lokasi offline yang ramah dari koordinat GPS.
+String formatGpsLocationLabel(Coordinates coords) {
+  final nearest = nearestIndonesianCity(coords);
+  if (nearest == null) return 'Lokasi GPS';
+  if (nearest.distanceKm <= 15.0) return nearest.city.name;
+  return 'Sekitar ${nearest.city.name}';
+}

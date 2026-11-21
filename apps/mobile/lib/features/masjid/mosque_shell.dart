@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:moeslim_brand/moeslim_brand.dart';
 
 import '../../ui/components.dart';
 import 'account_page.dart';
@@ -45,15 +46,16 @@ class _MasjidDashboardPageState extends ConsumerState<MasjidDashboardPage> {
     tabs = [
       (
         'Beranda',
-        Icons.home_outlined,
-        Icons.home,
+        MoeslimIcons.beranda,
+        MoeslimIcons.beranda,
         MosqueHomeTab(ctx: ctx, dash: dash, onOpenTab: (l) => _goTo(l, tabs)),
       ),
-      if (ctx.can('finance.view'))
-        ('Keuangan', Icons.account_balance_wallet_outlined, Icons.account_balance_wallet, FinanceTab(ctx: ctx)),
-      if (ctx.can('events.view')) ('Kegiatan', Icons.event_outlined, Icons.event, AgendaPage(ctx: ctx, embedded: true)),
-      if (ctx.can('staff.view')) ('Petugas', Icons.badge_outlined, Icons.badge, StaffPage(ctx: ctx, embedded: true)),
-      ('Akun', Icons.person_outline, Icons.person, MosqueAccountTab(ctx: ctx)),
+      if (ctx.can('finance.view')) ('Keuangan', MoeslimIcons.keuangan, MoeslimIcons.keuangan, FinanceTab(ctx: ctx)),
+      if (ctx.can('events.view'))
+        ('Kegiatan', MoeslimIcons.kalender, MoeslimIcons.kalender, AgendaPage(ctx: ctx, embedded: true)),
+      if (ctx.can('staff.view'))
+        ('Petugas', MoeslimIcons.petugas, MoeslimIcons.petugas, StaffPage(ctx: ctx, embedded: true)),
+      ('Akun', MoeslimIcons.profil, MoeslimIcons.profil, MosqueAccountTab(ctx: ctx)),
     ];
     final index = _tab.clamp(0, tabs.length - 1);
 
@@ -70,7 +72,7 @@ class _MasjidDashboardPageState extends ConsumerState<MasjidDashboardPage> {
           if (session.mosques.length > 1)
             PopupMenuButton<String>(
               tooltip: 'Ganti masjid',
-              icon: const Icon(Icons.swap_horiz),
+              icon: const Icon(MoeslimIcons.sinkronisasi),
               onSelected: ref.read(sessionProvider.notifier).selectMosque,
               itemBuilder: (_) => [
                 for (final m in session.mosques)

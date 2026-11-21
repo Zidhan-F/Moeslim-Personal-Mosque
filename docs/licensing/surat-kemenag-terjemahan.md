@@ -13,7 +13,7 @@ Assalamu'alaikum warahmatullahi wabarakatuh,
 
 Kami [nama pengembang/lembaga] mengembangkan aplikasi Android **Moeslim PM — Personal & Mosque**.
 Bagian utamanya, **Moeslim Personal**, adalah pendamping ibadah **gratis, tanpa iklan, tanpa pembelian, dan
-tanpa akun** (jadwal sholat, Al-Qur'an, dzikir, edukasi irama tilawah). Aplikasi juga memuat fitur tambahan
+tanpa akun** (jadwal sholat, Al-Qur'an, dzikir, audio murottal). Aplikasi juga memuat fitur tambahan
 opsional berbayar untuk pengurus masjid, yang tidak memuat teks Al-Qur'an maupun terjemahan.
 
 Dengan ini kami memohon:

@@ -68,17 +68,6 @@ void main() {
     expect(await repo.lastRead(), const AyahRef(18, 10));
   });
 
-  test('progres naghom', () async {
-    final repo = NaghomProgressRepository(store);
-    await repo.markCompleted('bayyati');
-    await repo.toggleFavorite('rast');
-    await repo.saveNote('bayyati', 'latih tingkat 2');
-    final again = NaghomProgressRepository(store);
-    expect(await again.completed(), {'bayyati'});
-    expect(await again.favorites(), {'rast'});
-    expect(await again.note('bayyati'), 'latih tingkat 2');
-  });
-
   test('masjid favorit dengan cache bertimestamp', () async {
     final repo = FavoriteMosqueRepository(store);
     await repo.follow(const FollowedMosque(slug: 'masjid-a', name: 'Masjid A'));
@@ -91,5 +80,32 @@ void main() {
     await repo.unfollow('masjid-a');
     expect(await repo.all(), isEmpty);
     expect(await repo.cache('masjid-a'), isNull);
+  });
+
+  test('pengaturan adzan per waktu salat dan pilihan muadzin tersimpan', () async {
+    final repo = SettingsRepository(store);
+    final initial = await repo.load();
+    expect(initial.notificationsEnabled, isTrue);
+    expect(initial.activeAdzanCount, 5);
+    expect(initial.muadzin.id, 'makkah');
+    expect(initial.isAdzanActiveFor(Prayer.fajr), isTrue);
+
+    final updated = initial
+        .setPrayerAdzan(Prayer.asr, false)
+        .setPrayerAdzan(Prayer.isha, false)
+        .copyWith(muadzinId: 'madinah');
+    await repo.save(updated);
+
+    final loaded = await SettingsRepository(store).load();
+    expect(loaded.muadzin.id, 'madinah');
+    expect(loaded.muadzin.name, contains('Essam Bukhari'));
+    expect(loaded.isAdzanActiveFor(Prayer.fajr), isTrue);
+    expect(loaded.isAdzanActiveFor(Prayer.asr), isFalse);
+    expect(loaded.isAdzanActiveFor(Prayer.isha), isFalse);
+    expect(loaded.activeAdzanCount, 3);
+
+    final disabledAll = loaded.copyWith(notificationsEnabled: false);
+    expect(disabledAll.isAdzanActiveFor(Prayer.fajr), isFalse);
+    expect(disabledAll.activeAdzanCount, 0);
   });
 }

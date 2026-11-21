@@ -78,11 +78,16 @@ void main() {
     );
     expect(find.textContaining('Tanzil'), findsWidgets);
     await tester.scrollUntilVisible(
+      find.textContaining('Kementerian Agama RI'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.textContaining('Kementerian Agama RI'), findsWidgets);
+    await tester.scrollUntilVisible(
       find.textContaining('Font mushaf: Amiri Quran'),
       200,
       scrollable: find.byType(Scrollable).first,
     );
     expect(find.textContaining('Amiri Quran'), findsWidgets);
-    expect(find.textContaining('Kementerian Agama RI'), findsWidgets);
   });
 }

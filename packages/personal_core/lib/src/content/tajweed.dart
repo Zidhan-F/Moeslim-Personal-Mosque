@@ -1,7 +1,7 @@
 /// Aturan tajwid untuk pewarnaan teks Al-Qur'an.
 ///
-/// Pewarnaan TIDAK ditebak dari teks: anotasi (posisi awal–akhir + aturan) harus berasal dari
-/// dataset yang ditelaah dan dibuat untuk EDISI TEKS YANG SAMA dengan teks yang ditampilkan.
+/// Anotasi (posisi awal–akhir + aturan) dibuat saat build oleh `classifyTajweed` atas teks Tanzil
+/// yang terpasang (lihat `tajweed_classifier.dart`), lalu disimpan di aset — bukan ditebak di perangkat.
 /// Palet warna di sini satu sumber kebenaran dan dapat diselaraskan dengan konvensi mushaf
 /// tajwid yang dipilih penelaah.
 enum TajweedRule {
@@ -41,6 +41,18 @@ enum TajweedRule {
 
   const TajweedRule(this.label, this.description, this.color, this.sourceNames);
 
+  /// Warna untuk latar gelap: dicampur 45% putih agar kontras tetap terjaga di mode malam.
+  int get darkColor {
+    int mix(int shift) {
+      final v = (color >> shift) & 0xFF;
+      return (v + ((255 - v) * 0.45)).round() & 0xFF;
+    }
+
+    return 0xFF000000 | (mix(16) << 16) | (mix(8) << 8) | mix(0);
+  }
+
+  int colorFor({required bool dark}) => dark ? darkColor : color;
+
   static TajweedRule? fromSource(String name) {
     for (final r in values) {
       if (r.sourceNames.contains(name)) return r;
@@ -56,11 +68,16 @@ class TajweedSpan {
   final TajweedRule rule;
   const TajweedSpan(this.start, this.end, this.rule);
 
-  List<Object> toJson() => [start, end, rule.name];
+  /// `[start, end, indeksAturan]` — indeks [TajweedRule.values] agar aset ringkas.
+  List<Object> toJson() => [start, end, rule.index];
 
+  /// Menerima indeks aturan (format aset) maupun nama aturan (format lama).
   static TajweedSpan? fromJson(Object? j) {
     if (j is! List || j.length < 3) return null;
-    final rule = TajweedRule.values.where((r) => r.name == j[2]).firstOrNull;
+    final r = j[2];
+    final rule = r is num
+        ? (r >= 0 && r < TajweedRule.values.length ? TajweedRule.values[r.toInt()] : null)
+        : TajweedRule.values.where((x) => x.name == r).firstOrNull;
     return rule == null ? null : TajweedSpan((j[0] as num).toInt(), (j[1] as num).toInt(), rule);
   }
 }

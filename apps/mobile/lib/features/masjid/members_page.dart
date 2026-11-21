@@ -60,7 +60,7 @@ class _MembersPageState extends ConsumerState<MembersPage> {
             IconButton(
               key: const Key('invite-member'),
               tooltip: 'Undang pengurus',
-              icon: const Icon(Icons.person_add_alt),
+              icon: const Icon(MoeslimIcons.daftarAkun),
               onPressed: _invite,
             ),
         ],
@@ -170,7 +170,7 @@ class _MembersPageState extends ConsumerState<MembersPage> {
               children: [
                 for (final i in invites)
                   ListTile(
-                    leading: const Icon(Icons.mark_email_unread_outlined),
+                    leading: const Icon(MoeslimIcons.surat),
                     title: Text('${i['email']}'),
                     trailing: StatusBadge(roleLabels[i['role']] ?? '${i['role']}', color: MosqueColors.info),
                   ),

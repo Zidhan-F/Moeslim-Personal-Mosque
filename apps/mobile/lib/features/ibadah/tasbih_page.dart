@@ -82,7 +82,7 @@ class _TasbihPageState extends ConsumerState<TasbihPage> {
             for (final t in [33, 99, 100, 1000])
               ListTile(
                 title: Text('$t kali'),
-                trailing: t == _target ? const Icon(Icons.check_circle, color: BrandColors.emerald) : null,
+                trailing: t == _target ? const Icon(MoeslimIcons.berhasil, color: BrandColors.emerald) : null,
                 onTap: () => Navigator.pop(context, t),
               ),
           ],
@@ -175,13 +175,13 @@ class _TasbihPageState extends ConsumerState<TasbihPage> {
                           ),
                           child: ListTile(
                             leading: Icon(
-                              Icons.radio_button_checked,
+                              MoeslimIcons.tasbih,
                               color: scheme.primary.withValues(alpha: d.id == _dzikir.id ? 1 : .3),
                             ),
                             title: Text(d.latin, style: const TextStyle(fontWeight: FontWeight.w600)),
                             subtitle: Text(d.meaning),
                             trailing: d.id == _dzikir.id
-                                ? Icon(Icons.check_circle, color: scheme.primary)
+                                ? Icon(MoeslimIcons.berhasil, color: scheme.primary)
                                 : const Icon(Icons.circle_outlined),
                             onTap: () {
                               setState(() => _dzikir = d);
@@ -192,7 +192,7 @@ class _TasbihPageState extends ConsumerState<TasbihPage> {
                       TextButton.icon(
                         key: const Key('edit-target'),
                         onPressed: _editTarget,
-                        icon: const Icon(Icons.add),
+                        icon: const Icon(MoeslimIcons.target),
                         label: const Text('Ubah Target Dzikir'),
                       ),
                       const SizedBox(height: 80),
@@ -204,7 +204,7 @@ class _TasbihPageState extends ConsumerState<TasbihPage> {
                       for (final d in dzikirList)
                         Card(
                           child: ListTile(
-                            title: Text('${d.name} — ${d.latin}', style: const TextStyle(fontWeight: FontWeight.w600)),
+                            title: Text('${d.name} · ${d.latin}', style: const TextStyle(fontWeight: FontWeight.w600)),
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -234,7 +234,7 @@ class _TasbihPageState extends ConsumerState<TasbihPage> {
                       tooltip: 'Reset',
                       iconSize: 28,
                       onPressed: _reset,
-                      icon: const Icon(Icons.restart_alt),
+                      icon: const Icon(MoeslimIcons.ulang),
                     ),
                     GestureDetector(
                       key: const Key('tasbih-button'),
@@ -269,7 +269,7 @@ class _TasbihPageState extends ConsumerState<TasbihPage> {
                       tooltip: 'Kurangi',
                       iconSize: 28,
                       onPressed: _minus,
-                      icon: const Icon(Icons.remove),
+                      icon: const Icon(MoeslimIcons.kurangi),
                     ),
                   ],
                 ),

@@ -2,8 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 
-import 'package:moeslim_mobile/features/quran/naghom_theme.dart';
-import 'package:personal_core/personal_core.dart';
 
 import 'helpers.dart';
 
@@ -31,13 +29,6 @@ void main() {
     }
   });
 
-  test('teks putih di atas warna 7 irama memenuhi kontras 4.5:1', () {
-    for (final s in naghomStyles) {
-      expect(contrastRatio(Colors.white, naghomColor(s.slug)), greaterThanOrEqualTo(4.5), reason: s.name);
-    }
-    expect(naghomColor('bayyati'), BrandColors.emerald);
-  });
-
   testWidgets('semua teks di kartu jadwal memakai Inter (DefaultTextStyle tidak menghapus font tema)', (tester) async {
     await pumpApp(tester);
     final card = find.byKey(const Key('prayer-card'));
@@ -45,7 +36,8 @@ void main() {
     expect(texts, findsWidgets);
     for (final e in texts.evaluate()) {
       final rich = e.widget as RichText;
-      if (rich.text.style?.fontFamily == 'MaterialIcons') continue; // ikon dekoratif
+      final family = rich.text.style?.fontFamily ?? '';
+      if (family == 'MaterialIcons' || family.endsWith('MoeslimIcons')) continue; // ikon dekoratif
       expect(rich.text.style?.fontFamily, contains('Inter'), reason: rich.text.toPlainText());
     }
   });

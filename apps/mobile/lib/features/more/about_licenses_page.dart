@@ -10,15 +10,30 @@ import '../quran/audio/audio_providers.dart';
 const contentSources = <(String, String)>[
   (
     'Teks Al-Qur\'an: Tanzil Quran Text (Uthmani)',
-    'Hak cipta © Tanzil Project — tanzil.net. Disalin apa adanya (verbatim); basmalah ditampilkan sebagai '
+    'Hak cipta © Tanzil Project (tanzil.net). Disalin apa adanya (verbatim); basmalah ditampilkan sebagai '
         'pembuka surah, bukan bagian ayat 1.',
   ),
   (
-    'Terjemahan: Al-Qur\'an dan Terjemahannya — Kementerian Agama RI',
+    'Terjemahan: Al-Qur\'an dan Terjemahannya (Kementerian Agama RI)',
     'Teks terjemahan id.indonesian melalui Tanzil.net (pembaruan 4 Juni 2010).',
   ),
-  ('Font mushaf: Amiri Quran', '© The Amiri Project Authors — SIL Open Font License 1.1.'),
-  ('Font antarmuka: Inter', '© The Inter Project Authors — SIL Open Font License 1.1.'),
+  (
+    'Anotasi tajwid: pengklasifikasi Moeslim PM',
+    'Ditandai otomatis atas teks Tanzil untuk 6.236 ayat; aturan disamakan dengan cpfair/quran-tajweed. '
+        'Perlu telaah guru tajwid.',
+  ),
+  ('Font mushaf: Amiri Quran', '© The Amiri Project Authors (SIL Open Font License 1.1).'),
+  ('Font antarmuka: Inter', '© The Inter Project Authors (SIL Open Font License 1.1).'),
+  (
+    'Ikon antarmuka: Font Awesome 4',
+    '© Dave Gandy (fontawesome.com), SIL Open Font License 1.1. Dikemas ulang sebagai font MoeslimIcons.',
+  ),
+  ('Ilustrasi, ikon Islami & aset visual', 'Moeslim PM Asset Kit, dibuat khusus untuk Moeslim PM.'),
+  (
+    'Doa harian & aktivitas (229 doa)',
+    'Kumpulan doa harian dan aktivitas merujuk kitab Hisnul Muslim (Syaikh Sa\'id bin Ali Al-Qahthani) & '
+        'EQuran.id Doa & Dzikir API (penggunaan non-komersial dengan atribusi).',
+  ),
 ];
 
 class AboutLicensesPage extends ConsumerWidget {
@@ -51,12 +66,9 @@ class AboutLicensesPage extends ConsumerWidget {
           for (final r in manifest.recitations)
             ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: Icon(r.isMurattal ? Icons.record_voice_over : Icons.graphic_eq),
+              leading: const Icon(MoeslimIcons.audio),
               title: Text(r.attribution.isNotEmpty ? r.attribution : r.qari),
-              subtitle: Text(
-                '${r.isMurattal ? 'Murattal' : naghomStyles.firstWhere((s) => s.slug == r.naghom).name}'
-                ' • ${r.qari}\nLisensi: ${r.license}',
-              ),
+              subtitle: Text('Murattal • ${r.qari}\nLisensi: ${r.license}'),
               isThreeLine: true,
             ),
           const SizedBox(height: 16),

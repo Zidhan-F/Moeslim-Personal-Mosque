@@ -2,7 +2,7 @@ import 'quran.dart';
 
 String ayahFileName(int surah, int ayah) => '${surah.toString().padLeft(3, '0')}${ayah.toString().padLeft(3, '0')}.mp3';
 
-/// Laporan kelengkapan berkas per ayat (`SSSAAA.mp3`) untuk satu qari + satu irama.
+/// Laporan kelengkapan berkas per ayat (`SSSAAA.mp3`) untuk satu qari.
 class CoverageReport {
   /// surah → daftar ayat yang belum ada berkasnya.
   final Map<int, List<int>> missing;

@@ -5,7 +5,6 @@ import 'package:personal_core/personal_core.dart';
 
 import '../../ui/components.dart';
 import 'masjid_api.dart';
-import 'mosque_providers.dart';
 import 'mosque_shell.dart';
 import 'session.dart';
 
@@ -69,7 +68,7 @@ class MosqueLandingPage extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               _RoleCard(
-                icon: Icons.person_outline,
+                icon: MoeslimIcons.profil,
                 title: 'Moeslim Personal',
                 body: 'Ibadah harian, Al-Qur\'an, doa, dan kebutuhan pribadi Muslim. Gratis tanpa akun.',
                 selected: false,
@@ -77,7 +76,7 @@ class MosqueLandingPage extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               const _RoleCard(
-                icon: Icons.mosque,
+                icon: MoeslimIcons.masjid,
                 title: 'Moeslim Mosque',
                 body: 'Kelola masjid: kas, kegiatan, petugas, pengurus, dan TV Display. Rp59.000/bulan per masjid (uji coba 30 hari).',
                 selected: true,
@@ -89,7 +88,7 @@ class MosqueLandingPage extends StatelessWidget {
                 key: const Key('register-mosque-start'),
                 style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(54), shape: const StadiumBorder()),
                 onPressed: () => openLogin(1),
-                icon: const Icon(Icons.add_home_work_outlined),
+                icon: const Icon(MoeslimIcons.masjid),
                 label: const Text('Daftarkan Masjid'),
               ),
               const SizedBox(height: 12),
@@ -143,7 +142,7 @@ class _RoleCard extends StatelessWidget {
                 ),
               ),
               Icon(
-                selected ? Icons.check_circle : Icons.circle_outlined,
+                selected ? MoeslimIcons.berhasil : Icons.circle_outlined,
                 color: selected ? scheme.primary : scheme.outline,
               ),
             ],
@@ -221,14 +220,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           if (_tab == 1)
             TextField(
               controller: _name,
-              decoration: const InputDecoration(labelText: 'Nama lengkap *', prefixIcon: Icon(Icons.person_outline)),
+              decoration: const InputDecoration(labelText: 'Nama lengkap *', prefixIcon: Icon(MoeslimIcons.profil)),
             ),
           if (_tab == 1) const SizedBox(height: 12),
           TextField(
             key: const Key('email'),
             controller: _email,
             keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(labelText: 'Email *', prefixIcon: Icon(Icons.mail_outline)),
+            decoration: const InputDecoration(labelText: 'Email *', prefixIcon: Icon(MoeslimIcons.surat)),
           ),
           const SizedBox(height: 12),
           TextField(
@@ -237,10 +236,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             obscureText: _obscure,
             decoration: InputDecoration(
               labelText: _tab == 1 ? 'Kata sandi * (min. 10 karakter)' : 'Kata sandi *',
-              prefixIcon: const Icon(Icons.lock_outline),
+              prefixIcon: const Icon(MoeslimIcons.kunci),
               suffixIcon: IconButton(
                 tooltip: _obscure ? 'Tampilkan kata sandi' : 'Sembunyikan kata sandi',
-                icon: Icon(_obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+                icon: Icon(_obscure ? MoeslimIcons.mata : MoeslimIcons.mataTutup),
                 onPressed: () => setState(() => _obscure = !_obscure),
               ),
             ),
@@ -253,7 +252,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               decoration: const InputDecoration(
                 labelText: 'Kode undangan pengurus (opsional)',
                 helperText: 'Dari admin masjid. Kosongkan bila Anda mendaftarkan masjid baru.',
-                prefixIcon: Icon(Icons.key_outlined),
+                prefixIcon: Icon(Icons.vpn_key_outlined),
               ),
             ),
           ],
@@ -269,14 +268,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             onPressed: _busy ? null : _submit,
             icon: _busy
                 ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Icon(Icons.login),
+                : const Icon(MoeslimIcons.login),
             label: Text(_tab == 1 ? 'Aktivasi Akun' : 'Masuk ke Dashboard'),
           ),
           const SizedBox(height: 16),
           Card(
             color: BrandColors.gold.withValues(alpha: .12),
             child: const ListTile(
-              leading: Icon(Icons.shield_outlined, color: BrandColors.goldText),
+              leading: Icon(MoeslimIcons.pengaman, color: BrandColors.goldText),
               title: Text('Aman & Tepercaya', style: TextStyle(fontWeight: FontWeight.w600)),
               subtitle: Text('Data masjid terisolasi per masjid dan hanya dapat diakses pengurus resmi.'),
             ),
@@ -308,7 +307,7 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
         actions: [
           IconButton(
             tooltip: 'Keluar',
-            icon: const Icon(Icons.logout),
+            icon: const Icon(MoeslimIcons.logout),
             onPressed: () => ref.read(sessionProvider.notifier).logout(),
           ),
         ],
@@ -316,7 +315,7 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          const Center(child: Icon(Icons.mark_email_read_outlined, size: 72, color: BrandColors.emerald)),
+          const Center(child: Icon(MoeslimIcons.surat, size: 72, color: BrandColors.emerald)),
           const SizedBox(height: 12),
           Text('Masukkan 6 digit kode yang dikirim ke $email.', textAlign: TextAlign.center),
           const SizedBox(height: 16),
@@ -398,7 +397,7 @@ class _RegisterMosquePageState extends ConsumerState<RegisterMosquePage> {
         actions: [
           IconButton(
             tooltip: 'Keluar',
-            icon: const Icon(Icons.logout),
+            icon: const Icon(MoeslimIcons.logout),
             onPressed: () => ref.read(sessionProvider.notifier).logout(),
           ),
         ],
@@ -406,10 +405,15 @@ class _RegisterMosquePageState extends ConsumerState<RegisterMosquePage> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          const MosqueBanner(
-            title: 'Daftarkan Masjid Anda di Moeslim PM',
-            subtitle: 'Buat profil masjid dan mulai kelola operasional secara digital.',
+          const BrandArt(BrandIllustration.manajemenMasjid4, key: Key('register-art'), height: 180),
+          const SizedBox(height: 8),
+          Text(
+            'Daftarkan Masjid Anda di Moeslim PM',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
           ),
+          const SizedBox(height: 4),
+          const Text('Buat profil masjid dan mulai kelola operasional secara digital.', textAlign: TextAlign.center),
           const SizedBox(height: 16),
           TextField(
             key: const Key('mosque-name'),
@@ -417,7 +421,7 @@ class _RegisterMosquePageState extends ConsumerState<RegisterMosquePage> {
             decoration: const InputDecoration(
               labelText: 'Nama Masjid *',
               hintText: 'Contoh: Masjid Baiturrahman',
-              prefixIcon: Icon(Icons.mosque_outlined),
+              prefixIcon: Icon(MoeslimIcons.masjid),
             ),
           ),
           const SizedBox(height: 12),
@@ -426,13 +430,13 @@ class _RegisterMosquePageState extends ConsumerState<RegisterMosquePage> {
             decoration: const InputDecoration(
               labelText: 'Alamat Lengkap *',
               hintText: 'Contoh: Jl. Ahmad Yani No. 10',
-              prefixIcon: Icon(Icons.location_on_outlined),
+              prefixIcon: Icon(MoeslimIcons.lokasi),
             ),
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<City>(
             initialValue: _city,
-            decoration: const InputDecoration(labelText: 'Lokasi (Kota) *', prefixIcon: Icon(Icons.map_outlined)),
+            decoration: const InputDecoration(labelText: 'Lokasi (Kota) *', prefixIcon: Icon(MoeslimIcons.peta)),
             items: [for (final c in indonesianCities) DropdownMenuItem(value: c, child: Text(c.name))],
             onChanged: (c) => setState(() => _city = c ?? _city),
           ),
@@ -440,7 +444,7 @@ class _RegisterMosquePageState extends ConsumerState<RegisterMosquePage> {
           TextField(
             controller: _phone,
             keyboardType: TextInputType.phone,
-            decoration: const InputDecoration(labelText: 'No. WhatsApp masjid', prefixIcon: Icon(Icons.phone_outlined)),
+            decoration: const InputDecoration(labelText: 'No. WhatsApp masjid', prefixIcon: Icon(MoeslimIcons.telepon)),
           ),
           const SizedBox(height: 12),
           TextField(
@@ -448,13 +452,13 @@ class _RegisterMosquePageState extends ConsumerState<RegisterMosquePage> {
             decoration: const InputDecoration(
               labelText: 'ID Masjid SIMAS Kemenag (opsional)',
               helperText: 'Membantu verifikasi kepemilikan masjid.',
-              prefixIcon: Icon(Icons.badge_outlined),
+              prefixIcon: Icon(MoeslimIcons.petugas),
             ),
           ),
           const SizedBox(height: 12),
           Card(
             child: ListTile(
-              leading: const Icon(Icons.admin_panel_settings_outlined, color: BrandColors.emerald),
+              leading: const Icon(MoeslimIcons.admin, color: BrandColors.emerald),
               title: const Text('Admin Utama (Pengelola)'),
               subtitle: Text('${user?['name'] ?? ''} • ${user?['email'] ?? ''}'),
             ),
@@ -468,7 +472,7 @@ class _RegisterMosquePageState extends ConsumerState<RegisterMosquePage> {
           FilledButton.icon(
             key: const Key('register-mosque'),
             style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(54), shape: const StadiumBorder()),
-            icon: const Icon(Icons.check),
+            icon: const Icon(MoeslimIcons.check),
             onPressed: _busy
                 ? null
                 : () async {

@@ -67,7 +67,7 @@ class MonthPicker extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.calendar_month_outlined, size: 18),
+                    const Icon(MoeslimIcons.kalender, size: 18),
                     const SizedBox(width: 8),
                     Text(monthLabel(m)),
                   ],
@@ -108,7 +108,7 @@ class _FinanceTabState extends ConsumerState<FinanceTab> {
           ? FloatingActionButton.extended(
               heroTag: null,
               key: const Key('add-transaction'),
-              icon: const Icon(Icons.add),
+              icon: const Icon(MoeslimIcons.tambah),
               label: const Text('Tambah Transaksi'),
               onPressed: () => _push(TransactionFormPage(mosqueId: ctx.id)),
             )
@@ -147,7 +147,7 @@ class _FinanceTabState extends ConsumerState<FinanceTab> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.account_balance_wallet_outlined, color: BrandColors.emerald, size: 36),
+                    const Icon(MoeslimIcons.keuangan, color: BrandColors.emerald, size: 36),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -169,7 +169,7 @@ class _FinanceTabState extends ConsumerState<FinanceTab> {
                     IconButton(
                       key: const Key('toggle-balance'),
                       tooltip: _hidden ? 'Tampilkan saldo' : 'Sembunyikan saldo',
-                      icon: Icon(_hidden ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                      icon: Icon(_hidden ? MoeslimIcons.mataTutup : MoeslimIcons.mata),
                       onPressed: () => setState(() => _hidden = !_hidden),
                     ),
                   ],
@@ -179,7 +179,7 @@ class _FinanceTabState extends ConsumerState<FinanceTab> {
                   children: [
                     Expanded(
                       child: _FlowBox(
-                        icon: Icons.arrow_upward,
+                        icon: MoeslimIcons.arahAtas,
                         label: 'Pemasukan',
                         value: money(s['total_in'] as num),
                         color: MosqueColors.income,
@@ -188,7 +188,7 @@ class _FinanceTabState extends ConsumerState<FinanceTab> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: _FlowBox(
-                        icon: Icons.arrow_downward,
+                        icon: MoeslimIcons.arahBawah,
                         label: 'Pengeluaran',
                         value: money(s['total_out'] as num),
                         color: MosqueColors.expense,
@@ -226,7 +226,11 @@ class _FinanceTabState extends ConsumerState<FinanceTab> {
                 ),
                 const SizedBox(height: 12),
                 if (cats.isEmpty)
-                  const EmptyState(Icons.donut_large, 'Belum ada transaksi pada periode ini')
+                  const EmptyState(
+                    MoeslimIcons.grafikPie,
+                    'Belum ada transaksi pada periode ini',
+                    art: BrandEmptyArt.transaksi,
+                  )
                 else
                   Row(
                     children: [
@@ -296,7 +300,7 @@ class _FinanceTabState extends ConsumerState<FinanceTab> {
                 OutlinedButton.icon(
                   key: const Key('open-history'),
                   onPressed: () => _push(TransactionHistoryPage(ctx: ctx)),
-                  icon: const Icon(Icons.receipt_long_outlined),
+                  icon: const Icon(MoeslimIcons.laporan),
                   label: const Text('Lihat Detail Transaksi'),
                 ),
               ],
@@ -312,7 +316,7 @@ class _FinanceTabState extends ConsumerState<FinanceTab> {
                 ListTile(
                   dense: true,
                   leading: Icon(
-                    f['restricted'] == true ? Icons.lock_outline : Icons.savings_outlined,
+                    f['restricted'] == true ? MoeslimIcons.kunci : MoeslimIcons.saldo,
                     color: BrandColors.emerald,
                   ),
                   title: Text('${f['name']}'),
@@ -327,7 +331,7 @@ class _FinanceTabState extends ConsumerState<FinanceTab> {
           margin: EdgeInsets.zero,
           child: ListTile(
             key: const Key('open-report'),
-            leading: const Icon(Icons.bar_chart, color: BrandColors.emerald),
+            leading: const Icon(MoeslimIcons.grafikBatang, color: BrandColors.emerald),
             title: const Text('Laporan Keuangan'),
             subtitle: const Text('Grafik bulanan/tahunan & ekspor CSV'),
             trailing: const Icon(Icons.chevron_right),
@@ -494,7 +498,7 @@ class _TransactionFormPageState extends ConsumerState<TransactionFormPage> {
                   DropdownButtonFormField<int>(
                     key: ValueKey('category-$_flow'),
                     initialValue: _category,
-                    decoration: const InputDecoration(labelText: 'Kategori', prefixIcon: Icon(Icons.category_outlined)),
+                    decoration: const InputDecoration(labelText: 'Kategori', prefixIcon: Icon(MoeslimIcons.kategori)),
                     items: [
                       for (final c in cats) DropdownMenuItem(value: c['id'] as int, child: Text(c['name'] as String)),
                     ],
@@ -522,17 +526,14 @@ class _TransactionFormPageState extends ConsumerState<TransactionFormPage> {
                     if (d != null) setState(() => _date = d);
                   },
                   child: InputDecorator(
-                    decoration: const InputDecoration(
-                      labelText: 'Tanggal *',
-                      prefixIcon: Icon(Icons.calendar_today_outlined),
-                    ),
+                    decoration: const InputDecoration(labelText: 'Tanggal *', prefixIcon: Icon(MoeslimIcons.kalender)),
                     child: Text(longDate(_date)),
                   ),
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<int>(
                   initialValue: _fund,
-                  decoration: const InputDecoration(labelText: 'Dana', prefixIcon: Icon(Icons.savings_outlined)),
+                  decoration: const InputDecoration(labelText: 'Dana', prefixIcon: Icon(MoeslimIcons.saldo)),
                   items: [
                     for (final f in _list('funds'))
                       DropdownMenuItem(
@@ -547,7 +548,7 @@ class _TransactionFormPageState extends ConsumerState<TransactionFormPage> {
                   initialValue: _account,
                   decoration: InputDecoration(
                     labelText: _flow == 'transfer' ? 'Dari akun' : 'Akun kas',
-                    prefixIcon: const Icon(Icons.account_balance_outlined),
+                    prefixIcon: const Icon(MoeslimIcons.saldo),
                   ),
                   items: [
                     for (final a in _list('accounts'))
@@ -588,7 +589,7 @@ class _TransactionFormPageState extends ConsumerState<TransactionFormPage> {
                   key: const Key('save'),
                   style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(54), shape: const StadiumBorder()),
                   onPressed: _busy ? null : _save,
-                  icon: const Icon(Icons.add_circle_outline),
+                  icon: const Icon(MoeslimIcons.tambahLingkar),
                   label: const Text('Simpan Transaksi'),
                 ),
                 const SizedBox(height: 8),
@@ -632,7 +633,10 @@ class _TransactionHistoryPageState extends ConsumerState<TransactionHistoryPage>
               key: const Key('tx-search'),
               controller: _search,
               textInputAction: TextInputAction.search,
-              decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Cari keterangan transaksi'),
+              decoration: const InputDecoration(
+                prefixIcon: Icon(MoeslimIcons.pencarian),
+                hintText: 'Cari keterangan transaksi',
+              ),
               onSubmitted: (v) => setState(() => _q = v.trim().isEmpty ? null : v.trim()),
             ),
             const SizedBox(height: 10),
@@ -665,7 +669,14 @@ class _TransactionHistoryPageState extends ConsumerState<TransactionHistoryPage>
   }
 
   Widget _list(BuildContext context, List<Map<String, dynamic>> list) {
-    if (list.isEmpty) return const EmptyState(Icons.receipt_long_outlined, 'Belum ada transaksi');
+    if (list.isEmpty) {
+      return const EmptyState(
+        MoeslimIcons.laporan,
+        'Belum ada transaksi',
+        art: BrandEmptyArt.transaksi,
+        message: 'Mulai catat pemasukan atau pengeluaran kas.',
+      );
+    }
     final reversed = {
       for (final t in list)
         if (t['reversal_of_id'] != null) t['reversal_of_id'],
@@ -684,7 +695,7 @@ class _TransactionHistoryPageState extends ConsumerState<TransactionHistoryPage>
           children: [
             Expanded(
               child: _FlowBox(
-                icon: Icons.arrow_upward,
+                icon: MoeslimIcons.arahAtas,
                 label: 'Total Pemasukan',
                 value: rupiah(sum('in')),
                 color: MosqueColors.income,
@@ -693,7 +704,7 @@ class _TransactionHistoryPageState extends ConsumerState<TransactionHistoryPage>
             const SizedBox(width: 10),
             Expanded(
               child: _FlowBox(
-                icon: Icons.arrow_downward,
+                icon: MoeslimIcons.arahBawah,
                 label: 'Total Pengeluaran',
                 value: rupiah(sum('out')),
                 color: MosqueColors.expense,
@@ -764,7 +775,7 @@ class TransactionTile extends StatelessWidget {
           switch (flow) {
             'in' => Icons.south_west,
             'out' => Icons.north_east,
-            _ => Icons.swap_horiz,
+            _ => MoeslimIcons.sinkronisasi,
           },
           color: color,
           size: 20,
@@ -793,9 +804,9 @@ class TransactionTile extends StatelessWidget {
           if (cancelled)
             const StatusBadge('Dibatalkan', icon: Icons.block, color: MosqueColors.expense)
           else if (isReversal)
-            const StatusBadge('Pembatalan', icon: Icons.undo, color: MosqueColors.warning)
+            const StatusBadge('Pembatalan', icon: MoeslimIcons.ulang, color: MosqueColors.warning)
           else
-            const StatusBadge('Tercatat', icon: Icons.check, color: MosqueColors.income),
+            const StatusBadge('Tercatat', icon: MoeslimIcons.check, color: MosqueColors.income),
         ],
       ),
     );
@@ -860,7 +871,7 @@ class _TxDetailSheetState extends ConsumerState<_TxDetailSheet> {
             OutlinedButton.icon(
               key: const Key('reverse-tx'),
               style: OutlinedButton.styleFrom(foregroundColor: MosqueColors.expense),
-              icon: const Icon(Icons.undo),
+              icon: const Icon(MoeslimIcons.ulang),
               label: const Text('Batalkan dengan entri pembalik'),
               onPressed: () async {
                 try {
@@ -1009,9 +1020,14 @@ class _ReportPageState extends ConsumerState<ReportPage> {
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 8),
-                    _SumRow(Icons.arrow_upward, 'Total Pemasukan', rupiah(s['total_in'] as num), MosqueColors.income),
                     _SumRow(
-                      Icons.arrow_downward,
+                      MoeslimIcons.arahAtas,
+                      'Total Pemasukan',
+                      rupiah(s['total_in'] as num),
+                      MosqueColors.income,
+                    ),
+                    _SumRow(
+                      MoeslimIcons.arahBawah,
                       'Total Pengeluaran',
                       rupiah(s['total_out'] as num),
                       MosqueColors.expense,
@@ -1024,7 +1040,7 @@ class _ReportPageState extends ConsumerState<ReportPage> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: _SumRow(
-                        Icons.account_balance_wallet_outlined,
+                        MoeslimIcons.keuangan,
                         'Saldo Akhir',
                         rupiah(s['balance'] as num),
                         null,
@@ -1042,7 +1058,7 @@ class _ReportPageState extends ConsumerState<ReportPage> {
               key: const Key('export-csv'),
               style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52)),
               onPressed: _exporting ? null : _export,
-              icon: const Icon(Icons.table_view_outlined),
+              icon: const Icon(MoeslimIcons.excel),
               label: const Text('Ekspor CSV (dapat dibuka di Excel)'),
             ),
           ],

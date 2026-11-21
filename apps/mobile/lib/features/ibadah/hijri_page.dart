@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:shared_prayer/shared_prayer.dart';
 
 import '../../core/format.dart';
@@ -38,6 +39,10 @@ class _HijriPageState extends ConsumerState<HijriPage> {
     final offset = ref.watch(settingsProvider).value?.hijriOffset ?? 0;
     final days = DateUtils.getDaysInMonth(_month.year, _month.month);
     final first = HijriDate.fromGregorian(_month, offsetDays: offset);
+    final ramadan = [
+      for (var d = 1; d <= days; d++)
+        HijriDate.fromGregorian(DateTime(_month.year, _month.month, d), offsetDays: offset),
+    ].where((h) => h.month == 9).firstOrNull;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Kalender Hijriah')),
@@ -66,6 +71,31 @@ class _HijriPageState extends ConsumerState<HijriPage> {
               ),
             ],
           ),
+          if (ramadan != null)
+            Card(
+              key: const Key('ramadan-banner'),
+              margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Ramadan ${ramadan.year} H',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                          ),
+                          const Text('Bulan ini memuat hari-hari Ramadan. Semoga ibadah kita diterima.'),
+                        ],
+                      ),
+                    ),
+                    const BrandArt(BrandIllustration.ramadanMalam4, width: 120, height: 80),
+                  ],
+                ),
+              ),
+            ),
           Expanded(
             child: ListView.builder(
               itemCount: days,

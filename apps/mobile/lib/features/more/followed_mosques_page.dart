@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:personal_core/personal_core.dart';
 
 import '../../core/format.dart';
@@ -20,7 +21,7 @@ class FollowedMosquesPage extends ConsumerWidget {
       appBar: AppBar(title: const Text('Masjid Diikuti'), centerTitle: true, automaticallyImplyLeading: !asTab),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Cari masjid',
-        child: const Icon(Icons.search),
+        child: const Icon(MoeslimIcons.pencarian),
         onPressed: () async {
           await showSearch(context: context, delegate: _MosqueSearch(ref));
           ref.invalidate(_followedProvider);
@@ -34,7 +35,7 @@ class FollowedMosquesPage extends ConsumerWidget {
                 child: Padding(
                   padding: EdgeInsets.all(32),
                   child: Text(
-                    'Ikuti masjid di sekitar Anda untuk melihat agenda kajian dan pengumuman publiknya — gratis, tanpa akun. Ketuk ikon cari.',
+                    'Ikuti masjid di sekitar Anda untuk melihat agenda kajian dan pengumuman publiknya, gratis tanpa akun. Ketuk ikon cari.',
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -43,7 +44,7 @@ class FollowedMosquesPage extends ConsumerWidget {
                 children: [
                   for (final m in list)
                     ListTile(
-                      leading: const Icon(Icons.mosque),
+                      leading: const Icon(MoeslimIcons.masjid),
                       title: Text(m.name),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () =>
@@ -63,7 +64,7 @@ class _MosqueSearch extends SearchDelegate<void> {
 
   @override
   List<Widget> buildActions(BuildContext context) => [
-    IconButton(icon: const Icon(Icons.clear), onPressed: () => query = ''),
+    IconButton(icon: const Icon(MoeslimIcons.tutup), onPressed: () => query = ''),
   ];
 
   @override
@@ -85,7 +86,7 @@ class _MosqueSearch extends SearchDelegate<void> {
               ListTile(
                 title: Text(m['name'] as String),
                 subtitle: Text('${m['city']}'),
-                trailing: const Icon(Icons.add),
+                trailing: const Icon(MoeslimIcons.tambah),
                 onTap: () async {
                   await ref
                       .read(favoriteMosqueRepoProvider)
@@ -166,7 +167,7 @@ class _FollowedMosqueDetailPageState extends ConsumerState<FollowedMosqueDetailP
           children: [
             if (c != null)
               Text(
-                '${_offline ? 'Offline — ' : ''}terakhir sinkron ${shortDate(c.fetchedAt.toLocal())} ${hhmm(c.fetchedAt.toLocal())}',
+                '${_offline ? 'Offline: ' : ''}terakhir sinkron ${shortDate(c.fetchedAt.toLocal())} ${hhmm(c.fetchedAt.toLocal())}',
                 style: const TextStyle(fontSize: 12),
               ),
             if (c == null && !_offline) const Center(child: CircularProgressIndicator()),

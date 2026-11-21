@@ -80,25 +80,4 @@ void main() {
     });
   });
 
-  test('cakupan katalog per irama untuk seluruh mushaf', () {
-    final m = AudioManifest.fromJson({
-      'version': 1,
-      'recitations': [
-        for (final n in naghomStyles)
-          {
-            'id': 'q-${n.slug}',
-            'qari': 'Q',
-            'naghom': n.slug,
-            'base_url': 'u',
-            'license': 'L',
-            'attribution': 'A',
-            'surahs': n.slug == 'sika' ? [1] : 'all'
-          },
-      ],
-    });
-    final gaps = m.coverageGaps();
-    expect(gaps.keys, ['sika']);
-    expect(gaps['sika']!.length, 113);
-    expect(m.allNaghomForAllSurahs, isFalse);
-  });
 }

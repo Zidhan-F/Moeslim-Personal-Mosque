@@ -68,10 +68,10 @@ const roleDescriptions = {
   'operator': 'Konten & layar TV masjid',
 };
 const roleIcons = {
-  'admin': Icons.workspace_premium_outlined,
-  'bendahara': Icons.account_balance_wallet_outlined,
-  'pengurus': Icons.groups_outlined,
-  'operator': Icons.tv_outlined,
+  'admin': MoeslimIcons.admin,
+  'bendahara': MoeslimIcons.keuangan,
+  'pengurus': MoeslimIcons.pengurus,
+  'operator': MoeslimIcons.layarTv,
 };
 
 /// Lencana kecil berwarna (peran, kondisi, kategori). Teks selalu ≥ 4.5:1 di atas latar lembutnya.
@@ -232,13 +232,14 @@ class AsyncBody<T> extends StatelessWidget {
       padding: EdgeInsets.all(32),
       child: Center(child: CircularProgressIndicator()),
     ),
-    error: (e, _) => Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        children: [
-          Text('$e', textAlign: TextAlign.center),
-          TextButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh), label: const Text('Coba lagi')),
-        ],
+    error: (e, _) => BrandEmptyState(
+      art: BrandEmptyArt.tanpaInternet,
+      title: 'Data belum dapat dimuat',
+      message: '$e',
+      action: TextButton.icon(
+        onPressed: onRetry,
+        icon: const Icon(MoeslimIcons.refresh),
+        label: const Text('Coba lagi'),
       ),
     ),
     data: data,
@@ -248,19 +249,25 @@ class AsyncBody<T> extends StatelessWidget {
 class EmptyState extends StatelessWidget {
   final IconData icon;
   final String text;
-  const EmptyState(this.icon, this.text, {super.key});
+
+  /// Gambar empty state asset kit; bila null, tampil ikon.
+  final BrandEmptyArt? art;
+  final String? message;
+  const EmptyState(this.icon, this.text, {super.key, this.art, this.message});
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.all(28),
-    child: Column(
-      children: [
-        Icon(icon, size: 48, color: Theme.of(context).colorScheme.outline),
-        const SizedBox(height: 8),
-        Text(text, textAlign: TextAlign.center),
-      ],
-    ),
-  );
+  Widget build(BuildContext context) => art != null
+      ? BrandEmptyState(art: art!, title: text, message: message, artSize: 120)
+      : Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            children: [
+              Icon(icon, size: 48, color: Theme.of(context).colorScheme.outline),
+              const SizedBox(height: 8),
+              Text(text, textAlign: TextAlign.center),
+            ],
+          ),
+        );
 }
 
 void showSnack(BuildContext context, String text) =>

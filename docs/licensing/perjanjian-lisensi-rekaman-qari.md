@@ -1,11 +1,10 @@
-# Templat Perjanjian Lisensi Rekaman Tilawah (7 Irama / Murattal)
+# Templat Perjanjian Lisensi Rekaman Tilawah (Murattal)
 
 > Templat awal untuk dirundingkan dengan qari mitra. **Tinjau bersama penasihat hukum sebelum ditandatangani.**
 
 **Para pihak:** [Pengembang] ("Pengembang") dan [Nama qari] ("Qari").
 
-1. **Objek.** Rekaman tilawah oleh Qari: [irama: Bayyati/Hijaz/Shaba/Rast/Jiharkah/Sika/Nahawand dan/atau
-   murattal], untuk surah [daftar], dipotong per ayat (`SSSAAA.mp3`).
+1. **Objek.** Rekaman tilawah murattal oleh Qari, untuk surah [daftar], dipotong per ayat (`SSSAAA.mp3`).
 2. **Hak yang diberikan.** Lisensi non-eksklusif, tidak dapat dialihkan, untuk menyimpan, menyalin ke CDN,
    dan mendistribusikan rekaman **tanpa perubahan isi** melalui fitur Moeslim Personal, termasuk unduhan
    offline oleh pengguna.

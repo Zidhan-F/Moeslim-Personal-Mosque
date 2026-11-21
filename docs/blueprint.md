@@ -33,7 +33,7 @@ Al-Qur'an (dataset lokal hasil import sumber berlisensi — tidak ditulis tangan
 lanjut baca; kiblat; dzikir & tasbih (33/99/100/kustom); kalender Hijriah + koreksi lokal;
 tracker ibadah; modul edukasi 7 Naghom (Bayyati, Hijaz, Shaba, Rast, Jiharkah, Sika,
 Nahawand) dengan label "perlu telaah qari"; audio murottal per surah/ayat dengan **pilihan 7 irama**
-(rekaman berlisensi via katalog, unduh offline, ulang ayat — `docs/audio-naghom.md`); masjid favorit (lokal). Kota manual bila izin
+(rekaman berlisensi via katalog, unduh offline, ulang ayat — `docs/audio-murattal.md`); masjid favorit (lokal). Kota manual bila izin
 lokasi ditolak.
 
 ## 3. Masjid (MVP)

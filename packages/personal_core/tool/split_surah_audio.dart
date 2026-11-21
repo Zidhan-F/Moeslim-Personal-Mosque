@@ -3,7 +3,7 @@
 //
 //   dart run tool/split_surah_audio.dart <rekaman.wav|mp3> <label.txt> <nomor-surah> <folder-output>
 //
-// Contoh folder output: produksi/qari-fulan/bayyati  (satu folder per qari per irama)
+// Contoh folder output: produksi/qari-fulan/murattal  (satu folder per qari)
 import 'dart:io';
 
 import 'package:personal_core/personal_core.dart';

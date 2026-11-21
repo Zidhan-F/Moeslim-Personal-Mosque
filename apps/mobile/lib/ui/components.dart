@@ -110,7 +110,16 @@ class ArchHeader extends StatelessWidget {
         children: [
           Positioned.fill(
             child: dark
-                ? const ColoredBox(color: BrandColors.nightCard)
+                ? DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: BrandColors.nightCard,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: BrandColors.gold.withValues(alpha: .45)),
+                    ),
+                    child: CustomPaint(
+                      painter: IslamicPatternPainter(color: BrandColors.gold.withValues(alpha: .08), cell: 28),
+                    ),
+                  )
                 : const BrandArt(BrandIllustration.archHeader, fit: BoxFit.fill),
           ),
           Padding(
@@ -123,7 +132,7 @@ class ArchHeader extends StatelessWidget {
   }
 }
 
-/// Nomor dalam bingkai oktagon emas (nomor surah/ayat).
+/// Nomor dalam medali bintang delapan Rub el Hizb emas (nomor surah/ayat/doa).
 class OctagonNumber extends StatelessWidget {
   final int number;
   final double size;
@@ -137,7 +146,7 @@ class OctagonNumber extends StatelessWidget {
       child: Center(
         child: Text(
           '$number',
-          style: TextStyle(fontSize: size * (number > 99 ? .28 : .34), fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: size * (number > 99 ? .28 : .34), fontWeight: FontWeight.w700),
         ),
       ),
     ),
@@ -151,21 +160,27 @@ class _OctagonPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size s) {
     final c = s.center(Offset.zero);
-    final r = s.shortestSide / 2 - 1.5;
-    final path = Path();
-    for (var i = 0; i < 8; i++) {
-      final a = math.pi / 8 + i * math.pi / 4;
-      final pt = c + Offset(math.cos(a), math.sin(a)) * r;
-      i == 0 ? path.moveTo(pt.dx, pt.dy) : path.lineTo(pt.dx, pt.dy);
+    final r = s.shortestSide / 2 - 2.2;
+    final fill = Paint()
+      ..color = color.withValues(alpha: .10)
+      ..style = PaintingStyle.fill;
+    final stroke = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.35
+      ..strokeJoin = StrokeJoin.round;
+    // Dua persegi diputar 45° membentuk medali Rub el Hizb (bintang 8 sudut khas mushaf).
+    for (final rot in [0.0, math.pi / 4]) {
+      final path = Path();
+      for (var i = 0; i < 4; i++) {
+        final a = rot + math.pi / 4 + i * math.pi / 2;
+        final pt = c + Offset(math.cos(a), math.sin(a)) * r;
+        i == 0 ? path.moveTo(pt.dx, pt.dy) : path.lineTo(pt.dx, pt.dy);
+      }
+      path.close();
+      canvas.drawPath(path, fill);
+      canvas.drawPath(path, stroke);
     }
-    path.close();
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = color
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.6,
-    );
   }
 
   @override
@@ -197,12 +212,15 @@ class SectionHeader extends StatelessWidget {
   );
 }
 
-/// Tombol menu cepat: kartu putih, ikon emerald, label dua baris (target sentuh ≥ 48dp).
+/// Tombol menu cepat: kartu putih, ubin fitur asset kit (atau ikon emerald), label dua baris
+/// (target sentuh ≥ 48dp).
 class MenuTile extends StatelessWidget {
-  final IconData icon;
+  final IconData? icon;
+  final BrandTile? tile;
   final String label;
   final VoidCallback onTap;
-  const MenuTile({super.key, required this.icon, required this.label, required this.onTap});
+  const MenuTile({super.key, this.icon, this.tile, required this.label, required this.onTap})
+    : assert(icon != null || tile != null);
 
   @override
   Widget build(BuildContext context) {
@@ -218,7 +236,7 @@ class MenuTile extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: scheme.primary, size: 26),
+              if (tile != null) FeatureTileArt(tile!, size: 40) else Icon(icon, color: scheme.primary, size: 26),
               const SizedBox(height: 6),
               Text(
                 label,
@@ -308,10 +326,10 @@ class CoreSwitcher extends StatelessWidget {
             value: c,
             child: ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: Icon(c == AppCore.personal ? Icons.person_outline : Icons.mosque_outlined),
+              leading: Icon(c == AppCore.personal ? MoeslimIcons.profil : MoeslimIcons.masjid),
               title: Text(c == AppCore.personal ? 'Moeslim Personal' : 'Moeslim Mosque'),
               subtitle: Text(c == AppCore.personal ? 'Ibadah harian pribadi' : 'Fitur tambahan pengurus masjid'),
-              trailing: c == current ? Icon(Icons.check_circle, color: scheme.primary) : null,
+              trailing: c == current ? Icon(MoeslimIcons.berhasil, color: scheme.primary) : null,
             ),
           ),
       ],
@@ -320,11 +338,19 @@ class CoreSwitcher extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(current == AppCore.personal ? Icons.person : Icons.mosque, color: scheme.primary, size: 22),
+            Icon(
+              current == AppCore.personal ? MoeslimIcons.profil : MoeslimIcons.masjid,
+              color: scheme.primary,
+              size: 22,
+            ),
             const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(fontWeight: FontWeight.w700, color: scheme.primary, fontSize: 17),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontWeight: FontWeight.w700, color: scheme.primary, fontSize: 17),
+              ),
             ),
             Icon(Icons.keyboard_arrow_down, color: scheme.primary),
           ],

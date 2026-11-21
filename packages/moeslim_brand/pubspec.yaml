@@ -1,5 +1,5 @@
 name: moeslim_brand
-description: Identitas visual Moeslim PM — warna, tema, tipografi Inter, dan logo.
+description: Identitas visual Moeslim PM — warna, tema, tipografi Inter, logo, ikon, ilustrasi, dan aset asset kit.
 version: 0.1.0
 publish_to: none
 
@@ -10,6 +10,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_svg: ^2.5.0
   material_ui: ^1.5.0
 
 dev_dependencies:
@@ -21,6 +22,13 @@ flutter:
   assets:
     - assets/logo/
     - assets/illustrations/
+    - assets/backgrounds/
+    - assets/patterns/
+    - assets/kit/tiles/
+    - assets/kit/empty/
+    - assets/kit/quran/
+    - assets/kit/decor/
+    - assets/kit/qibla/
   fonts:
     - family: Inter
       fonts:
@@ -34,6 +42,9 @@ flutter:
           weight: 700
         - asset: fonts/Inter-ExtraBold.ttf
           weight: 800
+    - family: MoeslimIcons
+      fonts:
+        - asset: fonts/MoeslimIcons.ttf
     - family: AmiriQuran
       fonts:
         - asset: fonts/AmiriQuran-Regular.ttf

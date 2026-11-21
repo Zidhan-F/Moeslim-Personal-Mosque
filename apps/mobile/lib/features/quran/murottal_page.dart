@@ -5,9 +5,9 @@ import 'package:personal_core/personal_core.dart';
 
 import '../../ui/components.dart';
 import 'audio/audio_providers.dart';
-import 'audio/naghom_player_bar.dart';
+import 'audio/quran_player_bar.dart';
 
-/// Halaman Murottal: dengarkan surah utuh dengan qari & irama pilihan, kecepatan, ulang, unduh, daftar putar.
+/// Halaman Murottal: dengarkan surah utuh dengan qari pilihan, kecepatan, ulang, unduh, daftar putar.
 class MurottalPage extends ConsumerStatefulWidget {
   final int initialSurah;
   const MurottalPage({super.key, this.initialSurah = 1});
@@ -24,7 +24,7 @@ class _MurottalPageState extends ConsumerState<MurottalPage> {
     super.initState();
     Future.microtask(() {
       final p = ref.read(quranPlayerProvider);
-      if (p.surah == null) ref.read(quranPlayerProvider.notifier).prepare(widget.initialSurah, prefer: murattalKey);
+      if (p.surah == null) ref.read(quranPlayerProvider.notifier).prepare(widget.initialSurah);
     });
   }
 
@@ -33,8 +33,7 @@ class _MurottalPageState extends ConsumerState<MurottalPage> {
 
   Future<void> _playSurah(int number) async {
     final ctl = ref.read(quranPlayerProvider.notifier);
-    final current = ref.read(quranPlayerProvider).naghom;
-    await ctl.prepare(number, prefer: current);
+    await ctl.prepare(number);
     await ctl.playFrom(1);
   }
 
@@ -42,10 +41,8 @@ class _MurottalPageState extends ConsumerState<MurottalPage> {
   Widget build(BuildContext context) {
     final player = ref.watch(quranPlayerProvider);
     final ctl = ref.read(quranPlayerProvider.notifier);
-    final manifest = ref.watch(audioManifestProvider).value ?? AudioManifest.empty;
     final surahNo = player.surah ?? widget.initialSurah;
     final surah = surahs[surahNo - 1];
-    final option = manifest.optionsFor(surahNo).where((o) => o.key == player.naghom).firstOrNull;
     final rec = player.recitation;
     final t = Theme.of(context).textTheme;
     final scheme = Theme.of(context).colorScheme;
@@ -65,7 +62,7 @@ class _MurottalPageState extends ConsumerState<MurottalPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(option?.label ?? 'Qari\' / Murottal', style: const TextStyle(color: BrandColors.cream)),
+                      const Text('Murottal', style: TextStyle(color: BrandColors.cream)),
                       Text(
                         rec?.qari ?? 'Belum ada rekaman',
                         key: const Key('murottal-qari'),
@@ -81,11 +78,11 @@ class _MurottalPageState extends ConsumerState<MurottalPage> {
           Card(
             child: ListTile(
               key: const Key('murottal-surah'),
-              leading: const Icon(Icons.menu_book, color: BrandColors.emerald),
+              leading: const Icon(MoeslimIcons.quranTerbuka, color: BrandColors.emerald),
               title: Text(surah.name, style: const TextStyle(fontWeight: FontWeight.w700)),
               subtitle: Text('Surah ke-${surah.number} • ${surah.ayahCount} Ayat'),
-              trailing: const Icon(Icons.graphic_eq),
-              onTap: () => showIramaSheet(context, surah),
+              trailing: const Icon(MoeslimIcons.audio),
+              onTap: () => showAudioSheet(context, surah),
             ),
           ),
           const SizedBox(height: 8),
@@ -116,7 +113,7 @@ class _MurottalPageState extends ConsumerState<MurottalPage> {
               ),
               IconButton(
                 tooltip: 'Ayat sebelumnya',
-                icon: const Icon(Icons.skip_previous, size: 32),
+                icon: const Icon(MoeslimIcons.sebelumnya, size: 32),
                 onPressed: rec == null ? null : () => ctl.skip(-1),
               ),
               IconButton.filled(
@@ -124,12 +121,12 @@ class _MurottalPageState extends ConsumerState<MurottalPage> {
                 iconSize: 40,
                 style: IconButton.styleFrom(minimumSize: const Size(72, 72)),
                 tooltip: player.playing ? 'Jeda' : 'Putar',
-                icon: Icon(player.playing ? Icons.pause : Icons.play_arrow),
+                icon: Icon(player.playing ? MoeslimIcons.pause : MoeslimIcons.play),
                 onPressed: rec == null ? null : () => player.queue.isEmpty ? ctl.playFrom(1) : ctl.togglePause(),
               ),
               IconButton(
                 tooltip: 'Ayat berikutnya',
-                icon: const Icon(Icons.skip_next, size: 32),
+                icon: const Icon(MoeslimIcons.selanjutnya, size: 32),
                 onPressed: rec == null ? null : () => ctl.skip(1),
               ),
               IconButton(tooltip: 'Berhenti', icon: const Icon(Icons.stop), onPressed: ctl.stop),
@@ -147,10 +144,14 @@ class _MurottalPageState extends ConsumerState<MurottalPage> {
                 ),
               ),
               Expanded(
-                child: _Chip(icon: Icons.graphic_eq, label: 'Irama', onTap: () => showIramaSheet(context, surah)),
+                child: _Chip(icon: MoeslimIcons.profil, label: 'Qari', onTap: () => showAudioSheet(context, surah)),
               ),
               Expanded(
-                child: _Chip(icon: Icons.download, label: 'Unduh Offline', onTap: () => showIramaSheet(context, surah)),
+                child: _Chip(
+                  icon: MoeslimIcons.unduh,
+                  label: 'Unduh Offline',
+                  onTap: () => showAudioSheet(context, surah),
+                ),
               ),
             ],
           ),
@@ -179,7 +180,7 @@ class _MurottalPageState extends ConsumerState<MurottalPage> {
               ),
               subtitle: Text('${s.ayahCount} ayat'),
               trailing: Icon(
-                s.number == surahNo && player.playing ? Icons.graphic_eq : Icons.play_circle_outline,
+                s.number == surahNo && player.playing ? MoeslimIcons.suara : MoeslimIcons.play,
                 color: scheme.primary,
               ),
               onTap: () => _playSurah(s.number),

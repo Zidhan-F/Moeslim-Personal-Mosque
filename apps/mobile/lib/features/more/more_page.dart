@@ -53,7 +53,7 @@ class MorePage extends ConsumerWidget {
                   const CircleAvatar(
                     radius: 28,
                     backgroundColor: BrandColors.cream,
-                    child: Icon(Icons.person, color: BrandColors.emerald, size: 32),
+                    child: Icon(MoeslimIcons.profil, color: BrandColors.emerald, size: 32),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -65,7 +65,7 @@ class MorePage extends ConsumerWidget {
                           style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700),
                         ),
                         Text(
-                          '${s.location.name} • ${s.method.label}',
+                          '${s.effectiveLocationName} • ${s.method.label}',
                           style: const TextStyle(color: BrandColors.cream),
                         ),
                       ],
@@ -75,7 +75,7 @@ class MorePage extends ConsumerWidget {
                     key: const Key('edit-name'),
                     tooltip: 'Ubah nama panggilan',
                     onPressed: () => _editName(context, ref, s),
-                    icon: const Icon(Icons.edit, color: Colors.white),
+                    icon: const Icon(MoeslimIcons.edit, color: Colors.white),
                   ),
                 ],
               ),
@@ -85,15 +85,15 @@ class MorePage extends ConsumerWidget {
             child: Column(
               children: [
                 ListTile(
-                  leading: const Icon(Icons.location_on_outlined),
+                  leading: const Icon(MoeslimIcons.lokasi),
                   title: const Text('Lokasi & metode salat'),
-                  subtitle: Text(s == null ? '' : '${s.location.name} • ${s.method.label}'),
+                  subtitle: Text(s == null ? '' : '${s.effectiveLocationSubtitle} • ${s.method.label}'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => push(const PrayerSettingsPage()),
                 ),
                 if (s != null) ...[
                   ListTile(
-                    leading: const Icon(Icons.dark_mode_outlined),
+                    leading: const Icon(MoeslimIcons.bulan),
                     title: const Text('Tampilan'),
                     trailing: SegmentedButton<AppThemeMode>(
                       showSelectedIcon: false,
@@ -135,10 +135,10 @@ class MorePage extends ConsumerWidget {
           Card(
             child: ListTile(
               key: const Key('masjid-entry'),
-              leading: const Icon(Icons.mosque, color: BrandColors.emerald),
+              leading: const Icon(MoeslimIcons.masjid, color: BrandColors.emerald),
               title: const Text('Moeslim Mosque'),
               subtitle: const Text(
-                'Untuk pengurus masjid: kas, agenda, petugas & TV Display. Layanan berbayar per masjid — '
+                'Untuk pengurus masjid: kas, agenda, petugas & TV Display. Layanan berbayar per masjid, '
                 'tidak diperlukan untuk fitur Personal.',
               ),
               isThreeLine: true,
@@ -152,7 +152,7 @@ class MorePage extends ConsumerWidget {
               children: [
                 ListTile(
                   key: const Key('about-licenses'),
-                  leading: const Icon(Icons.volunteer_activism),
+                  leading: const Icon(MoeslimIcons.laporan),
                   title: const Text('Tentang & Lisensi'),
                   subtitle: const Text('Gratis, non-komersial, tanpa iklan • atribusi sumber konten'),
                   trailing: const Icon(Icons.chevron_right),
@@ -162,7 +162,7 @@ class MorePage extends ConsumerWidget {
                   applicationName: 'Moeslim PM',
                   applicationVersion: '0.1.0',
                   applicationLegalese: 'Personal & Mosque',
-                  icon: Icon(Icons.info_outline),
+                  icon: Icon(MoeslimIcons.info),
                 ),
               ],
             ),

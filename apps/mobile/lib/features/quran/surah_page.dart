@@ -7,20 +7,17 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../../core/providers.dart';
 import '../../ui/components.dart';
 import 'audio/audio_providers.dart';
-import 'audio/naghom_player_bar.dart';
+import 'audio/quran_player_bar.dart';
 import 'murottal_page.dart';
 import 'quran_source.dart';
 import 'tajweed_view.dart';
 
 /// Pembaca mushaf per surah (desain "Mushaf"): ornamen judul, ayat ber-nomor oktagon, terjemahan,
-/// lompat ke ayat tertentu, dan bar pemutar ringkas dengan pilihan 7 irama.
+/// lompat ke ayat tertentu, dan bar pemutar murottal ringkas.
 class SurahPage extends ConsumerStatefulWidget {
   final Surah surah;
   final int? initialAyah;
-
-  /// Pilihan bacaan yang diutamakan saat dibuka (mis. dari halaman irama).
-  final String? preferredOption;
-  const SurahPage({super.key, required this.surah, this.initialAyah, this.preferredOption});
+  const SurahPage({super.key, required this.surah, this.initialAyah});
 
   @override
   ConsumerState<SurahPage> createState() => _SurahPageState();
@@ -37,9 +34,7 @@ class _SurahPageState extends ConsumerState<SurahPage> {
     super.initState();
     _loadBookmarks();
     ref.read(quranProgressProvider).setLastRead(AyahRef(surah.number, widget.initialAyah ?? 1));
-    Future.microtask(
-      () => ref.read(quranPlayerProvider.notifier).prepare(surah.number, prefer: widget.preferredOption),
-    );
+    Future.microtask(() => ref.read(quranPlayerProvider.notifier).prepare(surah.number));
   }
 
   Future<void> _loadBookmarks() async {
@@ -84,7 +79,11 @@ class _SurahPageState extends ConsumerState<SurahPage> {
     final settings = ref.watch(settingsProvider).value;
     final scale = settings?.fontScale ?? 1.0;
     final tajweedOn = settings?.tajweedColors ?? true;
-    final player = ref.watch(quranPlayerProvider);
+    final player = ref.watch(
+      quranPlayerProvider.select(
+        (p) => (recitation: p.recitation, surah: p.surah, ayah: p.current?.ayah, playing: p.playing),
+      ),
+    );
     final canPlay = player.recitation != null && player.surah == surah.number;
     final scheme = Theme.of(context).colorScheme;
     final t = Theme.of(context).textTheme;
@@ -92,7 +91,7 @@ class _SurahPageState extends ConsumerState<SurahPage> {
     Widget playButton(int ayah) => IconButton(
       key: Key('play-ayah-$ayah'),
       tooltip: 'Putar ayat $ayah',
-      icon: Icon(player.current?.ayah == ayah && player.playing ? Icons.graphic_eq : Icons.play_circle_outline),
+      icon: Icon(player.ayah == ayah && player.playing ? MoeslimIcons.suara : MoeslimIcons.play),
       onPressed: canPlay ? () => ref.read(quranPlayerProvider.notifier).playAyah(ayah) : null,
     );
 
@@ -107,14 +106,18 @@ class _SurahPageState extends ConsumerState<SurahPage> {
           ),
           Text('Surah ${surah.name}', style: t.titleMedium),
           Text('${surah.revelation} • ${surah.ayahCount} Ayat • Juz ${juzOf(surah.number, 1)}', style: t.bodySmall),
+          const Padding(
+            padding: EdgeInsets.only(top: 8),
+            child: BrandElementArt(BrandElement.ayahDivider, width: 150, height: 26),
+          ),
           if (showsBasmalaHeader(surah.number))
             Padding(
               key: const Key('basmala-header'),
               padding: const EdgeInsets.only(top: 14),
-              child: Text(
-                basmala,
+              child: TajweedText(
+                ayah: Ayah(surah.number, 0, basmala, tajweed: classifyTajweed(basmala)),
+                colored: tajweedOn,
                 textAlign: TextAlign.center,
-                textDirection: TextDirection.rtl,
                 style: quranTextStyle(fontSize: 26 * scale, color: scheme.primary),
               ),
             ),
@@ -151,7 +154,7 @@ class _SurahPageState extends ConsumerState<SurahPage> {
             itemBuilder: (_) => const [
               PopupMenuItem(
                 value: 'murottal',
-                child: ListTile(leading: Icon(Icons.headphones), title: Text('Buka Murottal')),
+                child: ListTile(leading: Icon(MoeslimIcons.audio), title: Text('Buka Murottal')),
               ),
               PopupMenuItem(
                 key: Key('tajweed-legend'),
@@ -162,7 +165,7 @@ class _SurahPageState extends ConsumerState<SurahPage> {
           ),
         ],
       ),
-      bottomNavigationBar: NaghomPlayerBar(surah: surah),
+      bottomNavigationBar: QuranPlayerBar(surah: surah),
       body: Column(
         children: [
           Material(
@@ -217,7 +220,7 @@ class _SurahPageState extends ConsumerState<SurahPage> {
                     if (index == 0) return header;
                     final a = ayat[index - 1];
                     final marked = _bookmarked.contains(a.number);
-                    final active = player.current?.ayah == a.number && player.surah == surah.number;
+                    final active = player.ayah == a.number && player.surah == surah.number;
                     return Container(
                       decoration: active
                           ? BoxDecoration(
@@ -236,7 +239,7 @@ class _SurahPageState extends ConsumerState<SurahPage> {
                               IconButton(
                                 tooltip: marked ? 'Hapus penanda' : 'Tandai ayat',
                                 icon: Icon(
-                                  marked ? Icons.bookmark : Icons.bookmark_border,
+                                  marked ? MoeslimIcons.bookmark : MoeslimIcons.penanda,
                                   color: marked ? BrandColors.goldText : null,
                                 ),
                                 onPressed: () async {

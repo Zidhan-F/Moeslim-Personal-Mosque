@@ -6,7 +6,6 @@ import 'package:personal_core/personal_core.dart';
 import '../../core/providers.dart';
 import '../../ui/components.dart';
 import 'murottal_page.dart';
-import 'naghom_pages.dart';
 import 'surah_page.dart';
 
 final _bookmarksProvider = FutureProvider.autoDispose((ref) => ref.watch(quranProgressProvider).bookmarks());
@@ -51,7 +50,7 @@ class _QuranPageState extends ConsumerState<QuranPage> {
         actions: [
           IconButton(
             tooltip: _searching ? 'Tutup pencarian' : 'Cari surah',
-            icon: Icon(_searching ? Icons.close : Icons.search),
+            icon: Icon(_searching ? MoeslimIcons.tutup : MoeslimIcons.pencarian),
             onPressed: () => setState(() {
               _searching = !_searching;
               _query = '';
@@ -121,18 +120,6 @@ class _SurahTab extends StatelessWidget {
                     ),
                     const BrandArt(BrandIllustration.heroQuran, height: 104),
                   ],
-                ),
-              ),
-              const SizedBox(height: 8),
-              Card(
-                color: Theme.of(context).colorScheme.secondaryContainer,
-                child: ListTile(
-                  key: const Key('naghom-entry'),
-                  leading: const Icon(Icons.graphic_eq),
-                  title: const Text('Belajar 7 Irama (Naghom)'),
-                  subtitle: const Text('Fitur andalan — dengarkan surah dengan irama pilihan'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NaghomCatalogPage())),
                 ),
               ),
             ],
@@ -220,7 +207,7 @@ class _MushafTab extends ConsumerWidget {
               FilledButton.tonalIcon(
                 key: const Key('continue-reading'),
                 onPressed: () => onOpen(lastRead?.surah ?? 1, lastRead?.ayah),
-                icon: const Icon(Icons.play_arrow),
+                icon: const Icon(MoeslimIcons.play),
                 label: const Text('Buka'),
               ),
             ],
@@ -230,9 +217,9 @@ class _MushafTab extends ConsumerWidget {
         Card(
           child: ListTile(
             key: const Key('open-murottal'),
-            leading: const Icon(Icons.headphones, color: BrandColors.emerald),
+            leading: const Icon(MoeslimIcons.audio, color: BrandColors.emerald),
             title: const Text('Murottal Al-Qur\'an', style: TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: const Text('Dengarkan dengan qari & 7 irama pilihan'),
+            subtitle: const Text('Dengarkan per ayat atau per surah dengan qari pilihan'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () =>
                 Navigator.of(context)
@@ -249,7 +236,7 @@ class _MushafTab extends ConsumerWidget {
           Card(
             margin: const EdgeInsets.symmetric(vertical: 4),
             child: ListTile(
-              leading: const Icon(Icons.bookmark, color: BrandColors.goldText),
+              leading: const Icon(MoeslimIcons.bookmark, color: BrandColors.goldText),
               title: Text('${surahs[b.surah - 1].name} : ${b.ayah}'),
               subtitle: Text('Juz ${juzOf(b.surah, b.ayah)}'),
               trailing: const Icon(Icons.chevron_right),

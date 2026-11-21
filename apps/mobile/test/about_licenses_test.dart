@@ -14,7 +14,7 @@ void main() {
           {
             'id': 'a',
             'qari': 'Qari A',
-            'naghom': 'rast',
+            'kind': 'murattal',
             'base_url': 'https://c/a',
             'license': 'CC BY-NC 4.0',
             'attribution': 'Rekaman Qari A — sumber X',

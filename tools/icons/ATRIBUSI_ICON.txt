@@ -1,0 +1,11 @@
+# ATTRIBUTION FOR GENERIC UI ICONS
+
+Icons in `05_IKON_UI/` are SVG path representations derived from glyphs in the installed Font Awesome v4 icon font.
+Original icon library: Font Awesome by Dave Gandy, https://fontawesome.com/v4/
+Font Awesome 4 license information: https://fontawesome.com/v4/license/
+The icon paths have been transformed geometrically and recolored for the Moeslim PM UI.
+Please check Font Awesome attribution and license requirements when redistributing these assets.
+
+No source font file is included in this ZIP.
+
+Special Islamic icons (`06_IKON_ISLAMI/`) and UI component SVGs are created for this Moeslim PM asset kit.

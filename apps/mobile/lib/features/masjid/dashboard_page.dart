@@ -23,7 +23,7 @@ class MosqueHomeTab extends ConsumerWidget {
     'storage_full': 'Penyimpanan penuh: unggah lampiran dihentikan, pencatatan kas tetap berjalan.',
     'transactions_soft_limit': 'Transaksi bulan ini melewati batas wajar 10.000.',
     'content_near_limit': 'Agenda & pengumuman aktif hampir 500. Arsipkan yang sudah selesai.',
-    'subscription_grace': 'Masa langganan berakhir — dalam masa tenggang 7 hari.',
+    'subscription_grace': 'Masa langganan berakhir (dalam masa tenggang 7 hari).',
     'subscription_expired': 'Langganan berakhir. Data hanya dapat dilihat & diekspor.',
   };
 
@@ -67,18 +67,18 @@ class MosqueHomeTab extends ConsumerWidget {
 
     final quick = <(IconData, String, VoidCallback)>[
       if (ctx.can('finance.write'))
-        (Icons.add_card_outlined, 'Catat Kas', () => _push(context, TransactionFormPage(mosqueId: ctx.id))),
+        (MoeslimIcons.keuangan, 'Catat Kas', () => _push(context, TransactionFormPage(mosqueId: ctx.id))),
       if (ctx.can('events.write'))
-        (Icons.event_available_outlined, 'Buat Kegiatan', () => _push(context, EventFormPage(ctx: ctx))),
+        (MoeslimIcons.kegiatan, 'Buat Kegiatan', () => _push(context, EventFormPage(ctx: ctx))),
       if (ctx.can('members.view'))
-        (Icons.groups_outlined, 'Kelola Pengurus', () => _push(context, MembersPage(ctx: ctx))),
-      if (ctx.can('staff.view')) (Icons.badge_outlined, 'Kelola Petugas', () => onOpenTab('Petugas')),
+        (MoeslimIcons.jamaah, 'Kelola Pengurus', () => _push(context, MembersPage(ctx: ctx))),
+      if (ctx.can('staff.view')) (MoeslimIcons.petugas, 'Kelola Petugas', () => onOpenTab('Petugas')),
       if (ctx.can('inventory.view'))
-        (Icons.inventory_2_outlined, 'Inventaris', () => _push(context, InventoryPage(ctx: ctx))),
-      if (ctx.can('display.view')) (Icons.tv_outlined, 'TV Display', () => _push(context, TvConfigPage(ctx: ctx))),
+        (MoeslimIcons.inventaris, 'Inventaris', () => _push(context, InventoryPage(ctx: ctx))),
+      if (ctx.can('display.view')) (MoeslimIcons.layarTv, 'TV Display', () => _push(context, TvConfigPage(ctx: ctx))),
       if (ctx.can('events.view'))
-        (Icons.campaign_outlined, 'Konten TV', () => _push(context, AnnouncementsPage(ctx: ctx))),
-      if (ctx.can('finance.view')) (Icons.bar_chart, 'Laporan', () => _push(context, ReportPage(ctx: ctx))),
+        (MoeslimIcons.pengumuman, 'Konten TV', () => _push(context, AnnouncementsPage(ctx: ctx))),
+      if (ctx.can('finance.view')) (MoeslimIcons.grafikBatang, 'Laporan', () => _push(context, ReportPage(ctx: ctx))),
     ];
 
     return Column(
@@ -90,7 +90,7 @@ class MosqueHomeTab extends ConsumerWidget {
             key: Key('warning-$w'),
             color: Theme.of(context).colorScheme.errorContainer,
             child: ListTile(
-              leading: Icon(Icons.warning_amber, color: Theme.of(context).colorScheme.onErrorContainer),
+              leading: Icon(MoeslimIcons.peringatan, color: Theme.of(context).colorScheme.onErrorContainer),
               title: Text(warningText[w] ?? w, style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer)),
             ),
           ),
@@ -106,7 +106,7 @@ class MosqueHomeTab extends ConsumerWidget {
             if (finance != null)
               StatTile(
                 key: const Key('stat-kas'),
-                icon: Icons.account_balance_wallet_outlined,
+                icon: MoeslimIcons.keuangan,
                 label: 'Kas Masjid',
                 value: rupiah(finance['balance'] as num),
                 caption: '${net >= 0 ? '+' : '−'}${rupiah(net.abs())} bln ini',
@@ -115,7 +115,7 @@ class MosqueHomeTab extends ConsumerWidget {
               ),
             StatTile(
               key: const Key('stat-kegiatan'),
-              icon: Icons.event_note_outlined,
+              icon: MoeslimIcons.kegiatan,
               label: 'Kegiatan',
               value: '${upcoming.length}',
               caption: 'akan datang',
@@ -123,7 +123,7 @@ class MosqueHomeTab extends ConsumerWidget {
             ),
             StatTile(
               key: const Key('stat-pengurus'),
-              icon: Icons.groups_outlined,
+              icon: MoeslimIcons.jamaah,
               label: 'Pengurus',
               value: members == null ? '-' : '${members['used']}/${members['limit']}',
               caption: 'akun aktif',
@@ -131,7 +131,7 @@ class MosqueHomeTab extends ConsumerWidget {
             ),
             StatTile(
               key: const Key('stat-tv'),
-              icon: Icons.tv_outlined,
+              icon: MoeslimIcons.layarTv,
               label: 'TV Display',
               value: '${displays['online'] ?? 0}/${displays['active'] ?? 0}',
               caption: 'online',
@@ -155,10 +155,7 @@ class MosqueHomeTab extends ConsumerWidget {
         Card(
           margin: EdgeInsets.zero,
           child: staff.isEmpty
-              ? const ListTile(
-                  leading: Icon(Icons.event_busy_outlined),
-                  title: Text('Belum ada jadwal petugas hari ini'),
-                )
+              ? const ListTile(leading: Icon(MoeslimIcons.kalender), title: Text('Belum ada jadwal petugas hari ini'))
               : Column(
                   children: [
                     for (final s in staff)
@@ -179,7 +176,7 @@ class MosqueHomeTab extends ConsumerWidget {
         Card(
           margin: EdgeInsets.zero,
           child: upcoming.isEmpty
-              ? const ListTile(leading: Icon(Icons.event_outlined), title: Text('Belum ada agenda mendatang'))
+              ? const ListTile(leading: Icon(MoeslimIcons.kalender), title: Text('Belum ada agenda mendatang'))
               : Column(
                   children: [
                     for (final e in upcoming)
@@ -204,13 +201,13 @@ class _RecentActivity extends ConsumerWidget {
   const _RecentActivity({required this.ctx});
 
   static IconData _icon(String action) => switch (action.split('.').first) {
-    'finance' => Icons.receipt_long_outlined,
-    'event' || 'announcement' => Icons.event_note_outlined,
-    'staff' => Icons.badge_outlined,
-    'inventory' => Icons.inventory_2_outlined,
-    'member' || 'invitation' => Icons.group_add_outlined,
-    'display' => Icons.tv_outlined,
-    _ => Icons.history,
+    'finance' => MoeslimIcons.laporan,
+    'event' || 'announcement' => MoeslimIcons.kegiatan,
+    'staff' => MoeslimIcons.petugas,
+    'inventory' => MoeslimIcons.inventaris,
+    'member' || 'invitation' => MoeslimIcons.daftarAkun,
+    'display' => MoeslimIcons.layarTv,
+    _ => MoeslimIcons.histori,
   };
 
   static String _label(String action) =>

@@ -60,7 +60,6 @@ final audioPrefsProvider = Provider((ref) => AudioPreferenceRepository(ref.watch
 
 class PlayerState {
   final int? surah;
-  final String? naghom;
   final Recitation? recitation;
   final List<AudioTrack> queue;
   final int? index;
@@ -73,7 +72,6 @@ class PlayerState {
 
   const PlayerState({
     this.surah,
-    this.naghom,
     this.recitation,
     this.queue = const [],
     this.index,
@@ -89,7 +87,6 @@ class PlayerState {
 
   PlayerState copyWith({
     int? surah,
-    String? naghom,
     Recitation? recitation,
     List<AudioTrack>? queue,
     int? index,
@@ -102,17 +99,19 @@ class PlayerState {
     Duration? duration,
   }) => PlayerState(
     surah: surah ?? this.surah,
-    naghom: naghom ?? this.naghom,
     recitation: recitation ?? this.recitation,
     queue: queue ?? this.queue,
     index: index ?? this.index,
     playing: playing ?? this.playing,
     repeatAyah: repeatAyah ?? this.repeatAyah,
     error: clearError ? null : (error ?? this.error),
+    speed: speed ?? this.speed,
+    position: position ?? this.position,
+    duration: duration ?? this.duration,
   );
 }
 
-/// Pemutar murottal dengan pilihan 7 irama naghom per surah / per ayat.
+/// Pemutar murottal per surah / per ayat dengan pilihan qari.
 class QuranPlayer extends Notifier<PlayerState> {
   final _subs = <StreamSubscription>[];
 
@@ -135,35 +134,27 @@ class QuranPlayer extends Notifier<PlayerState> {
     return const PlayerState();
   }
 
-  /// Siapkan pilihan untuk surah: pakai preferensi terakhir bila tersedia, jika tidak irama pertama yang ada.
-  Future<void> prepare(int surah, {String? prefer}) async {
+  /// Siapkan qari untuk surah: pakai preferensi terakhir bila tersedia, jika tidak qari pertama.
+  Future<void> prepare(int surah) async {
     if (state.surah != null && state.surah != surah && state.playing) await _engine.stop();
     final manifest = await ref.read(audioManifestProvider.future);
-    final options = manifest.optionsFor(surah);
-    final prefs = ref.read(audioPrefsProvider);
-    final prefNaghom = await prefs.naghom(), prefRec = await prefs.recitationId();
-    final opt =
-        options.where((o) => o.available && o.key == prefNaghom).firstOrNull ??
-        options.where((o) => o.available).firstOrNull;
-    final rec = opt == null
-        ? null
-        : (opt.recitations.where((r) => r.id == prefRec).firstOrNull ?? opt.recitations.first);
-    state = PlayerState(surah: surah, naghom: opt?.key, recitation: rec, repeatAyah: state.repeatAyah);
+    final options = manifest.recitationsFor(surah);
+    final prefRec = await ref.read(audioPrefsProvider).recitationId();
+    final rec = options.where((r) => r.id == prefRec).firstOrNull ?? options.firstOrNull;
+    state = PlayerState(surah: surah, recitation: rec, repeatAyah: state.repeatAyah);
   }
 
-  /// Pilih bacaan: [slug] = `murattal` atau slug irama.
-  Future<void> selectNaghom(String slug, {String? recitationId}) async {
+  /// Pilih qari; bila sedang memutar, lanjutkan dari ayat yang sama.
+  Future<void> selectRecitation(String id) async {
     final surah = state.surah;
     if (surah == null) return;
     final manifest = await ref.read(audioManifestProvider.future);
-    final opt = manifest.optionsFor(surah).firstWhere((o) => o.key == slug);
-    if (!opt.available) return;
-    final rec = opt.recitations.where((r) => r.id == recitationId).firstOrNull ?? opt.recitations.first;
+    final rec = manifest.recitationsFor(surah).where((r) => r.id == id).firstOrNull;
+    if (rec == null) return;
     final wasPlaying = state.playing;
     final resumeAyah = state.current?.ayah;
-    state = state.copyWith(naghom: slug, recitation: rec, clearError: true);
-    await ref.read(audioPrefsProvider).save(naghom: slug, recitationId: rec.id);
-    // Ganti irama saat memutar: lanjutkan dari ayat yang sama dengan irama baru.
+    state = state.copyWith(recitation: rec, clearError: true);
+    await ref.read(audioPrefsProvider).save(recitationId: rec.id);
     if (wasPlaying && resumeAyah != null) await playFrom(resumeAyah);
   }
 
@@ -186,16 +177,6 @@ class QuranPlayer extends Notifier<PlayerState> {
     } catch (e) {
       state = state.copyWith(error: 'Gagal memutar audio. Periksa koneksi atau unduh untuk offline.');
     }
-  }
-
-  /// Contoh irama untuk modul Naghom: ayat pertama Al-Fatihah dengan irama [slug].
-  Future<bool> playSample(String slug) async {
-    await prepare(1);
-    final manifest = await ref.read(audioManifestProvider.future);
-    if (!manifest.naghomOptionsFor(1).any((o) => o.style.slug == slug && o.available)) return false;
-    await selectNaghom(slug);
-    await playAyah(1);
-    return true;
   }
 
   /// Lompat ke ayat sebelumnya/berikutnya (delta -1/+1) dalam surah aktif.

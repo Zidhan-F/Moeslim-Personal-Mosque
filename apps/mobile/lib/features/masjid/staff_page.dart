@@ -28,10 +28,10 @@ const prayerLabels = {
 };
 
 IconData dutyIcon(String? duty) => switch (duty) {
-  'imam' => Icons.person_outline,
-  'muadzin' => Icons.campaign_outlined,
+  'imam' => MoeslimIcons.imam,
+  'muadzin' => MoeslimIcons.adzan,
   'khatib' => Icons.record_voice_over_outlined,
-  _ => Icons.badge_outlined,
+  _ => MoeslimIcons.petugas,
 };
 
 String dutyLabel(String? duty, String? prayer) =>
@@ -70,10 +70,10 @@ class _StaffPageState extends ConsumerState<StaffPage> {
           Row(
             children: [
               for (final (v, l, i) in const [
-                ('imam', 'Imam', Icons.person_outline),
-                ('muadzin', 'Muadzin', Icons.campaign_outlined),
+                ('imam', 'Imam', MoeslimIcons.imam),
+                ('muadzin', 'Muadzin', MoeslimIcons.adzan),
                 ('khatib', 'Khatib', Icons.record_voice_over_outlined),
-                (null, 'Semua', Icons.grid_view),
+                (null, 'Semua', MoeslimIcons.grid),
               ])
                 Expanded(
                   child: Padding(
@@ -183,7 +183,7 @@ class _StaffPageState extends ConsumerState<StaffPage> {
                                 IconButton(
                                   key: Key('add-staff-${day.day}'),
                                   tooltip: 'Tambah petugas',
-                                  icon: const Icon(Icons.edit_outlined, color: BrandColors.emerald),
+                                  icon: const Icon(MoeslimIcons.edit, color: BrandColors.emerald),
                                   onPressed: () => _openForm(day),
                                 ),
                             ],
@@ -215,7 +215,7 @@ class _StaffPageState extends ConsumerState<StaffPage> {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Hapus penugasan?'),
-        content: Text('${a['name']} — ${dutyLabel(a['duty_type'] as String?, a['prayer'] as String?)}'),
+        content: Text('${a['name']}: ${dutyLabel(a['duty_type'] as String?, a['prayer'] as String?)}'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
           FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Hapus')),
@@ -321,7 +321,7 @@ class _StaffFormState extends ConsumerState<_StaffForm> {
             initialValue: _prayer,
             decoration: const InputDecoration(labelText: 'Waktu salat (opsional)'),
             items: [
-              const DropdownMenuItem(value: null, child: Text('—')),
+              const DropdownMenuItem(value: null, child: Text('Tidak ditentukan')),
               for (final p in prayerLabels.entries) DropdownMenuItem(value: p.key, child: Text(p.value)),
             ],
             onChanged: (v) => setState(() => _prayer = v),

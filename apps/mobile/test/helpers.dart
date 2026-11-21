@@ -1,19 +1,29 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:moeslim_mobile/app.dart';
+import 'package:moeslim_mobile/core/adzan_service.dart';
+import 'package:moeslim_mobile/core/location_service.dart';
 import 'package:moeslim_mobile/core/providers.dart';
+import 'package:moeslim_mobile/features/ibadah/doa_pages.dart';
 import 'package:moeslim_mobile/features/ibadah/qibla_page.dart';
 import 'package:moeslim_mobile/features/masjid/session.dart';
-
-import 'dart:async';
 
 import 'package:moeslim_mobile/features/quran/audio/audio_engine.dart';
 import 'package:moeslim_mobile/features/quran/audio/audio_providers.dart';
 import 'package:moeslim_mobile/features/quran/audio/offline_audio.dart';
 import 'package:moeslim_mobile/features/quran/quran_source.dart';
 import 'package:personal_core/personal_core.dart';
+import 'package:shared_prayer/shared_prayer.dart';
+
+List<DailyDua>? _cachedDailyDuas;
+
+List<DailyDua> _defaultDailyDuas() =>
+    _cachedDailyDuas ??= parseDailyDuasJson(File('assets/doa/daily_duas.json').readAsStringSync());
 
 class FakeQuranSource implements QuranTextSource {
   final Map<int, List<Ayah>> data;
@@ -88,6 +98,115 @@ class FakeOfflineAudio implements OfflineAudioStore {
 /// 1 Jan 2025 05:00 UTC = 12:00 WIB (Jakarta).
 final fixedNow = DateTime.utc(2025, 1, 1, 5, 0, 0);
 
+final defaultJakartaGps = GpsPosition(
+  latitude: -6.1754,
+  longitude: 106.8272,
+  altitude: 10.0,
+  accuracyMeters: 6.0,
+  timestamp: DateTime.utc(2025, 1, 1, 5, 0, 0),
+);
+
+class FakeLocationService implements LocationService {
+  bool serviceEnabled;
+  LocationPermissionState permission;
+  LocationPermissionState requestResult;
+  GpsPosition? currentPosition;
+  Object? positionError;
+  int openLocationSettingsCalls = 0;
+  int openAppSettingsCalls = 0;
+  int requestPermissionCalls = 0;
+
+  final serviceController = StreamController<bool>.broadcast();
+  final positionController = StreamController<GpsPosition>.broadcast();
+
+  FakeLocationService({
+    this.serviceEnabled = true,
+    this.permission = LocationPermissionState.granted,
+    LocationPermissionState? requestResult,
+    GpsPosition? currentPosition,
+    bool holdPosition = false,
+    this.positionError,
+  })  : requestResult = requestResult ?? permission,
+        currentPosition = holdPosition ? null : (currentPosition ?? defaultJakartaGps);
+
+  @override
+  Future<bool> isServiceEnabled() async => serviceEnabled;
+
+  @override
+  Stream<bool> serviceStatusStream() => serviceController.stream;
+
+  @override
+  Future<LocationPermissionState> checkPermission() async => permission;
+
+  @override
+  Future<LocationPermissionState> requestPermission() async {
+    requestPermissionCalls++;
+    permission = requestResult;
+    return permission;
+  }
+
+  @override
+  Future<GpsPosition> getCurrentPosition() async {
+    if (positionError != null) throw positionError!;
+    if (currentPosition != null) return currentPosition!;
+    return positionController.stream.first;
+  }
+
+  @override
+  Stream<GpsPosition> positionStream() => positionController.stream;
+
+  @override
+  Future<bool> openLocationSettings() async {
+    openLocationSettingsCalls++;
+    return true;
+  }
+
+  @override
+  Future<bool> openAppSettings() async {
+    openAppSettingsCalls++;
+    return true;
+  }
+
+  void dispose() {
+    serviceController.close();
+    positionController.close();
+  }
+}
+
+class FakeDeclinationService implements DeclinationService {
+  final double declinationDegrees;
+  const FakeDeclinationService([this.declinationDegrees = 0.0]);
+
+  @override
+  Future<double> getDeclination(GpsPosition position) async => declinationDegrees;
+}
+
+class FakeAdzanAlarmBackend implements AdzanAlarmBackend {
+  List<ScheduledAdzanAlarm> syncedAlarms = const [];
+  final List<AdzanMuadzin> playedMuadzins = [];
+  final List<Prayer?> playedPrayers = [];
+  int stopCalls = 0;
+
+  @override
+  Future<void> syncAlarms(List<ScheduledAdzanAlarm> alarms, PersonalSettings settings) async {
+    syncedAlarms = List.unmodifiable(alarms);
+  }
+
+  @override
+  Future<void> playAdzan(AdzanMuadzin muadzin, {Prayer? prayer}) async {
+    playedMuadzins.add(muadzin);
+    playedPrayers.add(prayer);
+  }
+
+  @override
+  Future<void> stopAdzan() async {
+    stopCalls++;
+  }
+
+  @override
+  Future<void> dispose() async {}
+}
+
 Future<ProviderContainer> pumpApp(
   WidgetTester tester, {
   KeyValueStore? store,
@@ -95,9 +214,13 @@ Future<ProviderContainer> pumpApp(
   http.Client? client,
   TokenStore? tokens,
   QuranTextSource? quran,
+  List<DailyDua>? dailyDuas,
   AudioManifest? manifest,
   AudioEngine? engine,
   OfflineAudioStore? offline,
+  LocationService? locationService,
+  DeclinationService? declinationService,
+  AdzanAlarmBackend? adzanBackend,
   bool showOnboarding = false,
 }) async {
   store ??= InMemoryStore();
@@ -105,12 +228,19 @@ Future<ProviderContainer> pumpApp(
     final repo = SettingsRepository(store);
     await repo.save((await repo.load()).copyWith(onboardingDone: true));
   }
+  final ownLocation = locationService == null ? FakeLocationService() : null;
+  if (ownLocation != null) addTearDown(ownLocation.dispose);
   final container = ProviderContainer(
     overrides: [
       storeProvider.overrideWithValue(store),
       nowProvider.overrideWith((ref) => Stream.value(now ?? fixedNow)),
       headingProvider.overrideWith((ref) => Stream.value(null)),
+      compassProvider.overrideWith((ref) => Stream.value(null)),
+      locationServiceProvider.overrideWithValue(locationService ?? ownLocation!),
+      declinationServiceProvider.overrideWithValue(declinationService ?? const FakeDeclinationService()),
+      adzanBackendProvider.overrideWithValue(adzanBackend ?? FakeAdzanAlarmBackend()),
       quranSourceProvider.overrideWithValue(quran ?? FakeQuranSource()),
+      dailyDuasProvider.overrideWith((ref) async => dailyDuas ?? _defaultDailyDuas()),
       audioManifestProvider.overrideWith((ref) async => manifest ?? AudioManifest.empty),
       audioEngineProvider.overrideWithValue(engine ?? FakeAudioEngine()),
       offlineAudioProvider.overrideWithValue(offline ?? FakeOfflineAudio()),
@@ -125,8 +255,8 @@ Future<ProviderContainer> pumpApp(
   return container;
 }
 
-/// Buka lembar pilihan irama dari bar pemutar mushaf.
-Future<void> openIramaSheet(WidgetTester tester) async {
-  await tester.tap(find.byKey(const Key('irama-picker')));
+/// Buka lembar audio (pilih qari) dari bar pemutar mushaf.
+Future<void> openAudioSheet(WidgetTester tester) async {
+  await tester.tap(find.byKey(const Key('audio-picker')));
   await tester.pumpAndSettle();
 }

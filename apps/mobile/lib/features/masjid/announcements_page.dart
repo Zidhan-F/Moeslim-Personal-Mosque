@@ -43,7 +43,7 @@ class _AnnouncementsPageState extends ConsumerState<AnnouncementsPage> {
           ? FloatingActionButton.extended(
               heroTag: null,
               key: const Key('add-announcement'),
-              icon: const Icon(Icons.add),
+              icon: const Icon(MoeslimIcons.tambah),
               label: const Text('Tambah Pengumuman'),
               onPressed: () => showModalBottomSheet(
                 context: context,
@@ -72,7 +72,7 @@ class _AnnouncementsPageState extends ConsumerState<AnnouncementsPage> {
                 value: anns,
                 onRetry: () => ref.invalidate(announcementsProvider(ctx.id)),
                 data: (list) => list.isEmpty
-                    ? const EmptyState(Icons.campaign_outlined, 'Belum ada pengumuman aktif')
+                    ? const EmptyState(MoeslimIcons.pengumuman, 'Belum ada pengumuman aktif')
                     : Column(
                         children: [
                           for (final a in list)
@@ -85,7 +85,7 @@ class _AnnouncementsPageState extends ConsumerState<AnnouncementsPage> {
                                   children: [
                                     Row(
                                       children: [
-                                        const Icon(Icons.campaign_outlined, color: BrandColors.emerald),
+                                        const Icon(MoeslimIcons.pengumuman, color: BrandColors.emerald),
                                         const SizedBox(width: 8),
                                         Expanded(
                                           child: Text(
@@ -96,7 +96,7 @@ class _AnnouncementsPageState extends ConsumerState<AnnouncementsPage> {
                                         if (_canWrite)
                                           IconButton(
                                             tooltip: 'Arsipkan',
-                                            icon: const Icon(Icons.archive_outlined),
+                                            icon: const Icon(MoeslimIcons.arsip),
                                             onPressed: () => _run(() async {
                                               await ref
                                                   .read(masjidApiProvider)
@@ -112,7 +112,7 @@ class _AnnouncementsPageState extends ConsumerState<AnnouncementsPage> {
                                       children: [
                                         StatusBadge(
                                           a['visibility'] == 'public' ? 'Publik' : 'Internal',
-                                          icon: a['visibility'] == 'public' ? Icons.public : Icons.lock_outline,
+                                          icon: a['visibility'] == 'public' ? MoeslimIcons.web : MoeslimIcons.kunci,
                                         ),
                                         const Spacer(),
                                         const Text('Tayang di TV', style: TextStyle(fontSize: 12.5)),
@@ -142,7 +142,7 @@ class _AnnouncementsPageState extends ConsumerState<AnnouncementsPage> {
                 value: events,
                 onRetry: () => ref.invalidate(eventsProvider(ctx.id)),
                 data: (list) => list.isEmpty
-                    ? const EmptyState(Icons.event_note_outlined, 'Belum ada agenda aktif')
+                    ? const EmptyState(MoeslimIcons.kegiatan, 'Belum ada agenda aktif', art: BrandEmptyArt.agenda)
                     : Card(
                         margin: EdgeInsets.zero,
                         child: Column(
@@ -150,7 +150,7 @@ class _AnnouncementsPageState extends ConsumerState<AnnouncementsPage> {
                             for (final e in list)
                               SwitchListTile(
                                 key: Key('event-display-${e['id']}'),
-                                secondary: const Icon(Icons.event_available_outlined, color: BrandColors.emerald),
+                                secondary: const Icon(MoeslimIcons.kegiatan, color: BrandColors.emerald),
                                 title: Text('${e['title']}'),
                                 subtitle: Text(
                                   '${shortDate(DateTime.parse(e['starts_at'] as String).toLocal())} • ${categoryLabel(e['category'] as String?)}',

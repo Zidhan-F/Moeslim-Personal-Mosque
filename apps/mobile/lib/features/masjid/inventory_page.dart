@@ -17,10 +17,10 @@ const conditionLabels = {
 };
 
 StatusBadge conditionBadge(String? c) => switch (c) {
-  'baik' => const StatusBadge('Baik', icon: Icons.verified_outlined, color: MosqueColors.income),
+  'baik' => const StatusBadge('Baik', icon: MoeslimIcons.berhasil, color: MosqueColors.income),
   'rusak_ringan' => const StatusBadge('Rusak ringan', icon: Icons.build_outlined, color: MosqueColors.warning),
-  'rusak_berat' => const StatusBadge('Rusak berat', icon: Icons.report_outlined, color: MosqueColors.expense),
-  _ => const StatusBadge('Hilang', icon: Icons.help_outline, color: Color(0xFF5B5F5E)),
+  'rusak_berat' => const StatusBadge('Rusak berat', icon: MoeslimIcons.peringatan, color: MosqueColors.expense),
+  _ => const StatusBadge('Hilang', icon: MoeslimIcons.bantuan, color: Color(0xFF5B5F5E)),
 };
 
 /// Inventaris Masjid: pencarian, filter kondisi (dengan jumlah), daftar, detail + riwayat perawatan.
@@ -46,7 +46,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
           ? FloatingActionButton.extended(
               heroTag: null,
               key: const Key('add-inventory'),
-              icon: const Icon(Icons.add),
+              icon: const Icon(MoeslimIcons.tambah),
               label: const Text('Tambah Barang'),
               onPressed: () => showModalBottomSheet(
                 context: context,
@@ -64,7 +64,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
             TextField(
               key: const Key('inventory-search'),
               decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.search),
+                prefixIcon: Icon(MoeslimIcons.pencarian),
                 hintText: 'Cari inventaris (nama atau kode)',
               ),
               onChanged: (v) => setState(() => _q = v.trim().toLowerCase()),
@@ -100,7 +100,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    if (shown.isEmpty) const EmptyState(Icons.inventory_2_outlined, 'Belum ada barang'),
+                    if (shown.isEmpty) const EmptyState(MoeslimIcons.inventaris, 'Belum ada barang'),
                     for (final i in shown)
                       Card(
                         margin: const EdgeInsets.only(bottom: 8),
@@ -113,7 +113,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                               color: BrandColors.emerald.withValues(alpha: .08),
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Icon(Icons.inventory_2_outlined, color: BrandColors.emerald),
+                            child: const Icon(MoeslimIcons.inventaris, color: BrandColors.emerald),
                           ),
                           title: Text('${i['name']}', style: const TextStyle(fontWeight: FontWeight.w700)),
                           subtitle: Text([?i['code'] as String?, ?i['location'] as String?].join(' • ')),
@@ -192,14 +192,14 @@ class InventoryDetailPage extends ConsumerWidget {
                         conditionBadge(i['condition'] as String?),
                         const Divider(height: 24),
                         row(Icons.numbers, 'Jumlah', '${i['quantity']} unit'),
-                        row(Icons.location_on_outlined, 'Lokasi', '${i['location'] ?? '-'}'),
-                        row(Icons.person_outline, 'Penanggung jawab', '${i['responsible'] ?? '-'}'),
+                        row(MoeslimIcons.lokasi, 'Lokasi', '${i['location'] ?? '-'}'),
+                        row(MoeslimIcons.profil, 'Penanggung jawab', '${i['responsible'] ?? '-'}'),
                         row(
                           Icons.build_outlined,
                           'Perawatan terakhir',
                           logs.isEmpty ? '-' : shortDate(DateTime.parse(logs.first['date'] as String)),
                         ),
-                        if (i['notes'] != null) row(Icons.notes, 'Catatan', '${i['notes']}'),
+                        if (i['notes'] != null) row(MoeslimIcons.keterangan, 'Catatan', '${i['notes']}'),
                       ],
                     ),
                   ),
@@ -208,7 +208,7 @@ class InventoryDetailPage extends ConsumerWidget {
                     actionLabel: ctx.can('inventory.write') ? 'Catat' : null,
                     onAction: () => _addMaintenance(context, ref),
                   ),
-                  if (logs.isEmpty) const EmptyState(Icons.build_circle_outlined, 'Belum ada catatan perawatan'),
+                  if (logs.isEmpty) const EmptyState(Icons.build_outlined, 'Belum ada catatan perawatan'),
                   for (final l in logs)
                     Card(
                       margin: const EdgeInsets.only(bottom: 8),

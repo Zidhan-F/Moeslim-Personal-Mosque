@@ -5,8 +5,38 @@ idgham bighunnah/bilaghunnah/mutajanisain/mutaqaribain/mimi, ikhfa' haqiqi/syafa
 qalqalah, mad thabi'i/jaiz munfashil/wajib muttashil/lazim/'aridh lissukun, huruf tidak dibaca).
 Pengguna dapat mematikan pewarnaan (ikon di halaman surah) dan membuka **Panduan Warna Tajwid**.
 
-## Arsitektur: berbasis anotasi, bukan tebakan
-Warna berasal dari **dataset anotasi** — daftar rentang `(awal, akhir, aturan)` per ayat — yang
+## Status: seluruh 114 surah (6.236 ayat) sudah berwarna
+Anotasi dibuat saat build oleh **pengklasifikasi tajwid Moeslim PM**
+(`packages/personal_core/lib/src/content/tajweed_classifier.dart`) atas teks Tanzil Uthmani yang
+terpasang, lalu disimpan di aset (`tj` per ayat, `[awal, akhir, indeks aturan]`). Hasil saat ini:
+59.081 rentang warna; ke-18 aturan muncul.
+
+![Al-Baqarah](brand/screenshots/tajwid/baqarah.png) ![Al-Baqarah gelap](brand/screenshots/tajwid/baqarah_gelap.png)
+
+```bash
+cd packages/personal_core
+dart run tool/annotate_tajweed.dart        # tulis ulang kolom tj di apps/mobile/assets/quran/*.json
+dart run tool/tajweed_preview.dart 2 6     # lihat rentang & aturan per ayat untuk telaah
+dart test test/tajweed_classifier_test.dart
+```
+
+### Kesetaraan dengan cpfair/quran-tajweed
+Semantik disamakan dengan classifier cpfair (data CC BY 4.0; kodenya tanpa lisensi sehingga **tidak disalin** —
+logika ditulis ulang):
+- Model huruf: huruf dasar + tanda (Mn); spasi dihitung sebagai "huruf"; alif kecil (U+0670) berdiri sendiri.
+- Nama & cakupan rentang tiap aturan sama (mis. ikhfa dari nun/tanwin sampai harakat huruf sesudahnya;
+  mad lazim/muttashil/munfashil = huruf mad + tanda maddah; ghunnah = seluruh huruf bertasydid).
+- Konvensi Tanzil: huruf yang melebur ditulis tanpa sukun, iqlab bertanda mim kecil, huruf tak dibaca bertanda
+  U+06DF, mad panjang bertanda U+0653. Seperti cpfair, mad thabi'i hanya diwarnai pada alif/wau/ya kecil, dan
+  mad 'aridh lissukun hanya di akhir ayat.
+- Vektor uji: keluaran cpfair untuk Al-Fatihah ayat 1 cocok persis.
+- Penyesuaian untuk edisi teks ini: tanda mim kecil (U+06ED) juga dipakai pada tanwin non-izhar, sehingga iqlab
+  hanya diberikan bila huruf sesudahnya ب; lafaz Allah di akhir ayat dikecualikan dari lam syamsiyah.
+
+Warna mode gelap diturunkan otomatis (dicampur 45% putih) agar tetap kontras.
+
+## Arsitektur: berbasis anotasi
+Warna berasal dari **anotasi** (dibuat classifier di atas, atau dataset luar) — daftar rentang `(awal, akhir, aturan)` per ayat — yang
 diimpor bersama teks:
 
 ```bash

@@ -9,9 +9,9 @@ import 'helpers.dart';
 BrandIllustration artOf(WidgetTester tester, Finder f) => tester.widget<BrandArt>(f).art;
 
 void main() {
-  testWidgets('onboarding memakai ilustrasi masjid & Al-Qur\'an sesuai visualisasi', (tester) async {
+  testWidgets('onboarding memakai ilustrasi masjid & Al-Qur\'an dari asset kit', (tester) async {
     await pumpApp(tester, showOnboarding: true);
-    expect(artOf(tester, find.byKey(const Key('onboarding-art-0'))), BrandIllustration.heroQuran);
+    expect(artOf(tester, find.byKey(const Key('onboarding-art-0'))), BrandIllustration.masjidPagi4);
   });
 
   testWidgets('kompas kiblat menampilkan Ka\'bah di arah kiblat', (tester) async {

@@ -125,7 +125,7 @@ class TvConfigPage extends ConsumerWidget {
                           shape: const StadiumBorder(),
                         ),
                         onPressed: devices.length >= limit ? null : () => _pair(context, ref),
-                        icon: const Icon(Icons.add_to_queue),
+                        icon: const Icon(MoeslimIcons.layarTv),
                         label: const Text('Hubungkan TV Baru'),
                       ),
                   ],
@@ -215,7 +215,11 @@ class _ScreenSlot extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(empty ? Icons.add : Icons.tv, color: empty ? scheme.outline : scheme.primary, size: 28),
+                  Icon(
+                    empty ? MoeslimIcons.tambah : MoeslimIcons.layarTv,
+                    color: empty ? scheme.outline : scheme.primary,
+                    size: 28,
+                  ),
                   Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
                   if (name != null)
                     Text(name!, style: const TextStyle(fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -227,7 +231,7 @@ class _ScreenSlot extends StatelessWidget {
                 right: 6,
                 top: 6,
                 child: Icon(
-                  online ? Icons.check_circle : Icons.cloud_off,
+                  online ? MoeslimIcons.berhasil : Icons.cloud_off,
                   size: 18,
                   color: online ? BrandColors.emerald : scheme.outline,
                   semanticLabel: online ? 'Online' : 'Offline',
@@ -386,7 +390,7 @@ class _ThemeCard extends StatelessWidget {
                     const Positioned(
                       right: -6,
                       top: -6,
-                      child: Icon(Icons.check_circle, color: BrandColors.gold, size: 22),
+                      child: Icon(MoeslimIcons.berhasil, color: BrandColors.gold, size: 22),
                     ),
                 ],
               ),

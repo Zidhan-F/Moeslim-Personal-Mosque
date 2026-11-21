@@ -5,7 +5,7 @@ Status: diterima (keputusan pemilik produk)
 **Satu aplikasi** dengan dua bagian:
 1. **Moeslim Personal — aplikasi utama.** Gratis, mandiri, dan **non-komersial**: tanpa iklan, tanpa
    pembelian, tanpa fitur premium, tanpa akun, tanpa penjualan/pelacakan data. Semua fitur Personal
-   (jadwal sholat, Al-Qur'an, 7 Irama Naghom, audio, tajwid, tasbih, tracker, kiblat, kalender, masjid
+   (jadwal sholat, Al-Qur'an, audio murottal, tajwid, tasbih, tracker, kiblat, kalender, masjid
    yang diikuti) berfungsi penuh tanpa pernah menyentuh Mosque.
 2. **Moeslim Mosque — fitur tambahan opsional** untuk pengurus masjid (kas, agenda, petugas, inventaris,
    TV Display). Berbayar Rp59.000/bulan per masjid **hanya bila dipakai**. Pengguna yang tidak

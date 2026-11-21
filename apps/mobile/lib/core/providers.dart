@@ -33,7 +33,6 @@ final settingsProvider = AsyncNotifierProvider<SettingsNotifier, PersonalSetting
 final tasbihRepoProvider = Provider((ref) => TasbihRepository(ref.watch(storeProvider)));
 final trackerRepoProvider = Provider((ref) => TrackerRepository(ref.watch(storeProvider)));
 final quranProgressProvider = Provider((ref) => QuranProgressRepository(ref.watch(storeProvider)));
-final naghomProgressProvider = Provider((ref) => NaghomProgressRepository(ref.watch(storeProvider)));
 final favoriteMosqueRepoProvider = Provider((ref) => FavoriteMosqueRepository(ref.watch(storeProvider)));
 
 /// Status jadwal hari ini untuk lokasi aktif: waktu sholat, sholat berikutnya, dan sisa waktu.
@@ -50,21 +49,44 @@ class PrayerStatus {
 }
 
 PrayerStatus computeStatus(PersonalSettings s, DateTime deviceNow) {
-  final now = wallClock(deviceNow, s.location.utcOffset);
-  final today = s.timesFor(now);
+  final now = wallClock(deviceNow, s.effectiveUtcOffset);
+  return _statusFor(now, s.timesFor(now), () => s.timesFor(DateTime(now.year, now.month, now.day + 1)));
+}
+
+PrayerStatus _statusFor(DateTime now, PrayerTimes today, PrayerTimes Function() tomorrowTimes) {
   final next = today.nextAfter(now);
   if (next != null) {
     return PrayerStatus(now, today, next, today.timeOf(next), today.currentAt(now));
   }
-  final tomorrow = s.timesFor(DateTime(now.year, now.month, now.day + 1));
+  final tomorrow = tomorrowTimes();
   return PrayerStatus(now, today, Prayer.fajr, tomorrow.fajr, Prayer.isha);
 }
+
+// Recalculate astronomical times only when the local day or settings change.
+final _dailyPrayerTimesProvider = Provider<({PrayerTimes today, PrayerTimes tomorrow})?>((ref) {
+  final settings = ref.watch(settingsProvider).value;
+  if (settings == null) return null;
+  final date = ref.watch(
+    nowProvider.select((value) {
+      final deviceNow = value.value;
+      if (deviceNow == null) return null;
+      final local = wallClock(deviceNow, settings.effectiveUtcOffset);
+      return DateTime(local.year, local.month, local.day);
+    }),
+  );
+  if (date == null) return null;
+  return (today: settings.timesFor(date), tomorrow: settings.timesFor(date.add(const Duration(days: 1))));
+});
 
 final prayerStatusProvider = Provider<AsyncValue<PrayerStatus>>((ref) {
   final settings = ref.watch(settingsProvider);
   final now = ref.watch(nowProvider);
+  final times = ref.watch(_dailyPrayerTimesProvider);
   return switch ((settings, now)) {
-    (AsyncData(value: final s), AsyncData(value: final n)) => AsyncData(computeStatus(s, n)),
+    (AsyncData(value: final s), AsyncData(value: final n)) =>
+      times == null
+          ? const AsyncLoading()
+          : AsyncData(_statusFor(wallClock(n, s.effectiveUtcOffset), times.today, () => times.tomorrow)),
     (AsyncError(:final error, :final stackTrace), _) => AsyncError(error, stackTrace),
     _ => const AsyncLoading(),
   };

@@ -109,7 +109,13 @@ class _AgendaPageState extends ConsumerState<AgendaPage> {
                     ),
                   ),
                   SectionHeader(_selected == null ? 'Agenda Terdekat' : 'Agenda ${shortDate(_selected!)}'),
-                  if (shown.isEmpty) const EmptyState(Icons.event_busy_outlined, 'Tidak ada agenda'),
+                  if (shown.isEmpty)
+                    const EmptyState(
+                      MoeslimIcons.kalender,
+                      'Tidak ada agenda',
+                      art: BrandEmptyArt.tidakAdaHasil,
+                      message: 'Coba filter atau minggu lain.',
+                    ),
                   for (final p in shown) _EventCard(ctx: ctx, event: p.$2, start: p.$1),
                 ],
               );
@@ -122,7 +128,7 @@ class _AgendaPageState extends ConsumerState<AgendaPage> {
         ? FloatingActionButton.extended(
             heroTag: null,
             key: const Key('add-event'),
-            icon: const Icon(Icons.add),
+            icon: const Icon(MoeslimIcons.tambah),
             label: const Text('Tambah Kegiatan'),
             onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => EventFormPage(ctx: ctx))),
           )
@@ -135,7 +141,14 @@ class _AgendaPageState extends ConsumerState<AgendaPage> {
   }
 
   Widget _list(List<(DateTime, Map<String, dynamic>)> parsed) {
-    if (parsed.isEmpty) return const EmptyState(Icons.event_note_outlined, 'Belum ada agenda aktif');
+    if (parsed.isEmpty) {
+      return const EmptyState(
+        MoeslimIcons.kegiatan,
+        'Belum ada agenda aktif',
+        art: BrandEmptyArt.agenda,
+        message: 'Tambahkan kajian, pengajian, atau kegiatan masjid.',
+      );
+    }
     return Column(
       children: [for (final p in parsed) _EventCard(ctx: widget.ctx, event: p.$2, start: p.$1)],
     );
@@ -285,7 +298,7 @@ class _EventCard extends ConsumerWidget {
             StatusBadge(categoryLabel(e['category'] as String?)),
             const SizedBox(height: 4),
             Icon(
-              e['visibility'] == 'public' ? Icons.public : Icons.lock_outline,
+              e['visibility'] == 'public' ? MoeslimIcons.web : MoeslimIcons.kunci,
               size: 16,
               semanticLabel: e['visibility'] == 'public' ? 'Publik' : 'Internal',
             ),
@@ -356,15 +369,12 @@ class _EventFormPageState extends ConsumerState<EventFormPage> {
           TextField(
             key: const Key('event-title'),
             controller: _title,
-            decoration: const InputDecoration(
-              labelText: 'Nama kegiatan *',
-              prefixIcon: Icon(Icons.event_note_outlined),
-            ),
+            decoration: const InputDecoration(labelText: 'Nama kegiatan *', prefixIcon: Icon(MoeslimIcons.kegiatan)),
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
             initialValue: _category,
-            decoration: const InputDecoration(labelText: 'Kategori', prefixIcon: Icon(Icons.category_outlined)),
+            decoration: const InputDecoration(labelText: 'Kategori', prefixIcon: Icon(MoeslimIcons.kategori)),
             items: [for (final c in eventCategories.entries) DropdownMenuItem(value: c.key, child: Text(c.value))],
             onChanged: (v) => setState(() => _category = v ?? _category),
           ),
@@ -383,10 +393,7 @@ class _EventFormPageState extends ConsumerState<EventFormPage> {
                     if (d != null) setState(() => _date = d);
                   },
                   child: InputDecorator(
-                    decoration: const InputDecoration(
-                      labelText: 'Tanggal',
-                      prefixIcon: Icon(Icons.calendar_today_outlined),
-                    ),
+                    decoration: const InputDecoration(labelText: 'Tanggal', prefixIcon: Icon(MoeslimIcons.kalender)),
                     child: Text(shortDate(_date)),
                   ),
                 ),
@@ -399,7 +406,7 @@ class _EventFormPageState extends ConsumerState<EventFormPage> {
                     if (t != null) setState(() => _time = t);
                   },
                   child: InputDecorator(
-                    decoration: const InputDecoration(labelText: 'Jam', prefixIcon: Icon(Icons.schedule)),
+                    decoration: const InputDecoration(labelText: 'Jam', prefixIcon: Icon(MoeslimIcons.jam)),
                     child: Text('${_time.hour.toString().padLeft(2, '0')}:${_time.minute.toString().padLeft(2, '0')}'),
                   ),
                 ),
@@ -412,7 +419,7 @@ class _EventFormPageState extends ConsumerState<EventFormPage> {
             decoration: const InputDecoration(
               labelText: 'Lokasi',
               hintText: 'Contoh: Aula Masjid',
-              prefixIcon: Icon(Icons.location_on_outlined),
+              prefixIcon: Icon(MoeslimIcons.lokasi),
             ),
           ),
           const SizedBox(height: 12),
@@ -420,7 +427,7 @@ class _EventFormPageState extends ConsumerState<EventFormPage> {
             controller: _speaker,
             decoration: const InputDecoration(
               labelText: 'Pemateri / penanggung jawab',
-              prefixIcon: Icon(Icons.person_outline),
+              prefixIcon: Icon(MoeslimIcons.profil),
             ),
           ),
           const SizedBox(height: 12),
@@ -450,7 +457,7 @@ class _EventFormPageState extends ConsumerState<EventFormPage> {
             key: const Key('save-event'),
             style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(54), shape: const StadiumBorder()),
             onPressed: _busy ? null : _save,
-            icon: const Icon(Icons.check),
+            icon: const Icon(MoeslimIcons.check),
             label: const Text('Simpan Kegiatan'),
           ),
         ],

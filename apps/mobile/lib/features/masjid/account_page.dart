@@ -46,7 +46,7 @@ class MosqueAccountTab extends ConsumerWidget {
       if (ctx.can('members.view'))
         (
           const Key('menu-members'),
-          Icons.groups_outlined,
+          MoeslimIcons.jamaah,
           'Pengurus & Role',
           'Maks. 5 akun pengurus',
           MembersPage(ctx: ctx),
@@ -54,23 +54,35 @@ class MosqueAccountTab extends ConsumerWidget {
       if (ctx.can('inventory.view'))
         (
           const Key('menu-inventory'),
-          Icons.inventory_2_outlined,
+          MoeslimIcons.inventaris,
           'Inventaris Masjid',
           'Barang, kondisi, perawatan',
           InventoryPage(ctx: ctx),
         ),
       if (ctx.can('display.view'))
-        (const Key('menu-tv'), Icons.tv_outlined, 'Konfigurasi TV Display', 'Hingga 5 layar', TvConfigPage(ctx: ctx)),
+        (
+          const Key('menu-tv'),
+          MoeslimIcons.layarTv,
+          'Konfigurasi TV Display',
+          'Hingga 5 layar',
+          TvConfigPage(ctx: ctx),
+        ),
       if (ctx.can('events.view'))
         (
           const Key('menu-announcements'),
-          Icons.campaign_outlined,
+          MoeslimIcons.pengumuman,
           'Konten & Pengumuman',
           'Atur tayangan di TV',
           AnnouncementsPage(ctx: ctx),
         ),
       if (ctx.can('finance.view'))
-        (const Key('menu-report'), Icons.bar_chart, 'Laporan Keuangan', 'Grafik & ekspor CSV', ReportPage(ctx: ctx)),
+        (
+          const Key('menu-report'),
+          MoeslimIcons.grafikBatang,
+          'Laporan Keuangan',
+          'Grafik & ekspor CSV',
+          ReportPage(ctx: ctx),
+        ),
     ];
 
     return ListView(
@@ -82,7 +94,7 @@ class MosqueAccountTab extends ConsumerWidget {
             leading: const CircleAvatar(
               backgroundColor: BrandColors.emerald,
               foregroundColor: Colors.white,
-              child: Icon(Icons.person),
+              child: Icon(MoeslimIcons.profil),
             ),
             title: Text('${user['name'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.w700)),
             subtitle: Text('${roleLabels[ctx.role] ?? ctx.role} • ${ctx.name}'),
@@ -155,7 +167,7 @@ class MosqueAccountTab extends ConsumerWidget {
             minimumSize: const Size.fromHeight(50),
           ),
           onPressed: () => ref.read(sessionProvider.notifier).logout(),
-          icon: const Icon(Icons.logout),
+          icon: const Icon(MoeslimIcons.logout),
           label: const Text('Keluar dari Moeslim Mosque'),
         ),
       ],

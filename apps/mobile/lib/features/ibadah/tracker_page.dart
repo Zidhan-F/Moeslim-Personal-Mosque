@@ -89,7 +89,7 @@ class _TrackerPageState extends ConsumerState<TrackerPage> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.emoji_events, color: BrandColors.goldText),
+                    const Icon(MoeslimIcons.grafikGaris, color: BrandColors.goldText),
                     const SizedBox(width: 8),
                     Expanded(child: Text('Progres Mingguan', style: t.titleMedium)),
                     Text(
@@ -113,7 +113,7 @@ class _TrackerPageState extends ConsumerState<TrackerPage> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.mosque, color: scheme.primary),
+                    Icon(MoeslimIcons.centangKotak, color: scheme.primary),
                     const SizedBox(width: 8),
                     Expanded(child: Text('Checklist Salat', style: t.titleMedium)),
                     Text('Hari ini, ${shortDate(d.today.day)}', style: t.bodySmall),
@@ -138,7 +138,7 @@ class _TrackerPageState extends ConsumerState<TrackerPage> {
                                 Text(p.label, style: const TextStyle(fontSize: 12)),
                                 const SizedBox(height: 6),
                                 Icon(
-                                  d.today.items.contains(p) ? Icons.check_circle : Icons.circle_outlined,
+                                  d.today.items.contains(p) ? MoeslimIcons.berhasil : Icons.circle_outlined,
                                   color: d.today.items.contains(p) ? scheme.primary : scheme.outline,
                                   size: 30,
                                   semanticLabel: d.today.items.contains(p) ? '${p.label} sudah' : '${p.label} belum',
@@ -162,7 +162,7 @@ class _TrackerPageState extends ConsumerState<TrackerPage> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.menu_book, color: scheme.primary),
+                    Icon(MoeslimIcons.quranTerbuka, color: scheme.primary),
                     const SizedBox(width: 8),
                     Expanded(child: Text('Tilawah Al-Qur\'an', style: t.titleMedium)),
                     IconButton(
@@ -173,7 +173,7 @@ class _TrackerPageState extends ConsumerState<TrackerPage> {
                               await repo.addTilawahPages(d.today.day, -1);
                               _load();
                             },
-                      icon: const Icon(Icons.remove_circle_outline),
+                      icon: const Icon(MoeslimIcons.minusLingkar),
                     ),
                     IconButton(
                       key: const Key('add-page'),
@@ -182,7 +182,7 @@ class _TrackerPageState extends ConsumerState<TrackerPage> {
                         await repo.addTilawahPages(d.today.day, 1);
                         _load();
                       },
-                      icon: Icon(Icons.add_circle, color: scheme.primary),
+                      icon: Icon(MoeslimIcons.tambahLingkar, color: scheme.primary),
                     ),
                   ],
                 ),
@@ -210,7 +210,7 @@ class _TrackerPageState extends ConsumerState<TrackerPage> {
             ),
             Expanded(
               child: _StatCard(
-                icon: Icons.workspace_premium,
+                icon: MoeslimIcons.pencapaian,
                 color: BrandColors.goldText,
                 label: 'Terbaik',
                 value: '${d.best} hari',

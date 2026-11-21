@@ -344,7 +344,7 @@ class _Identity extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.location_on, size: 20 * scale, color: palette.accentText),
+                Icon(MoeslimIcons.lokasi, size: 20 * scale, color: palette.accentText),
                 const SizedBox(width: 4),
                 Flexible(
                   child: Text(
@@ -435,7 +435,7 @@ class _MainScreen extends StatelessWidget {
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.person, size: 22, color: palette.accentText),
+                                Icon(MoeslimIcons.profil, size: 22, color: palette.accentText),
                                 const SizedBox(width: 6),
                                 Text(
                                   '${_duty(s['duty_type'] as String)}: ${s['name']}',
@@ -554,7 +554,7 @@ class _IqamahCard extends StatelessWidget {
         style: TextStyle(color: fg),
         child: Row(
           children: [
-            Icon(Icons.mosque, size: 56, color: status.phase == SchedulePhase.beforeAdhan ? _emerald : fg),
+            Icon(MoeslimIcons.masjid, size: 56, color: status.phase == SchedulePhase.beforeAdhan ? _emerald : fg),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
@@ -735,7 +735,7 @@ class _InfoScreen extends StatelessWidget {
               Expanded(
                 child: _InfoPanel(
                   palette: palette,
-                  icon: Icons.event_note,
+                  icon: MoeslimIcons.kegiatan,
                   title: 'Agenda Masjid',
                   child: events.isEmpty
                       ? const _Muted('Belum ada agenda terpublikasi')
@@ -752,13 +752,13 @@ class _InfoScreen extends StatelessWidget {
                 child: finance != null
                     ? _InfoPanel(
                         palette: palette,
-                        icon: Icons.account_balance_wallet,
+                        icon: MoeslimIcons.keuangan,
                         title: 'Rekap Kas Masjid',
                         child: _FinanceSummary(finance: finance!),
                       )
                     : _InfoPanel(
                         palette: palette,
-                        icon: Icons.badge,
+                        icon: MoeslimIcons.petugas,
                         title: 'Petugas Hari Ini',
                         child: staff.isEmpty
                             ? const _Muted('Jadwal petugas belum diisi')
@@ -781,7 +781,7 @@ class _InfoScreen extends StatelessWidget {
               Expanded(
                 child: _InfoPanel(
                   palette: palette,
-                  icon: Icons.campaign,
+                  icon: MoeslimIcons.pengumuman,
                   title: 'Pengumuman Terbaru',
                   child: announcements.isEmpty
                       ? const _Muted('Belum ada pengumuman')
@@ -942,14 +942,14 @@ class _FinanceSummary extends StatelessWidget {
       ),
       const SizedBox(height: 18),
       _FlowLine(
-        icon: Icons.arrow_upward,
+        icon: MoeslimIcons.arahAtas,
         label: 'Pemasukan bulan ini',
         value: _rupiah(finance['month_in'] as num),
         color: _emerald,
       ),
       const SizedBox(height: 10),
       _FlowLine(
-        icon: Icons.arrow_downward,
+        icon: MoeslimIcons.arahBawah,
         label: 'Pengeluaran bulan ini',
         value: _rupiah(finance['month_out'] as num),
         color: const Color(0xFFB3261E),
@@ -1015,7 +1015,7 @@ class _TickerBar extends StatelessWidget {
           ),
           child: const Row(
             children: [
-              Icon(Icons.campaign, color: _onGold, size: 30),
+              Icon(MoeslimIcons.pengumuman, color: _onGold, size: 30),
               SizedBox(width: 8),
               Text(
                 'Pengumuman',

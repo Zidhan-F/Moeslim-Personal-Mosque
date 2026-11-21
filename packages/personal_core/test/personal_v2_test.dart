@@ -57,4 +57,36 @@ void main() {
     expect(await repo.decrement('tasbih'), 0);
     expect(await repo.decrement('tasbih'), 0);
   });
+
+  test('parser doa harian mendukung format objek data dan pencarian', () {
+    const raw = '''
+    {
+      "data": [
+        {
+          "id": 1,
+          "grup": "Doa Sebelum dan Sesudah Tidur",
+          "nama": "Doa Bangun Tidur",
+          "ar": "الْحَمْدُ لِلَّهِ",
+          "tr": "Alhamdulillah",
+          "idn": "Segala puji bagi Allah",
+          "tentang": "HR. Bukhari",
+          "tag": ["tidur", "pagi"]
+        },
+        {
+          "id": 2,
+          "grup": "Invalid",
+          "nama": "",
+          "ar": "",
+          "idn": ""
+        }
+      ]
+    }
+    ''';
+    final parsed = parseDailyDuasJson(raw);
+    expect(parsed.length, 1);
+    expect(parsed.first.title, 'Doa Bangun Tidur');
+    expect(parsed.first.matches('tidur'), isTrue);
+    expect(parsed.first.matches('alhamdulillah'), isTrue);
+    expect(parsed.first.matches('makan'), isFalse);
+  });
 }
