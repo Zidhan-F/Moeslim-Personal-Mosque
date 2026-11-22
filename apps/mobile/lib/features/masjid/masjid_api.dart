@@ -112,6 +112,9 @@ class MasjidApi {
   Future<Map<String, dynamic>> registerMosque(Map<String, dynamic> data) async =>
       Map<String, dynamic>.from((await _send('POST', '/mosques', body: data))['data'] as Map);
 
+  Future<Map<String, dynamic>> updateMosque(String mosqueId, Map<String, dynamic> data) async =>
+      Map<String, dynamic>.from((await _send('PATCH', '/mosques/$mosqueId', body: data))['data'] as Map);
+
   Future<Map<String, dynamic>> dashboard(String mosqueId) async =>
       Map<String, dynamic>.from(await _send('GET', '/mosques/$mosqueId/dashboard') as Map);
 
@@ -203,6 +206,31 @@ class MasjidApi {
   Future<void> revokeDisplay(String id, int deviceId) => _send('POST', '/mosques/$id/displays/$deviceId/revoke');
   Future<void> updateDisplay(String id, int deviceId, Map<String, dynamic> data) =>
       _send('PATCH', '/mosques/$id/displays/$deviceId', body: data);
+  Future<Map<String, dynamic>> updateDisplaySettings(String id, Map<String, dynamic> data) async =>
+      _map((await _send('PATCH', '/mosques/$id/displays/settings', body: data))['data']);
+  Future<Map<String, dynamic>> setDisplayOverride(String id, Map<String, dynamic> data) async =>
+      _map((await _send('POST', '/mosques/$id/displays/override', body: data))['data']);
+  Future<void> clearDisplayOverride(String id) => _send('DELETE', '/mosques/$id/displays/override');
+  Future<void> deleteDisplayQris(String id) => _send('DELETE', '/mosques/$id/displays/qris');
+  Future<Map<String, dynamic>> uploadDisplayQris(
+    String id, {
+    required List<int> bytes,
+    required String filename,
+    String? label,
+  }) async {
+    final uri = Uri.parse('$baseUrl/mosques/$id/displays/qris');
+    final req = http.MultipartRequest('POST', uri)
+      ..headers.addAll({'Accept': 'application/json', if (token != null) 'Authorization': 'Bearer $token'})
+      ..files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename));
+    if (label != null && label.isNotEmpty) req.fields['label'] = label;
+    final res = await http.Response.fromStream(await _client.send(req).timeout(const Duration(seconds: 25)));
+    final decoded = res.body.isEmpty ? null : jsonDecode(res.body);
+    if (res.statusCode >= 200 && res.statusCode < 300 && decoded is Map<String, dynamic>) {
+      return _map(decoded['data']);
+    }
+    final map = decoded is Map<String, dynamic> ? decoded : const <String, dynamic>{};
+    throw ApiException(res.statusCode, (map['message'] as String?) ?? 'Gagal mengunggah QRIS (${res.statusCode}).');
+  }
 
   Future<List<Map<String, dynamic>>> announcements(String id) async =>
       _list((await _send('GET', '/mosques/$id/announcements'))['data']);
@@ -216,6 +244,24 @@ class MasjidApi {
       _map(await _send('GET', '/mosques/$id/finance/summary', query: {'from': from, 'to': to}));
   Future<Map<String, dynamic>> monthlyReport(String id, int year) async =>
       _map(await _send('GET', '/mosques/$id/finance/reports/monthly', query: {'year': '$year'}));
+  Future<Map<String, dynamic>> fridayReport(String id, {String? date}) async =>
+      _map(await _send('GET', '/mosques/$id/finance/friday-report', query: {'date': ?date}));
+  Future<List<Map<String, dynamic>>> donationBoxCounts(String id) async =>
+      _list((await _send('GET', '/mosques/$id/finance/donation-box-counts'))['data']);
+  Future<Map<String, dynamic>> createDonationBoxCount(
+    String id,
+    Map<String, dynamic> data, {
+    required String idempotencyKey,
+  }) async => _map(
+    (await _send(
+      'POST',
+      '/mosques/$id/finance/donation-box-counts',
+      body: data,
+      headers: {'Idempotency-Key': idempotencyKey},
+    ))['data'],
+  );
+  Future<Map<String, dynamic>> transactionReceipt(String id, int txId) async =>
+      _map((await _send('GET', '/mosques/$id/finance/transactions/$txId/receipt'))['data']);
   Future<void> reverseTransaction(String id, int txId, String reason) =>
       _send('POST', '/mosques/$id/finance/transactions/$txId/reverse', body: {'reason': reason});
 
@@ -231,4 +277,44 @@ class MasjidApi {
   Future<Map<String, dynamic>> subscription(String id) async => _map(await _send('GET', '/mosques/$id/subscription'));
   Future<List<Map<String, dynamic>>> auditLogs(String id) async =>
       _list((await _send('GET', '/mosques/$id/audit-logs'))['data']);
+
+  // Zakat, Kurban & Kupon QR
+  Future<Map<String, dynamic>> zakat(String id, {int? hijriYear}) async =>
+      _map(await _send('GET', '/mosques/$id/zakat', query: {if (hijriYear != null) 'hijri_year': '$hijriYear'}));
+  Future<Map<String, dynamic>> createZakatCollection(String id, Map<String, dynamic> data) async =>
+      _map((await _send('POST', '/mosques/$id/zakat/collections', body: data))['data']);
+  Future<Map<String, dynamic>> createZakatMustahik(String id, Map<String, dynamic> data) async =>
+      _map((await _send('POST', '/mosques/$id/zakat/mustahiks', body: data))['data']);
+  Future<Map<String, dynamic>> distributeMustahik(String id, int mustahikId, {Map<String, dynamic>? data}) async =>
+      _map((await _send('POST', '/mosques/$id/zakat/mustahiks/$mustahikId/distribute', body: data ?? const {}))['data']);
+
+  Future<Map<String, dynamic>> qurbanAnimals(String id, {int? hijriYear}) async => _map(
+    await _send('GET', '/mosques/$id/qurban/animals', query: {if (hijriYear != null) 'hijri_year': '$hijriYear'}),
+  );
+  Future<Map<String, dynamic>> createQurbanAnimal(String id, Map<String, dynamic> data) async =>
+      _map((await _send('POST', '/mosques/$id/qurban/animals', body: data))['data']);
+  Future<Map<String, dynamic>> updateQurbanAnimal(String id, int animalId, Map<String, dynamic> data) async =>
+      _map((await _send('PATCH', '/mosques/$id/qurban/animals/$animalId', body: data))['data']);
+  Future<Map<String, dynamic>> createQurbanParticipant(String id, int animalId, Map<String, dynamic> data) async =>
+      _map((await _send('POST', '/mosques/$id/qurban/animals/$animalId/participants', body: data))['data']);
+  Future<Map<String, dynamic>> updateQurbanParticipant(String id, int participantId, Map<String, dynamic> data) async =>
+      _map((await _send('PATCH', '/mosques/$id/qurban/participants/$participantId', body: data))['data']);
+
+  Future<Map<String, dynamic>> coupons(String id, {String? program, int? hijriYear, String? status}) async => _map(
+    await _send(
+      'GET',
+      '/mosques/$id/coupons',
+      query: {
+        'program': ?program,
+        if (hijriYear != null) 'hijri_year': '$hijriYear',
+        'status': ?status,
+      },
+    ),
+  );
+  Future<List<Map<String, dynamic>>> createCoupons(String id, Map<String, dynamic> data) async =>
+      _list((await _send('POST', '/mosques/$id/coupons', body: data))['data']);
+  Future<Map<String, dynamic>> redeemCoupon(String id, String code) async =>
+      _map((await _send('POST', '/mosques/$id/coupons/redeem', body: {'code': code}))['data']);
+  Future<Map<String, dynamic>> voidCoupon(String id, int couponId) async =>
+      _map((await _send('POST', '/mosques/$id/coupons/$couponId/void'))['data']);
 }

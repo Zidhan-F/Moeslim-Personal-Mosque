@@ -1,5 +1,5 @@
 name: moeslim_brand
-description: Identitas visual Moeslim PM — warna, tema, tipografi Inter, logo, ikon, ilustrasi, dan aset asset kit.
+description: "Identitas visual Moeslim PM: warna, tema, tipografi Inter, logo, ikon, ilustrasi, dan aset asset kit."
 version: 0.1.0
 publish_to: none
 
@@ -20,15 +20,9 @@ dev_dependencies:
 
 flutter:
   assets:
+    - assets/3d/
+    - assets/3d/thumbs/
     - assets/logo/
-    - assets/illustrations/
-    - assets/backgrounds/
-    - assets/patterns/
-    - assets/kit/tiles/
-    - assets/kit/empty/
-    - assets/kit/quran/
-    - assets/kit/decor/
-    - assets/kit/qibla/
   fonts:
     - family: Inter
       fonts:

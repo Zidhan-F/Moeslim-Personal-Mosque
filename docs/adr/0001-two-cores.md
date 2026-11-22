@@ -1,4 +1,4 @@
-# ADR 0001 — Dua core independen dalam satu monorepo
+# ADR 0001: Dua core independen dalam satu monorepo
 Status: diterima
 
 **Keputusan**: Personal (offline, tanpa akun) dan Masjid (cloud, multi-tenant) adalah

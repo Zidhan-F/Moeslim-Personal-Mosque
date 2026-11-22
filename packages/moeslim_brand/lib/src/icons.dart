@@ -1,4 +1,4 @@
-// GENERATED — jangan diedit manual. Sumber: tools/icons/build_icon_font.py
+// GENERATED: jangan diedit manual. Sumber: tools/icons/build_icon_font.py
 // ignore_for_file: constant_identifier_names
 
 import 'package:material_ui/material_ui.dart';
@@ -9,7 +9,7 @@ abstract final class MoeslimIcons {
   static const _family = 'MoeslimIcons';
   static const _package = 'moeslim_brand';
 
-  // Ikon UI umum (Font Awesome 4 oleh Dave Gandy, SIL OFL 1.1 — lihat Tentang & Lisensi).
+  // Ikon UI umum (Font Awesome 4 oleh Dave Gandy, SIL OFL 1.1, lihat Tentang & Lisensi).
   static const IconData acak = IconData(0xE000, fontFamily: _family, fontPackage: _package);
   static const IconData admin = IconData(0xE001, fontFamily: _family, fontPackage: _package);
   static const IconData alquran = IconData(0xE002, fontFamily: _family, fontPackage: _package);

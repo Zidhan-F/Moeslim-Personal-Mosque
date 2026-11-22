@@ -11,7 +11,7 @@ Perihal: Permohonan izin penggunaan *Al-Qur'an dan Terjemahannya* serta telaah t
 
 Assalamu'alaikum warahmatullahi wabarakatuh,
 
-Kami [nama pengembang/lembaga] mengembangkan aplikasi Android **Moeslim PM — Personal & Mosque**.
+Kami [nama pengembang/lembaga] mengembangkan aplikasi Android **Moeslim PM: Personal & Mosque**.
 Bagian utamanya, **Moeslim Personal**, adalah pendamping ibadah **gratis, tanpa iklan, tanpa pembelian, dan
 tanpa akun** (jadwal sholat, Al-Qur'an, dzikir, audio murottal). Aplikasi juga memuat fitur tambahan
 opsional berbayar untuk pengurus masjid, yang tidak memuat teks Al-Qur'an maupun terjemahan.
@@ -28,4 +28,4 @@ Kami siap menyerahkan berkas aplikasi untuk ditelaah dan mengikuti ketentuan yan
 Wassalamu'alaikum warahmatullahi wabarakatuh,
 
 [Kota, tanggal]
-[Nama] — [Jabatan] — [Kontak]
+[Nama] | [Jabatan] | [Kontak]

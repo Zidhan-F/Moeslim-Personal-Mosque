@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 
 import '../../ui/components.dart';
@@ -38,6 +38,7 @@ class _MasjidDashboardPageState extends ConsumerState<MasjidDashboardPage> {
       id: id,
       name: (d?['mosque'] as Map?)?['name'] as String? ?? mosque['name'] as String,
       city: ((d?['mosque'] as Map?)?['city'] ?? mosque['city']) as String?,
+      slug: ((d?['mosque'] as Map?)?['slug'] ?? mosque['slug']) as String?,
       role: (d?['role'] ?? mosque['role'] ?? '') as String,
       permissions: {...?(d?['permissions'] as List?)?.cast<String>()},
     );

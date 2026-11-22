@@ -3,12 +3,13 @@ import 'dart:math' as math;
 
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../core/format.dart';
 import '../../ui/components.dart';
+import 'finance_pro_pages.dart';
 import 'masjid_api.dart';
 import 'mosque_providers.dart';
 import 'session.dart';
@@ -169,7 +170,7 @@ class _FinanceTabState extends ConsumerState<FinanceTab> {
                     IconButton(
                       key: const Key('toggle-balance'),
                       tooltip: _hidden ? 'Tampilkan saldo' : 'Sembunyikan saldo',
-                      icon: Icon(_hidden ? MoeslimIcons.mataTutup : MoeslimIcons.mata),
+                      icon: Icon(_hidden ? MoeslimIcons.kunci : Icons.lock_open_outlined),
                       onPressed: () => setState(() => _hidden = !_hidden),
                     ),
                   ],
@@ -199,6 +200,32 @@ class _FinanceTabState extends ConsumerState<FinanceTab> {
               ],
             ),
           ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: FilledButton.tonalIcon(
+                key: const Key('open-friday-report'),
+                style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+                onPressed: () => _push(FridayReportPage(ctx: ctx)),
+                icon: const Icon(MoeslimIcons.laporan),
+                label: const Text('Kas Jumat', overflow: TextOverflow.ellipsis),
+              ),
+            ),
+            if (ctx.can('finance.write')) ...[
+              const SizedBox(width: 10),
+              Expanded(
+                child: FilledButton.tonalIcon(
+                  key: const Key('open-box-count'),
+                  style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+                  onPressed: () => _push(DonationBoxCountPage(ctx: ctx)),
+                  icon: const Icon(MoeslimIcons.saldo),
+                  label: const Text('Kotak Amal', overflow: TextOverflow.ellipsis),
+                ),
+              ),
+            ],
+          ],
         ),
         const SizedBox(height: 12),
         Row(
@@ -425,6 +452,7 @@ class _TransactionFormPageState extends ConsumerState<TransactionFormPage> {
   final _idempotencyKey = MasjidApi.newIdempotencyKey();
   final _amount = TextEditingController();
   final _desc = TextEditingController();
+  final _donor = TextEditingController();
   Map<String, dynamic>? _setup;
   String _flow = 'in';
   int? _fund, _account, _toAccount, _category;
@@ -462,6 +490,7 @@ class _TransactionFormPageState extends ConsumerState<TransactionFormPage> {
         if (_flow != 'transfer' && _category != null) 'category_id': _category,
         'date': isoDate(_date),
         'description': _desc.text.trim(),
+        if (_flow == 'in' && _donor.text.trim().isNotEmpty) 'donor_name': _donor.text.trim(),
       }, idempotencyKey: _idempotencyKey);
       ref.invalidate(transactionsProvider);
       ref.invalidate(financeSummaryProvider);
@@ -566,6 +595,18 @@ class _TransactionFormPageState extends ConsumerState<TransactionFormPage> {
                         DropdownMenuItem(value: a['id'] as int, child: Text(a['name'] as String)),
                     ],
                     onChanged: (v) => setState(() => _toAccount = v),
+                  ),
+                ],
+                if (_flow == 'in') ...[
+                  const SizedBox(height: 12),
+                  TextField(
+                    key: const Key('donor-name'),
+                    controller: _donor,
+                    decoration: const InputDecoration(
+                      labelText: 'Nama donatur (opsional untuk kuitansi)',
+                      hintText: 'Kosongkan untuk Hamba Allah',
+                      prefixIcon: Icon(MoeslimIcons.profil),
+                    ),
                   ),
                 ],
                 const SizedBox(height: 12),
@@ -859,7 +900,26 @@ class _TxDetailSheetState extends ConsumerState<_TxDetailSheet> {
             'Akun',
             '${(t['account'] as Map?)?['name'] ?? '-'}${t['to_account'] != null ? ' → ${(t['to_account'] as Map)['name']}' : ''}',
           ),
+          if (t['donor_name'] != null) row('Donatur', '${t['donor_name']}'),
           row('Keterangan', '${t['description']}'),
+          if (t['flow'] == 'in') ...[
+            const SizedBox(height: 12),
+            FilledButton.tonalIcon(
+              key: const Key('open-receipt'),
+              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+              icon: const Icon(Icons.qr_code_2_rounded),
+              label: const Text('Kuitansi Digital QR'),
+              onPressed: () {
+                Navigator.pop(context);
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  showDragHandle: true,
+                  builder: (_) => ReceiptSheet(ctx: widget.ctx, txId: t['id'] as int),
+                );
+              },
+            ),
+          ],
           if (canReverse) ...[
             const Divider(height: 24),
             TextField(

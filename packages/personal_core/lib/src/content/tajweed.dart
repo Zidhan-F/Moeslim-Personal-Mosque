@@ -1,7 +1,7 @@
 /// Aturan tajwid untuk pewarnaan teks Al-Qur'an.
 ///
 /// Anotasi (posisi awal–akhir + aturan) dibuat saat build oleh `classifyTajweed` atas teks Tanzil
-/// yang terpasang (lihat `tajweed_classifier.dart`), lalu disimpan di aset — bukan ditebak di perangkat.
+/// yang terpasang (lihat `tajweed_classifier.dart`), lalu disimpan di aset, bukan ditebak di perangkat.
 /// Palet warna di sini satu sumber kebenaran dan dapat diselaraskan dengan konvensi mushaf
 /// tajwid yang dipilih penelaah.
 enum TajweedRule {
@@ -68,7 +68,7 @@ class TajweedSpan {
   final TajweedRule rule;
   const TajweedSpan(this.start, this.end, this.rule);
 
-  /// `[start, end, indeksAturan]` — indeks [TajweedRule.values] agar aset ringkas.
+  /// `[start, end, indeksAturan]`: indeks [TajweedRule.values] agar aset ringkas.
   List<Object> toJson() => [start, end, rule.index];
 
   /// Menerima indeks aturan (format aset) maupun nama aturan (format lama).
@@ -145,7 +145,7 @@ class TajweedAlignmentReport {
   double get ratio => anchorsChecked == 0 ? 0 : anchorsAligned / anchorsChecked;
 }
 
-/// Pemeriksaan ISI (bukan hanya batas): anotasi "jangkar" harus jatuh tepat pada hurufnya —
+/// Pemeriksaan ISI (bukan hanya batas): anotasi "jangkar" harus jatuh tepat pada hurufnya:
 /// Hamzah Washal pada ٱ (U+0671) dan Lam Syamsiyah pada ل (U+0644). Anotasi yang dibuat untuk
 /// edisi teks lain akan bergeser beberapa karakter dan gagal di sini, sehingga warna tidak
 /// pernah dipasang pada huruf yang salah.

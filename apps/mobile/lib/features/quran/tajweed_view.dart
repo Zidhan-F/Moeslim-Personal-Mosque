@@ -1,4 +1,4 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:personal_core/personal_core.dart';
 
@@ -56,9 +56,8 @@ class TajweedLegendPage extends StatelessWidget {
             child: Padding(
               padding: EdgeInsets.all(12),
               child: Text(
-                'Warna tajwid ditandai otomatis untuk seluruh 114 surah oleh pengklasifikasi aturan tajwid '
-                'atas teks mushaf Utsmani (Tanzil). Huruf tanpa warna dibaca seperti biasa. Panduan ini alat '
-                'bantu belajar. Tetap belajar dan tashih bacaan bersama guru.',
+                'Warna tajwid ditandai otomatis untuk seluruh 114 surah. Huruf tanpa warna dibaca seperti biasa. '
+                'Panduan ini alat bantu belajar; tetap pelajari dan tashih bacaan bersama guru.',
               ),
             ),
           ),

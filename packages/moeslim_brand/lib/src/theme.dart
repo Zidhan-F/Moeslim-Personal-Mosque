@@ -49,6 +49,10 @@ abstract final class BrandTheme {
         .apply(fontFamily: _font, package: _package, bodyColor: scheme.onSurface, displayColor: scheme.onSurface);
     return base.copyWith(
       scaffoldBackgroundColor: scaffold,
+      iconTheme: base.iconTheme.copyWith(shadows: const [
+        Shadow(color: Color(0x24000000), offset: Offset(.6, .9), blurRadius: .5),
+        Shadow(color: Color(0x30FFFFFF), offset: Offset(-.3, -.4)),
+      ]),
       textTheme: text.copyWith(
         headlineSmall: text.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
         titleLarge: text.titleLarge?.copyWith(fontWeight: FontWeight.w700),

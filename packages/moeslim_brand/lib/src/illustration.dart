@@ -1,7 +1,7 @@
 import 'package:material_ui/material_ui.dart';
+import 'soft_art.dart';
 
-/// Ilustrasi brand: digambar ulang dari paket visualisasi UI (sumber SVG di `tools/illustrations/`)
-/// dan ilustrasi raster asset kit (`tools/asset_kit/import_kit.py`).
+/// Nama ilustrasi lama dipertahankan agar rute aplikasi memakai koleksi 3D yang sama.
 enum BrandIllustration {
   /// Masjid & pepohonan dalam jendela lengkung + Al-Qur'an di rehal (onboarding, daftar surah, doa).
   heroQuran('hero_quran'),
@@ -69,7 +69,28 @@ enum BrandIllustration {
   final bool fromKit;
   const BrandIllustration(this.file, {this.fromKit = false});
 
-  String get assetPath => 'assets/illustrations/$file.webp';
+  SoftAsset get softAsset => switch (this) {
+        heroQuran || alquranRehal1 || alquranRehal2 || alquranRehal3 || alquranRehal4 => SoftAsset.quran,
+        mosqueCircle ||
+        mosqueBanner ||
+        skyline ||
+        masjidPagi1 ||
+        masjidPagi2 ||
+        masjidPagi3 ||
+        masjidPagi4 =>
+          SoftAsset.mosque,
+        ramadanMalam1 || ramadanMalam2 || ramadanMalam3 || ramadanMalam4 => SoftAsset.lantern,
+        manajemenMasjid1 || manajemenMasjid2 || manajemenMasjid3 || manajemenMasjid4 => SoftAsset.management,
+        kaaba => SoftAsset.kaaba,
+        loginShield => SoftAsset.shield,
+        tvMosque => SoftAsset.scene,
+        archHeader || cornerLattice => SoftAsset.relief,
+        tasbihSide => SoftAsset.tasbih,
+        qariBadge => SoftAsset.headphones,
+        calibrate => SoftAsset.phone,
+      };
+
+  String get assetPath => softAsset.assetPath;
 }
 
 /// Gambar ilustrasi dekoratif (tidak dibacakan pembaca layar).
@@ -92,16 +113,13 @@ class BrandArt extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Image.asset(
-        art.assetPath,
-        package: 'moeslim_brand',
+  Widget build(BuildContext context) => SoftArt(
+        art.softAsset,
         width: width,
         height: height,
         fit: fit,
         alignment: alignment,
-        opacity: opacity == 1 ? null : AlwaysStoppedAnimation(opacity),
-        filterQuality: FilterQuality.medium,
-        excludeFromSemantics: true,
-        gaplessPlayback: true,
+        opacity: opacity,
+        thumbnail: width != null && width! <= 64 && (height == null || height! <= 64),
       );
 }

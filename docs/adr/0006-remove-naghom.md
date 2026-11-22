@@ -1,6 +1,6 @@
-# ADR 0006 — Menghapus fitur 7 Irama (Naghom)
+# ADR 0006: Menghapus fitur 7 Irama (Naghom)
 
-**Status:** Diterima — 2026-11-21
+**Status:** Diterima (2026-11-21)
 
 ## Konteks
 7 Irama (Bayyati, Hijaz, Shaba, Rast, Jiharkah, Sika, Nahawand) sempat menjadi fitur andalan: modul

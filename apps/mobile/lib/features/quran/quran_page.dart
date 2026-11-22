@@ -1,12 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:personal_core/personal_core.dart';
 
 import '../../core/providers.dart';
 import '../../ui/components.dart';
+import 'khatam_planner_page.dart';
 import 'murottal_page.dart';
+import 'quran_study_suite_page.dart';
 import 'surah_page.dart';
+import 'tafsir_search_page.dart';
+import 'tahfidz_page.dart';
+import 'tajweed_learning_page.dart';
 
 final _bookmarksProvider = FutureProvider.autoDispose((ref) => ref.watch(quranProgressProvider).bookmarks());
 final _lastReadProvider = FutureProvider.autoDispose((ref) => ref.watch(quranProgressProvider).lastRead());
@@ -224,6 +229,58 @@ class _MushafTab extends ConsumerWidget {
             onTap: () =>
                 Navigator.of(context)
                     .push(MaterialPageRoute(builder: (_) => MurottalPage(initialSurah: lastRead?.surah ?? 1))),
+          ),
+        ),
+        Card(
+          child: ListTile(
+            key: const Key('open-tafsir-search'),
+            leading: const Icon(MoeslimIcons.buku, color: BrandColors.emerald),
+            title: const Text('Tafsir Ringkas & Pencarian Ayat', style: TextStyle(fontWeight: FontWeight.w600)),
+            subtitle: const Text('Cari kata di 6.236 ayat, indeks tematik & catatan tadabbur pribadi'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const TafsirSearchPage())),
+          ),
+        ),
+        Card(
+          child: ListTile(
+            key: const Key('open-tahfidz'),
+            leading: const Icon(MoeslimIcons.target, color: BrandColors.emerald),
+            title: const Text('Mode Hafalan (Tahfidz & Muraja\'ah)', style: TextStyle(fontWeight: FontWeight.w600)),
+            subtitle: const Text('Uji sambung ayat, tutup teks Arab, progres surah & jadwal muraja\'ah'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => TahfidzPage(initialSurah: lastRead?.surah ?? 112)),
+            ),
+          ),
+        ),
+        Card(
+          child: ListTile(
+            key: const Key('open-khatam-planner'),
+            leading: const Icon(MoeslimIcons.kalender, color: BrandColors.emerald),
+            title: const Text('Perencana Khatam Al-Qur\'an', style: TextStyle(fontWeight: FontWeight.w600)),
+            subtitle: const Text('Target 30/60/90 hari dengan pembagian halaman per waktu salat'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const KhatamPlannerPage())),
+          ),
+        ),
+        Card(
+          child: ListTile(
+            key: const Key('open-tajweed-learning'),
+            leading: const Icon(Icons.school_outlined, color: BrandColors.emerald),
+            title: const Text('Belajar Tajwid & Makharijul Huruf', style: TextStyle(fontWeight: FontWeight.w600)),
+            subtitle: const Text('Materi hukum tajwid, 5 area makhraj huruf & kuis interaktif'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const TajweedLearningPage())),
+          ),
+        ),
+        Card(
+          child: ListTile(
+            key: const Key('open-quran-study-suite'),
+            leading: const Icon(MoeslimIcons.quranTerbuka, color: BrandColors.emerald),
+            title: const Text('Pendalaman Al-Qur\'an, Kata per Kata & Fokus Tilawah', style: TextStyle(fontWeight: FontWeight.w600)),
+            subtitle: const Text('Terjemah per kata, Asbabun Nuzul, Flashcard Arab, Sajdah & Fokus Tilawah'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const QuranStudySuitePage())),
           ),
         ),
         SectionHeader('Penanda (${bookmarks.length})'),

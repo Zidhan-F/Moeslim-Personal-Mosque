@@ -1,4 +1,4 @@
-# Moeslim Personal & Masjid — Blueprint v1.1 (ringkasan kerja)
+# Moeslim Personal & Masjid: Blueprint v1.1 (ringkasan kerja)
 
 Sumber: *Product Blueprint v1.0* (dokumen konsep) + revisi arsitek v1.1. Dokumen ini
 adalah spesifikasi yang mengikat implementasi di repo ini.
@@ -13,8 +13,8 @@ fitur tambahan opsional untuk pengurus masjid yang berbayar hanya bila dipakai (
 | Koneksi | Offline-first | Cloud |
 | Harga | Gratis & **non-komersial** (tanpa iklan, tanpa pembelian; ADR 0005) | Fitur tambahan opsional: Rp59.000/bulan/masjid bila dipakai |
 | Data | Lokal di perangkat | PostgreSQL, terisolasi per masjid |
-| Akun | — | Maks. 5 pengurus aktif |
-| Display | — | Maks. 5 TV Display |
+| Akun | - | Maks. 5 pengurus aktif |
+| Display | - | Maks. 5 TV Display |
 
 ## 2. Personal (MVP)
 
@@ -29,11 +29,11 @@ Tampil paling atas di Beranda dan menjadi pilihan utama pemutar (Murattal hanya 
 - **Nahawand**: Memiliki 5 tingkat nada yang cocok untuk ayat-ayat bernuansa sedih atau penuh perenungan.
 
 Jadwal sholat (metode dapat disetel, default Kemenag), countdown, penyesuaian menit;
-Al-Qur'an (dataset lokal hasil import sumber berlisensi — tidak ditulis tangan), bookmark,
+Al-Qur'an (dataset lokal hasil import sumber berlisensi, tidak ditulis tangan), bookmark,
 lanjut baca; kiblat; dzikir & tasbih (33/99/100/kustom); kalender Hijriah + koreksi lokal;
 tracker ibadah; modul edukasi 7 Naghom (Bayyati, Hijaz, Shaba, Rast, Jiharkah, Sika,
 Nahawand) dengan label "perlu telaah qari"; audio murottal per surah/ayat dengan **pilihan 7 irama**
-(rekaman berlisensi via katalog, unduh offline, ulang ayat — `docs/audio-murattal.md`); masjid favorit (lokal). Kota manual bila izin
+(rekaman berlisensi via katalog, unduh offline, ulang ayat; lihat `docs/audio-murattal.md`); masjid favorit (lokal). Kota manual bila izin
 lokasi ditolak.
 
 ## 3. Masjid (MVP)
@@ -51,7 +51,7 @@ allowlist; audit log; langganan.
 5. **Verifikasi masjid**: kolom opsional `simas_id` (ID Masjid SIMAS Kemenag) untuk klaim.
 6. **Jadwal di Display dihitung lokal** dari koordinat (paket `shared_prayer`), server
    mengirim `server_time` untuk koreksi jam.
-7. **Billing provider-agnostic** (`manual`, `google_play`) — jalur final ditetapkan
+7. **Billing provider-agnostic** (`manual`, `google_play`), jalur final ditetapkan
    sebelum rilis.
 8. Kepatuhan **UU PDP No. 27/2022**: data minimum, hapus akun, ekspor.
 

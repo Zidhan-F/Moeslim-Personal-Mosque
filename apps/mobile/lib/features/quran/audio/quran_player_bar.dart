@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:personal_core/personal_core.dart';
 
@@ -50,60 +50,130 @@ class QuranPlayerBar extends ConsumerWidget {
     final scheme = Theme.of(context).colorScheme;
     final hasAudio = rec != null;
 
+    final activeAyah = player.surah == surah.number ? player.current?.ayah : null;
+    final statusLabel = rec == null
+        ? 'Murottal'
+        : (activeAyah != null ? '${rec.qari} • Ayat $activeAyah/${surah.ayahCount}' : rec.qari);
+
     return Material(
       key: const Key('player-bar'),
-      elevation: 8,
+      elevation: 6,
       color: Theme.of(context).cardTheme.color,
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
-          child: Row(
-            children: [
-              IconButton(
-                key: const Key('font-size'),
-                tooltip: 'Ukuran huruf',
-                icon: const Icon(Icons.text_fields),
-                onPressed: () => _fontSheet(context, ref),
-              ),
-              IconButton(
-                key: const Key('prev-ayah'),
-                tooltip: 'Ayat sebelumnya',
-                icon: const Icon(MoeslimIcons.sebelumnya),
-                onPressed: hasAudio ? () => ctl.skip(-1) : null,
-              ),
-              IconButton.filled(
-                key: const Key('play-surah'),
-                iconSize: 30,
-                style: IconButton.styleFrom(minimumSize: const Size(54, 54)),
-                tooltip: player.playing ? 'Jeda' : 'Putar surah',
-                icon: Icon(player.playing ? MoeslimIcons.pause : MoeslimIcons.play),
-                onPressed: hasAudio
-                    ? () => player.queue.isEmpty ? ctl.playFrom(1) : ctl.togglePause()
-                    : () => showAudioSheet(context, surah),
-              ),
-              IconButton(
-                key: const Key('next-ayah'),
-                tooltip: 'Ayat berikutnya',
-                icon: const Icon(MoeslimIcons.selanjutnya),
-                onPressed: hasAudio ? () => ctl.skip(1) : null,
-              ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: ActionChip(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: scheme.outlineVariant.withValues(alpha: .5))),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                InkWell(
                   key: const Key('audio-picker'),
-                  avatar: Icon(MoeslimIcons.audio, size: 18, color: scheme.primary),
-                  label: Text(
-                    rec == null
-                        ? 'Murottal'
-                        : (player.current != null ? '${rec.qari} • ayat ${player.current!.ayah}' : rec.qari),
-                    key: const Key('now-playing'),
-                    overflow: TextOverflow.ellipsis,
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: () => showAudioSheet(context, surah),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    child: Row(
+                      children: [
+                        Icon(MoeslimIcons.audio, size: 16, color: scheme.primary),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            statusLabel,
+                            key: const Key('now-playing'),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        if (player.repeatAyah)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 6),
+                            child: Text(
+                              'Ulang 1 ayat',
+                              style: Theme.of(context).textTheme.labelSmall?.copyWith(color: scheme.primary),
+                            ),
+                          ),
+                        Icon(Icons.keyboard_arrow_up, size: 18, color: scheme.onSurfaceVariant),
+                      ],
+                    ),
                   ),
-                  onPressed: () => showAudioSheet(context, surah),
                 ),
-              ),
-            ],
+                if (player.error != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(10, 0, 10, 4),
+                    child: Text(
+                      player.error!,
+                      style: TextStyle(color: scheme.error, fontSize: 12),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: IconButton(
+                          key: const Key('font-size'),
+                          tooltip: 'Ukuran huruf',
+                          icon: const Icon(Icons.text_fields),
+                          onPressed: () => _fontSheet(context, ref),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      key: const Key('prev-ayah'),
+                      tooltip: 'Ayat sebelumnya',
+                      icon: const Icon(MoeslimIcons.sebelumnya),
+                      onPressed: hasAudio ? () => ctl.skip(-1) : null,
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton.filled(
+                      key: const Key('play-surah'),
+                      iconSize: 28,
+                      style: IconButton.styleFrom(
+                        minimumSize: const Size(52, 52),
+                        fixedSize: const Size(52, 52),
+                        padding: EdgeInsets.zero,
+                        alignment: Alignment.center,
+                      ),
+                      tooltip: player.playing ? 'Jeda' : 'Putar surah',
+                      icon: Transform.translate(
+                        offset: Offset(player.playing ? 0 : 1.5, 0),
+                        child: Icon(player.playing ? MoeslimIcons.pause : MoeslimIcons.play),
+                      ),
+                      onPressed: hasAudio
+                          ? () => ctl.toggleSurahPlayback(surah.number)
+                          : () => showAudioSheet(context, surah),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      key: const Key('next-ayah'),
+                      tooltip: 'Ayat berikutnya',
+                      icon: const Icon(MoeslimIcons.selanjutnya),
+                      onPressed: hasAudio ? () => ctl.skip(1) : null,
+                    ),
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: IconButton(
+                          key: const Key('toggle-repeat-bar'),
+                          tooltip: player.repeatAyah ? 'Matikan ulang ayat' : 'Ulang satu ayat',
+                          isSelected: player.repeatAyah,
+                          icon: Icon(Icons.repeat_one, color: player.repeatAyah ? scheme.primary : null),
+                          onPressed: hasAudio ? ctl.toggleRepeat : null,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -164,7 +234,7 @@ class _AudioSheetState extends ConsumerState<AudioSheet> {
             if (options.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 10),
-                child: Text('Belum ada rekaman berlisensi untuk surah ini.', key: Key('no-audio')),
+                child: Text('Belum ada rekaman untuk surah ini.', key: Key('no-audio')),
               )
             else ...[
               Wrap(
@@ -221,11 +291,6 @@ class _AudioSheetState extends ConsumerState<AudioSheet> {
                         }
                       },
               ),
-              if (rec != null)
-                Text(
-                  '${rec.attribution} • Lisensi: ${rec.license}',
-                  style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
-                ),
             ],
             if (player.error != null) Text(player.error!, style: TextStyle(color: scheme.error, fontSize: 12)),
           ],

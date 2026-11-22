@@ -1,0 +1,170 @@
+[
+  {
+    "name": "mosque",
+    "source": "exec-7de3c2b5-cba1-460a-aa54-a628fabca672.png",
+    "alpha": true,
+    "bytes": 92140
+  },
+  {
+    "name": "quran",
+    "source": "exec-1a285bc0-e071-4520-8861-dd1ff63bb22c.png",
+    "alpha": true,
+    "bytes": 68700
+  },
+  {
+    "name": "tasbih",
+    "source": "exec-a19687dc-ace1-4de4-9037-5fb60a23576f.png",
+    "alpha": true,
+    "bytes": 61252
+  },
+  {
+    "name": "lantern",
+    "source": "exec-7e1c018b-1974-4e9f-b6ea-754e5d2411a0.png",
+    "alpha": true,
+    "bytes": 68502
+  },
+  {
+    "name": "kaaba",
+    "source": "exec-1c5dd393-5d1a-45c6-ac23-50491b88760b.png",
+    "alpha": true,
+    "bytes": 72450
+  },
+  {
+    "name": "calendar",
+    "source": "exec-e0bfe5dd-e40c-411d-ae1d-96334525c2af.png",
+    "alpha": true,
+    "bytes": 45270
+  },
+  {
+    "name": "prayerMat",
+    "source": "exec-7732e5ad-744c-4c83-9c2a-139d55d7eef9.png",
+    "alpha": true,
+    "bytes": 125290
+  },
+  {
+    "name": "compass",
+    "source": "exec-4b08042a-db44-4c74-bd92-db71bae9218a.png",
+    "alpha": true,
+    "bytes": 57950
+  },
+  {
+    "name": "headphones",
+    "source": "exec-5c0bbe1f-a777-4ceb-ac9a-8a70aa9fa551.png",
+    "alpha": true,
+    "bytes": 66722
+  },
+  {
+    "name": "shield",
+    "source": "exec-a3bfdff9-e163-4edc-a2a6-aad00358ee91.png",
+    "alpha": true,
+    "bytes": 35342
+  },
+  {
+    "name": "finance",
+    "source": "exec-be250a98-7383-4f0c-b588-70b563710866.png",
+    "alpha": true,
+    "bytes": 80650
+  },
+  {
+    "name": "clock",
+    "source": "exec-46d772cb-8d02-4ac7-9b30-1164b2b26217.png",
+    "alpha": true,
+    "bytes": 39328
+  },
+  {
+    "name": "journal",
+    "source": "exec-98f5120f-4961-4d08-b64e-c3ea067511de.png",
+    "alpha": true,
+    "bytes": 84326
+  },
+  {
+    "name": "display",
+    "source": "exec-c9c14b8d-ee33-45cd-92b2-b04e66c847c0.png",
+    "alpha": true,
+    "bytes": 47494
+  },
+  {
+    "name": "profile",
+    "source": "exec-bc42bd85-55a3-45c9-b9f6-4a8f492e7543.png",
+    "alpha": true,
+    "bytes": 35478
+  },
+  {
+    "name": "home",
+    "source": "exec-5660ce58-48b4-44fa-ae5e-7573d052da8d.png",
+    "alpha": true,
+    "bytes": 50508
+  },
+  {
+    "name": "location",
+    "source": "exec-519ada86-d588-4668-a3fe-f2dde3e0162a.png",
+    "alpha": true,
+    "bytes": 40896
+  },
+  {
+    "name": "apps",
+    "source": "exec-2a63c524-e9c7-4b54-8284-c703a4ffc51e.png",
+    "alpha": true,
+    "bytes": 43002
+  },
+  {
+    "name": "offline",
+    "source": "exec-02c566e8-8e51-40b6-85f9-b31b4d0eb320.png",
+    "alpha": true,
+    "bytes": 46152
+  },
+  {
+    "name": "search",
+    "source": "exec-20ff441c-17e1-4919-bac0-682749dfcb35.png",
+    "alpha": true,
+    "bytes": 33460
+  },
+  {
+    "name": "receipt",
+    "source": "exec-917a1056-42bd-4f99-ad1d-eeb3d9f133b9.png",
+    "alpha": true,
+    "bytes": 36646
+  },
+  {
+    "name": "management",
+    "source": "exec-13b5b10c-95fe-4c64-9cb3-e782781ad1e3.png",
+    "alpha": true,
+    "bytes": 65166
+  },
+  {
+    "name": "scene",
+    "source": "exec-b2cfe134-bf48-4230-8034-31b4ad5f10fc.png",
+    "alpha": false,
+    "bytes": 156522
+  },
+  {
+    "name": "relief",
+    "source": "exec-3ff1be7c-a3ee-475a-8ede-6d167bfd9da7.png",
+    "alpha": false,
+    "bytes": 6984
+  },
+  {
+    "name": "reliefDark",
+    "source": "exec-7e8eb73c-8cf0-4404-9715-2d3040ad38e8.png",
+    "alpha": false,
+    "bytes": 4556
+  },
+  {
+    "name": "dua",
+    "source": "exec-3b361846-3792-4f04-90cd-551d623efd14.png",
+    "alpha": true,
+    "bytes": 93604
+  },
+  {
+    "name": "prayerTime",
+    "source": "exec-18e54944-6720-42f9-9272-a097fdbc3647.png",
+    "alpha": true,
+    "bytes": 57800
+  },
+  {
+    "name": "phone",
+    "source": "exec-92e173a5-f7cf-4197-a90e-df8304219004.png",
+    "alpha": true,
+    "bytes": 38280
+  }
+]

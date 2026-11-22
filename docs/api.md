@@ -27,8 +27,8 @@ Semua rute `/mosques/{mosque}/...` mensyaratkan anggota aktif (selain itu 404). 
 | GET | `/mosques/{m}/subscription` | status + pemakaian FUP |
 | POST | `/mosques/{m}/subscription/verify` | `billing.manage` (Google Play; 503 bila belum dikonfigurasi) |
 | GET | `/mosques/{m}/members` | `members.view` |
-| POST | `/mosques/{m}/members/invite` | `members.manage` — `member_limit_reached` |
-| PATCH | `/mosques/{m}/members/{id}` | ubah role — `last_admin` |
+| POST | `/mosques/{m}/members/invite` | `members.manage`, error `member_limit_reached` |
+| PATCH | `/mosques/{m}/members/{id}` | ubah role, error `last_admin` |
 | POST | `/mosques/{m}/members/{id}/deactivate` · `/reactivate` | `rotation_limit_reached` (maks 3/30 hari) |
 | DELETE | `/mosques/{m}/invitations/{id}` | cabut undangan |
 | POST | `/mosques/{m}/transfer-ownership` | pemilik |
@@ -41,10 +41,10 @@ Semua rute `/mosques/{mosque}/...` mensyaratkan anggota aktif (selain itu 404). 
 | GET | `/finance/setup` | dana, akun kas, kategori |
 | GET | `/finance/transactions?from&to&fund_id&cash_account_id&flow&q` | `finance.view` |
 | POST | `/finance/transactions` | `finance.write`, header **Idempotency-Key** wajib (428). Key sama + data beda → 409 |
-| POST | `/finance/transactions/{id}/reverse` | entri pembalik — `already_reversed` |
-| POST | `/finance/transactions/{id}/attachments` | jpg/png/webp/pdf ≤5 MB — `storage_quota_exceeded` |
+| POST | `/finance/transactions/{id}/reverse` | entri pembalik, error `already_reversed` |
+| POST | `/finance/transactions/{id}/attachments` | jpg/png/webp/pdf ≤5 MB, error `storage_quota_exceeded` |
 | GET | `/finance/summary?from&to` · `/finance/reports/monthly?year` | `finance.view` |
-| GET | `/finance/export?from&to` | `finance.export` — CSV UTF-8 |
+| GET | `/finance/export?from&to` | `finance.export` (CSV UTF-8) |
 | POST | `/finance/accounts` · `/finance/funds` · `/finance/categories` | `finance.write` |
 
 Transaksi: `flow` = in | out | transfer, `amount` integer rupiah > 0, `fund_id`, `cash_account_id`,
@@ -65,7 +65,7 @@ Batas: 500 agenda+pengumuman aktif (`content_limit_reached`), 5.000 inventaris (
 | Metode | Path | Keterangan |
 |---|---|---|
 | GET | `/mosques/{m}/displays` | `display.view` |
-| POST | `/mosques/{m}/displays/pairing-codes` | `display.manage` → kode 6 digit, 10 menit, sekali pakai — `display_limit_reached` |
+| POST | `/mosques/{m}/displays/pairing-codes` | `display.manage` → kode 6 digit, 10 menit, sekali pakai, error `display_limit_reached` |
 | PATCH/POST | `/mosques/{m}/displays/{id}` · `/revoke` | `display.manage` |
 | POST | `/display/pair` | perangkat menukar kode → token (throttle 5/menit) |
 | GET | `/display/content` | token perangkat; mendukung `If-None-Match` (304) |

@@ -1,4 +1,4 @@
-# Moeslim MVP — Implementation Plan
+# Moeslim MVP: Implementation Plan
 
 Spec: `docs/blueprint.md` (ringkasan Product Blueprint v1.0 + revisi arsitek v1.1).
 
@@ -62,7 +62,7 @@ Tests: limit, permission operator, arsip membebaskan slot.
 Tests: pairing sekali pakai, kedaluwarsa, limit 5, revoke → 401, tidak bocor data internal.
 
 ### Task 8: Publik, langganan, dashboard
-- `GET /api/public/mosques/{slug}`, `/events`, `/announcements` — allowlist field, rate limit.
+- `GET /api/public/mosques/{slug}`, `/events`, `/announcements`: allowlist field, rate limit.
 - Subscription state: trialing/active/grace(7 hari)/expired; middleware `entitled` memblokir write (403 `subscription_inactive`) saat expired, read + export tetap.
 - Provider interface `BillingProvider` (manual, google_play stub) + `POST /mosques/{m}/subscription/verify`.
 - `GET /mosques/{m}/dashboard`.

@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 
 import '../../core/format.dart';
@@ -79,6 +79,9 @@ class MosqueHomeTab extends ConsumerWidget {
       if (ctx.can('events.view'))
         (MoeslimIcons.pengumuman, 'Konten TV', () => _push(context, AnnouncementsPage(ctx: ctx))),
       if (ctx.can('finance.view')) (MoeslimIcons.grafikBatang, 'Laporan', () => _push(context, ReportPage(ctx: ctx))),
+      if (ctx.can('zakat.view')) (MoeslimIcons.saldo, 'Zakat', () => _push(context, ZakatPage(ctx: ctx))),
+      if (ctx.can('qurban.view')) (Icons.qr_code_2_rounded, 'Kurban & QR', () => _push(context, QurbanPage(ctx: ctx))),
+      (MoeslimIcons.web, 'Profil Web', () => _push(context, MosqueMicrositePage(ctx: ctx))),
     ];
 
     return Column(
@@ -214,6 +217,15 @@ class _RecentActivity extends ConsumerWidget {
       const {
         'finance.transaction_created': 'Transaksi kas dicatat',
         'finance.transaction_reversed': 'Transaksi dibatalkan',
+        'finance.donation_box_counted': 'Kotak amal dihitung',
+        'zakat.collection_created': 'Penerimaan zakat dicatat',
+        'zakat.mustahik_distributed': 'Zakat disalurkan ke mustahik',
+        'qurban.animal_created': 'Hewan kurban didaftarkan',
+        'qurban.participant_created': 'Shohibul qurban ditambahkan',
+        'coupon.issued': 'Kupon QR diterbitkan',
+        'coupon.redeemed': 'Kupon QR ditukarkan',
+        'display.override_set': 'Siaran darurat TV diaktifkan',
+        'display.qris_uploaded': 'QRIS TV Display diperbarui',
         'event.created': 'Kegiatan ditambahkan',
         'event.updated': 'Kegiatan diperbarui',
         'event.archived': 'Kegiatan diarsipkan',

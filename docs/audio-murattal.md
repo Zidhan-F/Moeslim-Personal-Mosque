@@ -1,7 +1,7 @@
 # Audio Murottal
 
 Pemutar Al-Qur'an **per surah atau per ayat** dengan pilihan **qari murattal** (bacaan tartil).
-Fitur 7 Irama (Naghom) sudah dihapus — lihat ADR 0006.
+Fitur 7 Irama (Naghom) sudah dihapus; lihat ADR 0006.
 
 ## Arsitektur
 - **Satuan audio = satu berkas per ayat**: `<base_url>/<SSS><AAA>.mp3` (mis. `002255.mp3`).
@@ -23,7 +23,7 @@ Fitur 7 Irama (Naghom) sudah dihapus — lihat ADR 0006.
       "qari": "Qari Fulan",
       "kind": "murattal",
       "base_url": "https://cdn.moeslim.id/audio/qari-fulan/murattal",
-      "license": "Perjanjian lisensi No. 12/2026 — distribusi & unduh offline diizinkan",
+      "license": "Perjanjian lisensi No. 12/2026: distribusi & unduh offline diizinkan",
       "attribution": "Rekaman Qari Fulan",
       "surahs": "all"
     }

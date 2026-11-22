@@ -57,6 +57,6 @@ void main() {
         'packages/moeslim_brand/assets/logo/horizontal_white.png');
     expect(await assetFor(Brightness.dark, BrandLogoVariant.symbol),
         'packages/moeslim_brand/assets/logo/symbol_white.png');
-    expect(find.bySemanticsLabel('Moeslim PM — Personal & Mosque'), findsOneWidget);
+    expect(find.bySemanticsLabel('Moeslim PM: Personal & Mosque'), findsOneWidget);
   });
 }

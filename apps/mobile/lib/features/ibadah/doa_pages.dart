@@ -1,6 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:personal_core/personal_core.dart';
 
@@ -130,8 +130,8 @@ class _DoaListPageState extends ConsumerState<DoaListPage> {
                   const SizedBox(height: 2),
                   Text(
                     isDaily
-                        ? 'Kumpulan doa sehari-hari dan aktivitas dari bangun tidur hingga tidur lagi (Hisnul Muslim & sunnah shahih).'
-                        : 'Doa-doa yang diabadikan dalam Al-Qur\'an, lengkap dengan teks Arab dan terjemahan Kemenag.',
+                        ? 'Kumpulan doa sehari-hari dan aktivitas dari bangun tidur hingga tidur lagi.'
+                        : 'Doa-doa yang diabadikan dalam Al-Qur\'an, lengkap dengan teks Arab dan terjemahan.',
                   ),
                   const SizedBox(height: 12),
                   TextField(
@@ -459,12 +459,28 @@ class _DoaEmptyState extends StatelessWidget {
   }
 }
 
+/// Menghapus baris atribusi "Sumber: ..." agar seluruh referensi dipusatkan di menu Tentang.
+String cleanDuaNote(String raw) {
+  final lines = raw
+      .split('\n')
+      .where((line) => !RegExp(r'^\s*sumber\s*:', caseSensitive: false).hasMatch(line))
+      .toList();
+  while (lines.isNotEmpty && lines.last.trim().isEmpty) {
+    lines.removeLast();
+  }
+  while (lines.isNotEmpty && lines.first.trim().isEmpty) {
+    lines.removeAt(0);
+  }
+  return lines.join('\n').replaceAll(RegExp(r'\n{3,}'), '\n\n').trim();
+}
+
 class DailyDuaDetailPage extends StatelessWidget {
   final DailyDua dua;
   const DailyDuaDetailPage({super.key, required this.dua});
 
   @override
   Widget build(BuildContext context) {
+    final note = cleanDuaNote(dua.source);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Detail Doa'),
@@ -479,7 +495,7 @@ class DailyDuaDetailPage extends StatelessWidget {
                 dua.arabic,
                 if (dua.latin.isNotEmpty) dua.latin,
                 'Artinya: ${dua.translation}',
-                if (dua.source.isNotEmpty) dua.source,
+                if (note.isNotEmpty) note,
               ].join('\n\n');
               Clipboard.setData(ClipboardData(text: text));
               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Doa disalin ke clipboard')));
@@ -523,12 +539,12 @@ class DailyDuaDetailPage extends StatelessWidget {
               subtitle: Padding(padding: const EdgeInsets.only(top: 6), child: Text(dua.translation)),
             ),
           ),
-          if (dua.source.isNotEmpty)
+          if (note.isNotEmpty)
             Card(
               child: ListTile(
                 leading: const Icon(MoeslimIcons.quranTerbuka, color: BrandColors.emerald),
-                title: const Text('Sumber & Keterangan', style: TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: Padding(padding: const EdgeInsets.only(top: 6), child: Text(dua.source)),
+                title: const Text('Keterangan', style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: Padding(padding: const EdgeInsets.only(top: 6), child: Text(note)),
               ),
             ),
         ],
@@ -567,15 +583,8 @@ class DoaDetailPage extends StatelessWidget {
           Card(
             child: ListTile(
               leading: const Icon(Icons.translate, color: BrandColors.emerald),
-              title: const Text('Artinya (Terjemahan Kemenag)', style: TextStyle(fontWeight: FontWeight.w600)),
+              title: const Text('Artinya', style: TextStyle(fontWeight: FontWeight.w600)),
               subtitle: Padding(padding: const EdgeInsets.only(top: 6), child: Text(dua.translation)),
-            ),
-          ),
-          Card(
-            child: ListTile(
-              leading: const Icon(MoeslimIcons.quranTerbuka),
-              title: Text(dua.reference),
-              subtitle: const Text('Teks: Tanzil (Uthmani) • Terjemahan: Kementerian Agama RI'),
             ),
           ),
         ],

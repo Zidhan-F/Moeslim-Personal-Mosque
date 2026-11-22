@@ -1,4 +1,7 @@
 .superpowers/
+.omc/
+__pycache__/
+*.pyc
 .DS_Store
 .idea/
 .vscode/
@@ -12,6 +15,7 @@ pubspec_overrides.yaml
 # Backend
 backend/vendor/
 backend/node_modules/
+tools/asset_kit/optimizer/node_modules/
 backend/.env
 backend/storage/*.key
 backend/.phpunit.result.cache

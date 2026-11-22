@@ -25,6 +25,10 @@ const adminPermissions = [
   'audit.view',
   'mosque.update',
   'billing.manage',
+  'zakat.view',
+  'zakat.write',
+  'qurban.view',
+  'qurban.write',
 ];
 
 String _today() {
@@ -66,7 +70,13 @@ MockClient fakeMosqueBackend(
       });
     case ('GET', '/mosques/M1/dashboard'):
       return json({
-        'mosque': {'id': 'M1', 'name': 'Masjid Al-Ikhlas', 'city': 'Jakarta'},
+        'mosque': {
+          'id': 'M1',
+          'slug': 'masjid-al-ikhlas',
+          'name': 'Masjid Al-Ikhlas',
+          'city': 'Jakarta',
+          'settings': {'public_show_finance': false},
+        },
         'role': role,
         'permissions': permissions,
         'finance': permissions.contains('finance.view')
@@ -133,6 +143,76 @@ MockClient fakeMosqueBackend(
           for (var m = 1; m <= 12; m++) {'month': m, 'in': m * 10000, 'out': m * 4000},
         ],
       });
+    case ('PATCH', '/mosques/M1'):
+      return json({'data': jsonDecode(req.body)});
+    case ('GET', '/mosques/M1/finance/friday-report'):
+      return json({
+        'mosque_name': 'Masjid Al-Ikhlas',
+        'mosque_city': 'Jakarta',
+        'from': '2026-11-14',
+        'to': req.url.queryParameters['date'] ?? '2026-11-20',
+        'opening_balance': 1000000,
+        'total_in': 500000,
+        'total_out': 150000,
+        'net': 350000,
+        'closing_balance': 1350000,
+        'funds': [
+          {'id': 1, 'name': 'Kas Operasional', 'balance': 1350000, 'restricted': false},
+        ],
+        'top_in': [
+          {'date': '2026-11-20', 'description': 'Infaq Kotak Jumat', 'amount': 500000, 'fund_name': 'Kas Operasional'},
+        ],
+        'top_out': [
+          {'date': '2026-11-18', 'description': 'Token Listrik', 'amount': 150000, 'fund_name': 'Kas Operasional'},
+        ],
+        'whatsapp_text': '*LAPORAN KAS JUMAT*\n*Masjid Al-Ikhlas*\nSaldo Akhir: Rp1.350.000',
+      });
+    case ('GET', '/mosques/M1/finance/donation-box-counts'):
+      return json({
+        'data': [
+          {
+            'id': 1,
+            'date': today,
+            'box_name': 'Kotak Amal Utama',
+            'denominations': {'100000': 2, '50000': 3},
+            'total_amount': 350000,
+            'witness_1_name': 'H. Budi',
+            'witness_2_name': 'Bpk. Slamet',
+            'transaction': {'id': 11, 'reference_no': 'TX-11', 'amount': 350000, 'date': today, 'receipt_token': 'tok-11'},
+          },
+        ],
+      });
+    case ('POST', '/mosques/M1/finance/donation-box-counts'):
+      final body = jsonDecode(req.body) as Map;
+      return json({
+        'data': {
+          'id': 2,
+          'date': body['date'],
+          'box_name': body['box_name'],
+          'denominations': body['denominations'],
+          'total_amount': 250000,
+          'witness_1_name': body['witness_1_name'],
+          'witness_2_name': body['witness_2_name'],
+          'transaction': {'id': 14, 'reference_no': 'TX-14', 'amount': 250000, 'date': body['date'], 'receipt_token': 'tok-14'},
+        },
+      }, 201);
+    case ('GET', '/mosques/M1/finance/transactions/11/receipt'):
+      return json({
+        'data': {
+          'receipt_no': 'TX-11',
+          'receipt_token': 'tok-11',
+          'verify_url': 'https://moeslim.id/verify/receipt/tok-11',
+          'status': 'valid',
+          'mosque_name': 'Masjid Al-Ikhlas',
+          'mosque_city': 'Jakarta',
+          'donor_name': 'H. Ahmad Fauzi',
+          'amount': 200000,
+          'fund_name': 'Kas Operasional',
+          'account_name': 'Tunai',
+          'date': today,
+          'description': 'Infaq Jumat',
+        },
+      });
     case ('GET', '/mosques/M1/finance/transactions'):
       final flow = req.url.queryParameters['flow'];
       final all = [
@@ -143,6 +223,8 @@ MockClient fakeMosqueBackend(
           'amount': 200000,
           'date': today,
           'description': 'Infaq Jumat',
+          'donor_name': 'H. Ahmad Fauzi',
+          'receipt_token': 'tok-11',
           'category': {'id': 1, 'name': 'Infaq'},
           'fund': {'id': 1, 'name': 'Kas Operasional'},
           'account': {'id': 1, 'name': 'Tunai'},
@@ -315,7 +397,27 @@ MockClient fakeMosqueBackend(
           },
         ],
         'limit': 5,
+        'mosque_settings': {
+          'display_show_finance': false,
+          'display_show_qris': false,
+          'qris_label': 'Infaq Masjid',
+          'iqamah_minutes': {'fajr': 10, 'dhuhr': 10, 'asr': 10, 'maghrib': 5, 'isha': 10},
+          'praying_minutes': {'fajr': 15, 'dhuhr': 15, 'asr': 15, 'maghrib': 15, 'isha': 15, 'jumuah': 45},
+          'silent_prayer_screen': true,
+          'silent_prayer_message': 'Luruskan & Rapatkan Shaf • Harap Tenangkan Ponsel',
+          'iqamah_beep': true,
+        },
+        'qris': {'has_image': false, 'enabled': false, 'label': 'Infaq Masjid'},
+        'override': null,
       });
+    case ('PATCH', '/mosques/M1/displays/settings'):
+      return json({'data': jsonDecode(req.body)});
+    case ('POST', '/mosques/M1/displays/override'):
+      return json({'data': jsonDecode(req.body)});
+    case ('DELETE', '/mosques/M1/displays/override'):
+      return json({'data': null});
+    case ('DELETE', '/mosques/M1/displays/qris'):
+      return json({'data': {'has_image': false, 'enabled': false}});
     case ('POST', '/mosques/M1/displays/pairing-codes'):
       return json({
         'data': {'code': '482913', 'expires_at': '2026-11-20T10:10:00Z'},
@@ -337,6 +439,109 @@ MockClient fakeMosqueBackend(
       });
     case ('PATCH', '/mosques/M1/announcements/3/display'):
       return json({'data': {}});
+    case ('GET', '/mosques/M1/zakat'):
+      return json({
+        'summary': {
+          'total_collections': 1,
+          'total_souls': 4,
+          'total_money_in': 180000,
+          'total_rice_in_kg': 0,
+          'total_mustahik': 1,
+          'distributed_mustahik': 0,
+          'distributed_money': 0,
+          'distributed_rice_kg': 0,
+        },
+        'collections': [
+          {
+            'id': 1,
+            'type': 'fitrah_money',
+            'hijri_year': 1447,
+            'date': today,
+            'muzakki_name': 'Keluarga Bpk. Hasan',
+            'souls_count': 4,
+            'money_amount': 180000,
+            'rice_kg': 0,
+          },
+        ],
+        'mustahiks': [
+          {
+            'id': 10,
+            'hijri_year': 1447,
+            'name': 'Mbah Suyono',
+            'asnaf': 'fakir',
+            'address': 'RT 03',
+            'money_amount': 100000,
+            'rice_kg': 3.5,
+            'status': 'planned',
+          },
+        ],
+      });
+    case ('POST', '/mosques/M1/zakat/collections'):
+      return json({'data': {'id': 2, ...jsonDecode(req.body) as Map}}, 201);
+    case ('POST', '/mosques/M1/zakat/mustahiks'):
+      return json({'data': {'id': 11, ...jsonDecode(req.body) as Map}}, 201);
+    case ('POST', '/mosques/M1/zakat/mustahiks/10/distribute'):
+      return json({'data': {'id': 10, 'status': 'distributed'}});
+    case ('GET', '/mosques/M1/qurban/animals'):
+      return json({
+        'summary': {
+          'total_animals': 1,
+          'total_participants': 1,
+          'total_meat_packs': 0,
+          'slaughtered_count': 0,
+        },
+        'data': [
+          {
+            'id': 5,
+            'hijri_year': 1447,
+            'code': 'SAPI-01',
+            'species': 'sapi',
+            'capacity': 7,
+            'used_shares': 1,
+            'remaining_shares': 6,
+            'weight_kg': 450,
+            'price_idr': 24500000,
+            'slaughter_status': 'registered',
+            'meat_packs_count': 0,
+            'participants': [
+              {'id': 21, 'name': 'H. Rahman', 'shares': 1, 'amount_idr': 3500000, 'payment_status': 'paid', 'meat_taken': false},
+            ],
+          },
+        ],
+      });
+    case ('POST', '/mosques/M1/qurban/animals'):
+      return json({'data': {'id': 6, ...jsonDecode(req.body) as Map}}, 201);
+    case ('PATCH', '/mosques/M1/qurban/animals/5'):
+      return json({'data': {'id': 5, ...jsonDecode(req.body) as Map}});
+    case ('POST', '/mosques/M1/qurban/animals/5/participants'):
+      return json({'data': {'id': 22, ...jsonDecode(req.body) as Map}}, 201);
+    case ('GET', '/mosques/M1/coupons'):
+      return json({
+        'summary': {'total': 1, 'issued': 1, 'redeemed': 0, 'void': 0},
+        'data': [
+          {
+            'id': 31,
+            'program': 'qurban',
+            'hijri_year': 1447,
+            'code': 'QBN-ABC123',
+            'recipient_name': 'Warga RW 05 #1',
+            'recipient_address': 'RW 05',
+            'status': 'issued',
+          },
+        ],
+      });
+    case ('POST', '/mosques/M1/coupons'):
+      return json({
+        'data': [
+          {'id': 32, 'code': 'QBN-NEW999', 'recipient_name': 'Warga Baru #1', 'status': 'issued'},
+        ],
+      }, 201);
+    case ('POST', '/mosques/M1/coupons/redeem'):
+      final code = (jsonDecode(req.body) as Map)['code'] as String;
+      if (code == 'QBN-DUP') {
+        return json({'code': 'coupon_already_redeemed', 'message': 'Kupon QBN-DUP sudah ditukarkan sebelumnya.'}, 422);
+      }
+      return json({'data': {'id': 31, 'code': code, 'recipient_name': 'Warga RW 05 #1', 'status': 'redeemed'}});
   }
   return json({'message': 'not found'}, 404);
 });

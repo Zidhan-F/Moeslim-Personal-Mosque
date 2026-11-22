@@ -2,6 +2,8 @@ import 'package:intl/intl.dart';
 
 String hhmm(DateTime t) => '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 
+String hhmmss(DateTime t) => '${hhmm(t)}:${t.second.toString().padLeft(2, '0')}';
+
 String countdown(Duration d) {
   if (d.isNegative) d = Duration.zero;
   final h = d.inHours, m = d.inMinutes % 60, s = d.inSeconds % 60;

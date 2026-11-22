@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:personal_core/personal_core.dart';
 
@@ -119,10 +119,18 @@ class _MurottalPageState extends ConsumerState<MurottalPage> {
               IconButton.filled(
                 key: const Key('murottal-play'),
                 iconSize: 40,
-                style: IconButton.styleFrom(minimumSize: const Size(72, 72)),
+                style: IconButton.styleFrom(
+                  minimumSize: const Size(72, 72),
+                  fixedSize: const Size(72, 72),
+                  padding: EdgeInsets.zero,
+                  alignment: Alignment.center,
+                ),
                 tooltip: player.playing ? 'Jeda' : 'Putar',
-                icon: Icon(player.playing ? MoeslimIcons.pause : MoeslimIcons.play),
-                onPressed: rec == null ? null : () => player.queue.isEmpty ? ctl.playFrom(1) : ctl.togglePause(),
+                icon: Transform.translate(
+                  offset: Offset(player.playing ? 0 : 2.0, 0),
+                  child: Icon(player.playing ? MoeslimIcons.pause : MoeslimIcons.play),
+                ),
+                onPressed: rec == null ? null : () => ctl.toggleSurahPlayback(surah.number),
               ),
               IconButton(
                 tooltip: 'Ayat berikutnya',
@@ -155,18 +163,10 @@ class _MurottalPageState extends ConsumerState<MurottalPage> {
               ),
             ],
           ),
-          if (rec != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                '${rec.attribution} • Lisensi: ${rec.license}',
-                style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
-              ),
-            ),
           if (rec == null)
             const Padding(
               padding: EdgeInsets.only(top: 8),
-              child: Text('Belum ada rekaman berlisensi untuk surah ini.', key: Key('no-audio')),
+              child: Text('Belum ada rekaman untuk surah ini.', key: Key('no-audio')),
             ),
           const SectionHeader('Daftar Putar'),
           for (final s in surahs.take(20))

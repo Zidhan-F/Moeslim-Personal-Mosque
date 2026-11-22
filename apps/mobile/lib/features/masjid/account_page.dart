@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 
 import '../../core/format.dart';
@@ -8,14 +8,18 @@ import 'announcements_page.dart';
 import 'finance_pages.dart';
 import 'inventory_page.dart';
 import 'members_page.dart';
+import 'microsite_page.dart';
 import 'mosque_providers.dart';
 import 'session.dart';
 import 'tv_config_page.dart';
+import 'zakat_qurban_page.dart';
 
 export 'announcements_page.dart';
 export 'inventory_page.dart';
 export 'members_page.dart';
+export 'microsite_page.dart';
 export 'tv_config_page.dart';
+export 'zakat_qurban_page.dart';
 
 const subscriptionStates = {
   'trialing': ('Uji coba', MosqueColors.info),
@@ -74,6 +78,29 @@ class MosqueAccountTab extends ConsumerWidget {
           'Konten & Pengumuman',
           'Atur tayangan di TV',
           AnnouncementsPage(ctx: ctx),
+        ),
+      (
+        const Key('menu-microsite'),
+        MoeslimIcons.web,
+        'Microsite Profil Masjid',
+        'Tautan web publik & kartu QR',
+        MosqueMicrositePage(ctx: ctx),
+      ),
+      if (ctx.can('zakat.view'))
+        (
+          const Key('menu-zakat'),
+          MoeslimIcons.keuangan,
+          'Zakat Fitrah & Maal',
+          'Muzakki, beras/uang & mustahik',
+          ZakatPage(ctx: ctx),
+        ),
+      if (ctx.can('qurban.view'))
+        (
+          const Key('menu-qurban'),
+          MoeslimIcons.kegiatan,
+          'Kurban & Kupon QR',
+          'Patungan 1/7, sembelih & scan QR',
+          QurbanPage(ctx: ctx),
         ),
       if (ctx.can('finance.view'))
         (

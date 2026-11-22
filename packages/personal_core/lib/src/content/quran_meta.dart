@@ -1,5 +1,5 @@
 // GENERATED oleh skrip impor dari @faha1999/al-quran-database (MIT; data alquran.cloud/Tanzil).
-// Jangan diedit manual — jalankan ulang skrip impor bila sumber berubah.
+// Jangan diedit manual; jalankan ulang skrip impor bila sumber berubah.
 
 /// Nama Arab surah (urut 1..114).
 const List<String> surahArabicNames = [

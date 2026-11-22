@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:personal_core/personal_core.dart';
 
@@ -8,6 +8,7 @@ import '../../ui/components.dart';
 import '../masjid/masjid_home_page.dart';
 import '../prayer/prayer_page.dart';
 import 'about_licenses_page.dart';
+import 'backup_restore_page.dart';
 
 /// Profil Moeslim Personal: semua data hanya di perangkat, tanpa akun.
 class MorePage extends ConsumerWidget {
@@ -95,16 +96,19 @@ class MorePage extends ConsumerWidget {
                   ListTile(
                     leading: const Icon(MoeslimIcons.bulan),
                     title: const Text('Tampilan'),
-                    trailing: SegmentedButton<AppThemeMode>(
-                      showSelectedIcon: false,
-                      segments: const [
-                        ButtonSegment(value: AppThemeMode.system, label: Text('Auto')),
-                        ButtonSegment(value: AppThemeMode.light, label: Text('Terang')),
-                        ButtonSegment(value: AppThemeMode.dark, label: Text('Gelap')),
-                      ],
-                      selected: {s.themeMode},
-                      onSelectionChanged: (v) =>
-                          ref.read(settingsProvider.notifier).save(s.copyWith(themeMode: v.first)),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: SegmentedButton<AppThemeMode>(
+                        showSelectedIcon: false,
+                        segments: const [
+                          ButtonSegment(value: AppThemeMode.system, label: Text('Auto')),
+                          ButtonSegment(value: AppThemeMode.light, label: Text('Terang')),
+                          ButtonSegment(value: AppThemeMode.dark, label: Text('Gelap')),
+                        ],
+                        selected: {s.themeMode},
+                        onSelectionChanged: (v) =>
+                            ref.read(settingsProvider.notifier).save(s.copyWith(themeMode: v.first)),
+                      ),
                     ),
                   ),
                   ListTile(
@@ -148,23 +152,23 @@ class MorePage extends ConsumerWidget {
           ),
           const SectionHeader('Tentang'),
           Card(
-            child: Column(
-              children: [
-                ListTile(
-                  key: const Key('about-licenses'),
-                  leading: const Icon(MoeslimIcons.laporan),
-                  title: const Text('Tentang & Lisensi'),
-                  subtitle: const Text('Gratis, non-komersial, tanpa iklan • atribusi sumber konten'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => push(const AboutLicensesPage()),
-                ),
-                const AboutListTile(
-                  applicationName: 'Moeslim PM',
-                  applicationVersion: '0.1.0',
-                  applicationLegalese: 'Personal & Mosque',
-                  icon: Icon(MoeslimIcons.info),
-                ),
-              ],
+            child: ListTile(
+              key: const Key('about-licenses'),
+              leading: const Icon(MoeslimIcons.info),
+              title: const Text('Tentang'),
+              subtitle: const Text('Daftar isi, referensi & lisensi • v$appVersion'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => push(const AboutLicensesPage()),
+            ),
+          ),
+          Card(
+            child: ListTile(
+              key: const Key('open-backup-restore'),
+              leading: const Icon(MoeslimIcons.database),
+              title: const Text('Cadangkan & Pulihkan Data Lokal'),
+              subtitle: const Text('Ekspor/impor penanda, catatan ibadah, hafalan & pengaturan'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => push(const BackupRestorePage()),
             ),
           ),
         ],

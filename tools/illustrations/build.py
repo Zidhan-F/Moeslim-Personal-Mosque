@@ -1,4 +1,4 @@
-"""Generator ilustrasi Moeslim PM (SVG) — gaya selaras dengan Asset Kit (warm editorial Islamic illustration):
+"""Generator ilustrasi Moeslim PM (SVG), gaya selaras dengan Asset Kit (warm editorial Islamic illustration):
 masjid krem berkubah zamrud (emerald) & sabuk emas, cahaya mihrab hangat keemasan, halo matahari pagi,
 dedaunan organik berlapis, Al-Qur'an di rehal kayu ukir dengan bintang Rub el Hizb, serta ornamen kisi.
 

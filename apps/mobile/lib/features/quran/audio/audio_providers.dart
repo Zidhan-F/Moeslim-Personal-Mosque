@@ -64,6 +64,7 @@ class PlayerState {
   final List<AudioTrack> queue;
   final int? index;
   final bool playing;
+  final bool completed;
   final bool repeatAyah;
   final String? error;
   final double speed;
@@ -76,6 +77,7 @@ class PlayerState {
     this.queue = const [],
     this.index,
     this.playing = false,
+    this.completed = false,
     this.repeatAyah = false,
     this.error,
     this.speed = 1,
@@ -83,14 +85,16 @@ class PlayerState {
     this.duration,
   });
 
-  AudioTrack? get current => index != null && index! < queue.length ? queue[index!] : null;
+  AudioTrack? get current => index != null && index! >= 0 && index! < queue.length ? queue[index!] : null;
 
   PlayerState copyWith({
     int? surah,
     Recitation? recitation,
     List<AudioTrack>? queue,
     int? index,
+    bool clearIndex = false,
     bool? playing,
+    bool? completed,
     bool? repeatAyah,
     String? error,
     bool clearError = false,
@@ -101,8 +105,9 @@ class PlayerState {
     surah: surah ?? this.surah,
     recitation: recitation ?? this.recitation,
     queue: queue ?? this.queue,
-    index: index ?? this.index,
+    index: clearIndex ? null : (index ?? this.index),
     playing: playing ?? this.playing,
+    completed: completed ?? this.completed,
     repeatAyah: repeatAyah ?? this.repeatAyah,
     error: clearError ? null : (error ?? this.error),
     speed: speed ?? this.speed,
@@ -114,6 +119,7 @@ class PlayerState {
 /// Pemutar murottal per surah / per ayat dengan pilihan qari.
 class QuranPlayer extends Notifier<PlayerState> {
   final _subs = <StreamSubscription>[];
+  int _playGen = 0;
 
   AudioEngine get _engine => ref.read(audioEngineProvider);
 
@@ -122,7 +128,24 @@ class QuranPlayer extends Notifier<PlayerState> {
     final engine = ref.watch(audioEngineProvider);
     _subs
       ..add(engine.currentIndex.listen((i) => state = state.copyWith(index: i)))
-      ..add(engine.playing.listen((p) => state = state.copyWith(playing: p)))
+      ..add(engine.playing.listen((p) => state = state.copyWith(playing: p, completed: p ? false : state.completed)))
+      ..add(
+        engine.completed.listen((done) {
+          if (done) {
+            state = state.copyWith(completed: true, playing: false);
+          } else if (state.completed) {
+            state = state.copyWith(completed: false);
+          }
+        }),
+      )
+      ..add(
+        engine.errors.listen(
+          (_) => state = state.copyWith(
+            playing: false,
+            error: 'Gagal memutar audio. Periksa koneksi atau unduh untuk offline.',
+          ),
+        ),
+      )
       ..add(engine.position.listen((p) => state = state.copyWith(position: p)))
       ..add(engine.duration.listen((d) => state = state.copyWith(duration: d)));
     ref.onDispose(() {
@@ -136,12 +159,17 @@ class QuranPlayer extends Notifier<PlayerState> {
 
   /// Siapkan qari untuk surah: pakai preferensi terakhir bila tersedia, jika tidak qari pertama.
   Future<void> prepare(int surah) async {
-    if (state.surah != null && state.surah != surah && state.playing) await _engine.stop();
+    final switchingSurah = state.surah != null && state.surah != surah;
+    if (switchingSurah) {
+      await _engine.stop();
+    } else if (state.surah == surah && state.recitation != null && state.queue.isNotEmpty) {
+      return;
+    }
     final manifest = await ref.read(audioManifestProvider.future);
     final options = manifest.recitationsFor(surah);
     final prefRec = await ref.read(audioPrefsProvider).recitationId();
     final rec = options.where((r) => r.id == prefRec).firstOrNull ?? options.firstOrNull;
-    state = PlayerState(surah: surah, recitation: rec, repeatAyah: state.repeatAyah);
+    state = PlayerState(surah: surah, recitation: rec, repeatAyah: state.repeatAyah, speed: state.speed);
   }
 
   /// Pilih qari; bila sedang memutar, lanjutkan dari ayat yang sama.
@@ -153,9 +181,21 @@ class QuranPlayer extends Notifier<PlayerState> {
     if (rec == null) return;
     final wasPlaying = state.playing;
     final resumeAyah = state.current?.ayah;
-    state = state.copyWith(recitation: rec, clearError: true);
     await ref.read(audioPrefsProvider).save(recitationId: rec.id);
-    if (wasPlaying && resumeAyah != null) await playFrom(resumeAyah);
+    if (wasPlaying && resumeAyah != null) {
+      state = state.copyWith(recitation: rec, clearError: true);
+      await playFrom(resumeAyah);
+    } else {
+      await _engine.stop();
+      state = state.copyWith(
+        recitation: rec,
+        queue: const [],
+        clearIndex: true,
+        playing: false,
+        completed: false,
+        clearError: true,
+      );
+    }
   }
 
   /// Putar surah mulai ayat [ayah] sampai akhir surah.
@@ -164,18 +204,72 @@ class QuranPlayer extends Notifier<PlayerState> {
   /// Putar satu ayat saja.
   Future<void> playAyah(int ayah) => _play(fromAyah: ayah, toAyah: ayah);
 
+  /// Putar berurutan mulai dari [ayah] hingga akhir surah; jika ayat ini sedang diputar, jeda/lanjutkan.
+  Future<void> playOrToggleFromAyah(int ayah) async {
+    final surah = state.surah;
+    final rec = state.recitation;
+    if (surah == null || rec == null) return;
+    if (state.current?.ayah == ayah && state.playing) {
+      await _engine.pause();
+      return;
+    }
+    final isSameContinuousQueue =
+        state.current?.ayah == ayah &&
+        !state.completed &&
+        state.queue.isNotEmpty &&
+        state.queue.first.surah == surah &&
+        state.queue.first.recitation.id == rec.id &&
+        state.queue.last.ayah == surahs[surah - 1].ayahCount;
+    if (isSameContinuousQueue) {
+      await _engine.resume();
+      return;
+    }
+    await playFrom(ayah);
+  }
+
+  /// Putar seluruh surah berurutan atau jeda/lanjutkan antrean surah yang sedang aktif.
+  Future<void> toggleSurahPlayback([int? targetSurah]) async {
+    if (targetSurah != null && state.surah != targetSurah) {
+      await prepare(targetSurah);
+    }
+    final surah = state.surah;
+    final rec = state.recitation;
+    if (surah == null || rec == null) return;
+    if (state.playing) {
+      await _engine.pause();
+      return;
+    }
+    final expectedLast = surahs[surah - 1].ayahCount;
+    final hasContinuousSurahQueue =
+        state.queue.isNotEmpty &&
+        state.queue.first.surah == surah &&
+        state.queue.first.recitation.id == rec.id &&
+        state.queue.last.ayah == expectedLast;
+    if (hasContinuousSurahQueue && !state.completed) {
+      await _engine.resume();
+    } else {
+      await playFrom(1);
+    }
+  }
+
   Future<void> _play({required int fromAyah, int? toAyah}) async {
     final rec = state.recitation, surah = state.surah;
     if (rec == null || surah == null) return;
+    final gen = ++_playGen;
     try {
       final tracks = rec.playlist(surah, fromAyah: fromAyah, toAyah: toAyah);
       final offline = ref.read(offlineAudioProvider);
       final uris = [for (final t in tracks) await offline.localUri(t) ?? Uri.parse(t.url)];
-      state = state.copyWith(queue: tracks, index: 0, clearError: true);
+      if (gen != _playGen) return;
+      state = state.copyWith(queue: tracks, index: 0, completed: false, clearError: true);
       await _engine.setRepeatOne(state.repeatAyah);
       await _engine.playAll(uris);
-    } catch (e) {
-      state = state.copyWith(error: 'Gagal memutar audio. Periksa koneksi atau unduh untuk offline.');
+    } catch (_) {
+      if (gen != _playGen) return;
+      state = state.copyWith(
+        playing: false,
+        error: 'Gagal memutar audio. Periksa koneksi atau unduh untuk offline.',
+      );
     }
   }
 
@@ -193,11 +287,11 @@ class QuranPlayer extends Notifier<PlayerState> {
     await _engine.setSpeed(speed);
   }
 
-  Future<void> togglePause() => state.playing ? _engine.pause() : _engine.resume();
+  Future<void> togglePause() => toggleSurahPlayback();
 
   Future<void> stop() async {
     await _engine.stop();
-    state = state.copyWith(playing: false);
+    state = state.copyWith(playing: false, completed: false);
   }
 
   Future<void> toggleRepeat() async {

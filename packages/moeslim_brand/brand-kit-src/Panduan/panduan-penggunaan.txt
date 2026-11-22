@@ -1,4 +1,4 @@
-MOESLIM PM — PANDUAN SINGKAT
+MOESLIM PM: PANDUAN SINGKAT
 
 LOGO UTAMA
 - Pakai SVG/05_moeslim_pm_primary_horizontal.svg untuk header, website, dan dokumen.

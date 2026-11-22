@@ -28,28 +28,28 @@ const adzanMuadzins = <AdzanMuadzin>[
     name: 'Syaikh Ali Ahmad Mulla',
     origin: 'Masjidil Haram, Makkah',
     style: 'Maqam Hijaz klasik Makkah',
-    assetPath: 'assets/audio/adzan/makkah.wav',
+    assetPath: 'assets/audio/adzan/makkah.mp3',
   ),
   AdzanMuadzin(
     id: 'madinah',
     name: 'Syaikh Essam Bukhari',
     origin: 'Masjid Nabawi, Madinah',
     style: 'Maqam Bayati syahdu Madinah',
-    assetPath: 'assets/audio/adzan/madinah.wav',
+    assetPath: 'assets/audio/adzan/madinah.mp3',
   ),
   AdzanMuadzin(
     id: 'al_aqsa',
     name: 'Muadzin Al-Quds',
     origin: 'Masjidil Aqsa, Yerusalem',
     style: 'Maqam Rast khas Al-Quds',
-    assetPath: 'assets/audio/adzan/al_aqsa.wav',
+    assetPath: 'assets/audio/adzan/al_aqsa.mp3',
   ),
   AdzanMuadzin(
     id: 'mishary',
     name: 'Syaikh Mishary Rashid Alafasy',
     origin: 'Masjid Al-Kabir, Kuwait',
     style: 'Maqam Nahawand lembut & khusyuk',
-    assetPath: 'assets/audio/adzan/mishary.wav',
+    assetPath: 'assets/audio/adzan/mishary.mp3',
   ),
 ];
 

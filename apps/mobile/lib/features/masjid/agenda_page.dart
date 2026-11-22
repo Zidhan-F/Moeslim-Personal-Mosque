@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 
 import '../../core/format.dart';
@@ -7,6 +7,7 @@ import '../../ui/components.dart';
 import 'finance_pages.dart' show monthLabel;
 import 'masjid_api.dart';
 import 'mosque_providers.dart';
+import 'poster_share_sheet.dart';
 import 'session.dart';
 
 const eventCategories = {
@@ -291,16 +292,32 @@ class _EventCard extends ConsumerWidget {
             if (e['speaker'] != null) Text('${e['speaker']}'),
           ],
         ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            StatusBadge(categoryLabel(e['category'] as String?)),
-            const SizedBox(height: 4),
-            Icon(
-              e['visibility'] == 'public' ? MoeslimIcons.web : MoeslimIcons.kunci,
-              size: 16,
-              semanticLabel: e['visibility'] == 'public' ? 'Publik' : 'Internal',
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                StatusBadge(categoryLabel(e['category'] as String?)),
+                const SizedBox(height: 4),
+                Icon(
+                  e['visibility'] == 'public' ? MoeslimIcons.web : MoeslimIcons.kunci,
+                  size: 16,
+                  semanticLabel: e['visibility'] == 'public' ? 'Publik' : 'Internal',
+                ),
+              ],
+            ),
+            IconButton(
+              key: Key('share-event-${e['id']}'),
+              tooltip: 'Bagikan Poster & WA',
+              icon: const Icon(Icons.share_outlined, size: 20),
+              onPressed: () => showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                showDragHandle: true,
+                builder: (_) => PosterShareSheet(data: WaTextBuilder.forEvent(ctx.name, e)),
+              ),
             ),
           ],
         ),

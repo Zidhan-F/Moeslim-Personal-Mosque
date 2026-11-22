@@ -3,9 +3,9 @@ import 'package:material_ui/material_ui.dart';
 enum BrandLogoVariant { horizontal, stacked, symbol }
 
 /// Logo resmi Moeslim PM. Varian terang/putih dipilih otomatis dari kecerahan tema
-/// (atau dipaksa lewat [onDark]). Pertahankan proporsi — jangan dipipihkan.
+/// (atau dipaksa lewat [onDark]). Pertahankan proporsi, jangan dipipihkan.
 class BrandLogo extends StatelessWidget {
-  static const semanticLabel = 'Moeslim PM — Personal & Mosque';
+  static const semanticLabel = 'Moeslim PM: Personal & Mosque';
 
   final BrandLogoVariant variant;
   final double height;

@@ -148,7 +148,7 @@ void main() {
 
   testWidgets('fase iqamah tampil setelah azan', (tester) async {
     SharedPreferences.setMockInitialValues({'display.token': 't', 'display.content': jsonEncode(content())});
-    // 12:01 WIB (setelah azan Dzuhur ±11:59) — server tidak berubah (304)
+    // 12:01 WIB (setelah azan Dzuhur ±11:59), server tidak berubah (304)
     await pump(tester, MockClient((_) async => http.Response('', 304)), now: DateTime.utc(2025, 1, 1, 5, 1));
     expect(find.text('Iqamah Dzuhur'), findsOneWidget);
   });

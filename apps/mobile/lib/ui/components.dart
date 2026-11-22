@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 
-import 'package:material_ui/material_ui.dart';
+import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 
 /// Pola geometris islami (bintang delapan) yang halus untuk latar header/kartu.
@@ -54,17 +54,15 @@ class PatternBanner extends StatelessWidget {
   Widget build(BuildContext context) => ClipRRect(
     borderRadius: borderRadius,
     child: DecoratedBox(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
+        image: BrandBackground.bannerGelap.decoration(),
         gradient: LinearGradient(
           colors: [BrandColors.emerald, BrandColors.deep],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
       ),
-      child: CustomPaint(
-        painter: IslamicPatternPainter(color: Colors.white.withValues(alpha: .06)),
-        child: Padding(padding: padding, child: child),
-      ),
+      child: Padding(padding: padding, child: child),
     ),
   );
 }
@@ -82,20 +80,18 @@ class OrnamentCard extends StatelessWidget {
         color: dark ? BrandColors.nightCard : const Color(0xFFFFFDF6),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: BrandColors.gold.withValues(alpha: .55)),
+        image: (dark ? BrandBackground.bannerGelap : BrandBackground.alquranKrem).decoration(),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
-        child: CustomPaint(
-          painter: IslamicPatternPainter(color: BrandColors.gold.withValues(alpha: dark ? .08 : .12), cell: 28),
-          child: Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20), child: child),
-        ),
+        child: Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20), child: child),
       ),
     );
   }
 }
 
 /// Kepala halaman berornamen: lengkung krem berbingkai emas di atas kisi hijau, siluet masjid emas tipis
-/// (Jadwal Salat, Detail Doa, Mushaf) — sesuai visualisasi.
+/// (Jadwal Salat, Detail Doa, Mushaf), sesuai visualisasi.
 class ArchHeader extends StatelessWidget {
   final Widget child;
   final EdgeInsets padding;
@@ -115,9 +111,7 @@ class ArchHeader extends StatelessWidget {
                       color: BrandColors.nightCard,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: BrandColors.gold.withValues(alpha: .45)),
-                    ),
-                    child: CustomPaint(
-                      painter: IslamicPatternPainter(color: BrandColors.gold.withValues(alpha: .08), cell: 28),
+                      image: BrandBackground.bannerGelap.decoration(),
                     ),
                   )
                 : const BrandArt(BrandIllustration.archHeader, fit: BoxFit.fill),
@@ -217,10 +211,11 @@ class SectionHeader extends StatelessWidget {
 class MenuTile extends StatelessWidget {
   final IconData? icon;
   final BrandTile? tile;
+  final Widget? art;
   final String label;
   final VoidCallback onTap;
-  const MenuTile({super.key, this.icon, this.tile, required this.label, required this.onTap})
-    : assert(icon != null || tile != null);
+  const MenuTile({super.key, this.icon, this.tile, this.art, required this.label, required this.onTap})
+    : assert(icon != null || tile != null || art != null);
 
   @override
   Widget build(BuildContext context) {
@@ -236,7 +231,21 @@ class MenuTile extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              if (tile != null) FeatureTileArt(tile!, size: 40) else Icon(icon, color: scheme.primary, size: 26),
+              if (art != null)
+                art!
+              else if (tile != null)
+                FeatureTileArt(tile!, size: 40)
+              else
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: scheme.primary.withValues(alpha: .12),
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(icon, color: scheme.primary, size: 22),
+                ),
               const SizedBox(height: 6),
               Text(
                 label,
@@ -254,52 +263,127 @@ class MenuTile extends StatelessWidget {
 }
 
 /// Tab bergaya pil (Mushaf/Surah/Juz, Tasbih/Dzikir, Ringkasan/Riwayat).
-class PillTabs extends StatelessWidget {
+///
+/// Sampai 3 tab: lebar dibagi rata. Lebih dari itu: tiap tab selebar isinya
+/// (satu baris), bar bisa digeser menyamping dan tab aktif otomatis terlihat.
+class PillTabs extends StatefulWidget {
   final List<String> labels;
   final int index;
   final ValueChanged<int> onChanged;
   const PillTabs({super.key, required this.labels, required this.index, required this.onChanged});
 
   @override
+  State<PillTabs> createState() => _PillTabsState();
+}
+
+class _PillTabsState extends State<PillTabs> {
+  late List<GlobalKey> _keys = _makeKeys();
+
+  List<GlobalKey> _makeKeys() => List.generate(widget.labels.length, (_) => GlobalKey());
+
+  @override
+  void didUpdateWidget(PillTabs old) {
+    super.didUpdateWidget(old);
+    if (old.labels.length != widget.labels.length) _keys = _makeKeys();
+    if (old.index != widget.index) _reveal();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _reveal();
+  }
+
+  final _scroll = ScrollController();
+  final _viewportKey = GlobalKey();
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  // Hanya menggulir bar tab ini, bukan scroll induk halaman.
+  void _reveal() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scroll.hasClients || widget.index >= _keys.length) return;
+      final tab = _keys[widget.index].currentContext?.findRenderObject();
+      final viewport = _viewportKey.currentContext?.findRenderObject();
+      if (tab is! RenderBox || viewport is! RenderBox) return;
+      final left = tab.localToGlobal(Offset.zero, ancestor: viewport).dx + _scroll.offset;
+      final target = (left + tab.size.width / 2 - viewport.size.width / 2)
+          .clamp(_scroll.position.minScrollExtent, _scroll.position.maxScrollExtent);
+      _scroll.animateTo(target, duration: const Duration(milliseconds: 220), curve: Curves.easeOut);
+    });
+  }
+
+  Widget _tab(BuildContext context, int i, {required bool scrollable}) {
+    final scheme = Theme.of(context).colorScheme;
+    final l = widget.labels[i];
+    final selected = i == widget.index;
+    final text = Text(
+      l,
+      maxLines: 1,
+      softWrap: false,
+      overflow: TextOverflow.ellipsis,
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        fontWeight: FontWeight.w600,
+        color: selected ? scheme.onPrimary : scheme.onSurface,
+      ),
+    );
+    return Semantics(
+      key: _keys[i],
+      selected: selected,
+      button: true,
+      child: GestureDetector(
+        key: Key('tab-$l'),
+        behavior: HitTestBehavior.opaque,
+        onTap: () => widget.onChanged(i),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          constraints: const BoxConstraints(minHeight: 40),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? scheme.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: scrollable ? text : FittedBox(fit: BoxFit.scaleDown, child: text),
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final scrollable = widget.labels.length > 3;
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: scheme.surfaceContainerHighest.withValues(alpha: .6),
         borderRadius: BorderRadius.circular(24),
       ),
-      child: Row(
-        children: [
-          for (final (i, l) in labels.indexed)
-            Expanded(
-              child: Semantics(
-                selected: i == index,
-                button: true,
-                child: GestureDetector(
-                  key: Key('tab-$l'),
-                  onTap: () => onChanged(i),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    constraints: const BoxConstraints(minHeight: 40),
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: i == index ? scheme.primary : Colors.transparent,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      l,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: i == index ? scheme.onPrimary : scheme.onSurface,
-                      ),
-                    ),
-                  ),
-                ),
+      child: scrollable
+          ? SingleChildScrollView(
+              key: _viewportKey,
+              controller: _scroll,
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  for (var i = 0; i < widget.labels.length; i++) ...[
+                    if (i > 0) const SizedBox(width: 4),
+                    _tab(context, i, scrollable: true),
+                  ],
+                ],
               ),
+            )
+          : Row(
+              children: [
+                for (var i = 0; i < widget.labels.length; i++) Expanded(child: _tab(context, i, scrollable: false)),
+              ],
             ),
-        ],
-      ),
     );
   }
 }

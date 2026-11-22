@@ -9,7 +9,7 @@
 - 06 Ubin_Fitur, 08_ELEMEN_FITUR → assets/kit/**.svg  (teks statis berfont Arial dibuang; judul
                        empty state & huruf mata angin dirender Flutter dengan Inter agar aksesibel)
 
-Ikon UI/Islami/salat tidak di sini — lihat tools/icons/build_icon_font.py.
+Ikon UI/Islami/salat tidak di sini; lihat tools/icons/build_icon_font.py.
 """
 
 from __future__ import annotations

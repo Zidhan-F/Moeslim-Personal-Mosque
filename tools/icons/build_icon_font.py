@@ -1,8 +1,8 @@
 """Bangun font ikon `MoeslimIcons` dari SVG asset kit Moeslim PM.
 
 Sumber (tools/icons/svg/):
-  ui/      120 ikon UI (glyph Font Awesome 4, satu <path> + transform) — lihat ATRIBUSI_ICON.txt
-  islami/  15 ikon Islami bergaris (stroke 1.7, ujung & sambungan bulat) — garis diubah jadi bidang
+  ui/      120 ikon UI (glyph Font Awesome 4, satu <path> + transform), lihat ATRIBUSI_ICON.txt
+  islami/  15 ikon Islami bergaris (stroke 1.7, ujung & sambungan bulat), garis diubah jadi bidang
   sholat/  5 ikon waktu salat (glyph Font Awesome 4)
 
 Keluaran:
@@ -278,7 +278,7 @@ GROUPS = [
 ]
 
 DOC = {
-    "ui": "Ikon UI umum (Font Awesome 4 oleh Dave Gandy, SIL OFL 1.1 — lihat Tentang & Lisensi).",
+    "ui": "Ikon UI umum (Font Awesome 4 oleh Dave Gandy, SIL OFL 1.1, lihat Tentang & Lisensi).",
     "islami": "Ikon Islami bergaris (asset kit Moeslim PM).",
     "sholat": "Ikon waktu salat.",
 }
@@ -310,7 +310,13 @@ def main() -> int:
     fb.setupGlyphOrder(glyph_order)
     fb.setupCharacterMap(cmap)
     fb.setupGlyf(glyphs)
-    fb.setupHorizontalMetrics({g: (UPM, 0) for g in glyph_order})
+    metrics = {}
+    for g in glyph_order:
+        gl = glyphs[g]
+        gl.recalcBounds(None)
+        lsb = gl.xMin if gl.numberOfContours != 0 else 0
+        metrics[g] = (UPM, lsb)
+    fb.setupHorizontalMetrics(metrics)
     fb.setupHorizontalHeader(ascent=UPM, descent=0)
     fb.setupNameTable(
         {
@@ -325,7 +331,7 @@ def main() -> int:
     fb.save(str(FONT_OUT))
 
     lines = [
-        "// GENERATED — jangan diedit manual. Sumber: tools/icons/build_icon_font.py",
+        "// GENERATED: jangan diedit manual. Sumber: tools/icons/build_icon_font.py",
         "// ignore_for_file: constant_identifier_names",
         "",
         "import 'package:material_ui/material_ui.dart';",

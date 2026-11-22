@@ -1,4 +1,4 @@
-# ADR 0003 — Ledger keuangan berbasis dana dan akun kas
+# ADR 0003: Ledger keuangan berbasis dana dan akun kas
 Status: diterima
 
 **Keputusan**: transaksi immutable dengan `fund_id` (dana) dan `cash_account_id`

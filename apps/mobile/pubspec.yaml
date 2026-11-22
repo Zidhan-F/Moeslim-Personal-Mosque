@@ -12,20 +12,26 @@ dependencies:
   flutter_compass: ^0.8.1
   flutter_riverpod: ^3.5.0
   flutter_secure_storage: ^11.2.0
+  gal: ^3.0.1
   geolocator: ^14.1.2
   http: ^1.6.0
   intl: ^0.20.3
   just_audio: ^0.10.6
   material_ui: ^1.1.0
+  mobile_scanner: ^7.5.0
   moeslim_brand:
     path: ../../packages/moeslim_brand
   path_provider: ^2.1.6
+  pdf: ^3.13.1
   personal_core:
     path: ../../packages/personal_core
+  qr_flutter: ^4.1.0
   scrollable_positioned_list: ^0.3.8
+  share_plus: ^13.3.1
   shared_prayer:
     path: ../../packages/shared_prayer
   shared_preferences: ^2.5.6
+  url_launcher: ^6.3.3
 
 dev_dependencies:
   flutter_test:

@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 
 import '../../core/format.dart';
@@ -7,6 +7,7 @@ import '../../ui/components.dart';
 import 'agenda_page.dart' show categoryLabel;
 import 'masjid_api.dart';
 import 'mosque_providers.dart';
+import 'poster_share_sheet.dart';
 import 'session.dart';
 
 /// Kelola Konten & Pengumuman: pengumuman dan agenda dengan sakelar "tayang di TV".
@@ -91,6 +92,17 @@ class _AnnouncementsPageState extends ConsumerState<AnnouncementsPage> {
                                           child: Text(
                                             '${a['title']}',
                                             style: const TextStyle(fontWeight: FontWeight.w700),
+                                          ),
+                                        ),
+                                        IconButton(
+                                          key: Key('share-ann-${a['id']}'),
+                                          tooltip: 'Bagikan Poster & WA',
+                                          icon: const Icon(Icons.share_outlined, size: 20),
+                                          onPressed: () => showModalBottomSheet(
+                                            context: context,
+                                            isScrollControlled: true,
+                                            showDragHandle: true,
+                                            builder: (_) => PosterShareSheet(data: WaTextBuilder.forAnnouncement(ctx.name, a)),
                                           ),
                                         ),
                                         if (_canWrite)

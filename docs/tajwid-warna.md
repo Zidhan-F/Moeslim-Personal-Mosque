@@ -21,7 +21,7 @@ dart test test/tajweed_classifier_test.dart
 ```
 
 ### Kesetaraan dengan cpfair/quran-tajweed
-Semantik disamakan dengan classifier cpfair (data CC BY 4.0; kodenya tanpa lisensi sehingga **tidak disalin** —
+Semantik disamakan dengan classifier cpfair (data CC BY 4.0; kodenya tanpa lisensi sehingga **tidak disalin**,
 logika ditulis ulang):
 - Model huruf: huruf dasar + tanda (Mn); spasi dihitung sebagai "huruf"; alif kecil (U+0670) berdiri sendiri.
 - Nama & cakupan rentang tiap aturan sama (mis. ikhfa dari nun/tanwin sampai harakat huruf sesudahnya;
@@ -36,7 +36,7 @@ logika ditulis ulang):
 Warna mode gelap diturunkan otomatis (dicampur 45% putih) agar tetap kontras.
 
 ## Arsitektur: berbasis anotasi
-Warna berasal dari **anotasi** (dibuat classifier di atas, atau dataset luar) — daftar rentang `(awal, akhir, aturan)` per ayat — yang
+Warna berasal dari **anotasi** (dibuat classifier di atas, atau dataset luar), yaitu daftar rentang `(awal, akhir, aturan)` per ayat yang
 diimpor bersama teks:
 
 ```bash
@@ -59,7 +59,7 @@ Pengaman: aturan tak dikenal dilaporkan; impor **dibatalkan** bila ada posisi di
 ## Yang perlu ditetapkan penelaah
 1. **Edisi teks**: anotasi harus dibuat untuk edisi yang sama. Mushaf Standar Indonesia (Kemenag) berbeda
    konvensi penulisan dengan mushaf Madinah/Tanzil, sehingga anotasi untuk Tanzil tidak otomatis cocok.
-   Contoh dataset terbuka untuk teks Tanzil: proyek `quran-tajweed` (cpfair) — periksa lisensinya dan
+   Contoh dataset terbuka untuk teks Tanzil: proyek `quran-tajweed` (cpfair); periksa lisensinya dan
    cocokkan edisinya. Karena Moeslim Personal non-komersial (ADR 0005), dataset berlisensi terbuka/
    non-komersial dapat dipakai dengan atribusi sesuai ketentuannya.
 2. **Palet warna**: satu sumber di `packages/personal_core/lib/src/content/tajweed.dart`; selaraskan dengan

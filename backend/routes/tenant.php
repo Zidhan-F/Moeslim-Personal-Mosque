@@ -1,11 +1,14 @@
 <?php
 
 use App\Http\Controllers\Api\AnnouncementController;
+use App\Http\Controllers\Api\CouponController;
 use App\Http\Controllers\Api\DisplayController;
 use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\FinanceController;
 use App\Http\Controllers\Api\InventoryController;
+use App\Http\Controllers\Api\QurbanController;
 use App\Http\Controllers\Api\StaffAssignmentController;
+use App\Http\Controllers\Api\ZakatController;
 use Illuminate\Support\Facades\Route;
 
 // Dimuat di dalam grup mosques/{mosque} (auth:sanctum + tenant + scopeBindings).
@@ -15,8 +18,11 @@ Route::prefix('finance')->group(function () {
         Route::get('setup', [FinanceController::class, 'setup']);
         Route::get('transactions', [FinanceController::class, 'index']);
         Route::get('transactions/{transaction}', [FinanceController::class, 'show']);
+        Route::get('transactions/{transaction}/receipt', [FinanceController::class, 'receipt']);
         Route::get('summary', [FinanceController::class, 'summary']);
         Route::get('reports/monthly', [FinanceController::class, 'monthly']);
+        Route::get('friday-report', [FinanceController::class, 'fridayReport']);
+        Route::get('donation-box-counts', [FinanceController::class, 'donationBoxCounts']);
         Route::get('attachments/{attachment}', [FinanceController::class, 'downloadAttachment']);
     });
     Route::get('export', [FinanceController::class, 'export'])->middleware(['perm:finance.export', 'throttle:20,1']);
@@ -25,6 +31,7 @@ Route::prefix('finance')->group(function () {
         Route::post('transactions', [FinanceController::class, 'store']);
         Route::post('transactions/{transaction}/reverse', [FinanceController::class, 'reverse']);
         Route::post('transactions/{transaction}/attachments', [FinanceController::class, 'storeAttachment']);
+        Route::post('donation-box-counts', [FinanceController::class, 'storeDonationBoxCount']);
         Route::post('accounts', [FinanceController::class, 'storeAccount']);
         Route::post('funds', [FinanceController::class, 'storeFund']);
         Route::post('categories', [FinanceController::class, 'storeCategory']);
@@ -69,7 +76,40 @@ Route::middleware('perm:inventory.write')->group(function () {
 
 Route::get('displays', [DisplayController::class, 'index'])->middleware('perm:display.view');
 Route::middleware('perm:display.manage')->group(function () {
+    Route::patch('displays/settings', [DisplayController::class, 'updateSettings']);
+    Route::post('displays/override', [DisplayController::class, 'setOverride']);
+    Route::delete('displays/override', [DisplayController::class, 'clearOverride']);
+    Route::post('displays/qris', [DisplayController::class, 'uploadQris']);
+    Route::delete('displays/qris', [DisplayController::class, 'deleteQris']);
     Route::post('displays/pairing-codes', [DisplayController::class, 'createPairingCode']);
     Route::patch('displays/{displayDevice}', [DisplayController::class, 'update']);
     Route::post('displays/{displayDevice}/revoke', [DisplayController::class, 'revoke']);
+});
+
+Route::prefix('zakat')->group(function () {
+    Route::get('/', [ZakatController::class, 'index'])->middleware('perm:zakat.view');
+    Route::middleware('perm:zakat.write')->group(function () {
+        Route::post('collections', [ZakatController::class, 'storeCollection']);
+        Route::post('mustahiks', [ZakatController::class, 'storeMustahik']);
+        Route::post('mustahiks/{zakatMustahik}/distribute', [ZakatController::class, 'distributeMustahik']);
+    });
+});
+
+Route::prefix('qurban')->group(function () {
+    Route::get('animals', [QurbanController::class, 'index'])->middleware('perm:qurban.view');
+    Route::middleware('perm:qurban.write')->group(function () {
+        Route::post('animals', [QurbanController::class, 'storeAnimal']);
+        Route::patch('animals/{qurbanAnimal}', [QurbanController::class, 'updateAnimal']);
+        Route::post('animals/{qurbanAnimal}/participants', [QurbanController::class, 'storeParticipant']);
+        Route::patch('participants/{qurbanParticipant}', [QurbanController::class, 'updateParticipant']);
+    });
+});
+
+Route::prefix('coupons')->group(function () {
+    Route::get('/', [CouponController::class, 'index'])->middleware('perm:qurban.view');
+    Route::middleware('perm:qurban.write')->group(function () {
+        Route::post('/', [CouponController::class, 'store']);
+        Route::post('redeem', [CouponController::class, 'redeem']);
+        Route::post('{distributionCoupon}/void', [CouponController::class, 'void']);
+    });
 });

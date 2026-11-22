@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Exceptions\DomainRuleException;
 use App\Http\Controllers\Controller;
 use App\Models\CashAccount;
+use App\Models\DonationBoxCount;
 use App\Models\FinanceAttachment;
 use App\Models\FinanceTransaction;
 use App\Models\Mosque;
@@ -111,6 +112,7 @@ class FinanceController extends Controller
             'category_id' => ['nullable', 'integer', Rule::exists('finance_categories', 'id')->where('mosque_id', $mosque->id)],
             'date' => ['required', 'date', 'before_or_equal:'.now()->addDay()->toDateString()],
             'description' => ['required', 'string', 'max:255'],
+            'donor_name' => ['nullable', 'string', 'max:120'],
         ]);
 
         [$tx, $created] = $this->finance->record($mosque, $request->user(), $data, $key);
@@ -164,8 +166,11 @@ class FinanceController extends Controller
     public function monthly(Request $request, Mosque $mosque): JsonResponse
     {
         $year = (int) $request->validate(['year' => ['required', 'integer', 'between:2000,2100']])['year'];
+        $monthExpr = DB::connection()->getDriverName() === 'sqlite'
+            ? "cast(strftime('%m', date) as integer)"
+            : 'extract(month from date)::int';
         $rows = FinanceTransaction::where('mosque_id', $mosque->id)->whereYear('date', $year)
-            ->selectRaw("extract(month from date)::int as m, coalesce(sum(case when flow='in' then amount end),0) as i, coalesce(sum(case when flow='out' then amount end),0) as o")
+            ->selectRaw("{$monthExpr} as m, coalesce(sum(case when flow='in' then amount end),0) as i, coalesce(sum(case when flow='out' then amount end),0) as o")
             ->groupBy('m')->get()->keyBy('m');
 
         return response()->json([
@@ -174,6 +179,82 @@ class FinanceController extends Controller
                 'month' => $m, 'in' => (int) ($rows[$m]->i ?? 0), 'out' => (int) ($rows[$m]->o ?? 0),
             ])->all(),
         ]);
+    }
+
+    public function fridayReport(Request $request, Mosque $mosque): JsonResponse
+    {
+        $data = $request->validate(['date' => ['nullable', 'date']]);
+
+        return response()->json($this->finance->fridayReport($mosque, $data['date'] ?? null));
+    }
+
+    public function donationBoxCounts(Mosque $mosque): JsonResponse
+    {
+        $items = $mosque->donationBoxCounts()
+            ->with(['transaction:id,reference_no,amount,date,receipt_token,fund_id,cash_account_id', 'creator:id,name'])
+            ->orderByDesc('date')
+            ->orderByDesc('id')
+            ->limit(50)
+            ->get()
+            ->map(fn (DonationBoxCount $c) => $this->presentBoxCount($c));
+
+        return response()->json(['data' => $items]);
+    }
+
+    public function storeDonationBoxCount(Request $request, Mosque $mosque): JsonResponse
+    {
+        $key = $request->header('Idempotency-Key');
+        if (! $key || strlen($key) > 100) {
+            throw new DomainRuleException('idempotency_key_required', 'Header Idempotency-Key wajib diisi.', 428);
+        }
+        if (str_starts_with($key, FinanceService::INTERNAL_KEY_PREFIX)) {
+            throw new DomainRuleException('idempotency_key_reserved', 'Awalan Idempotency-Key ini dicadangkan sistem.');
+        }
+
+        $data = $request->validate([
+            'box_name' => ['required', 'string', 'max:120'],
+            'date' => ['required', 'date', 'before_or_equal:'.now()->addDay()->toDateString()],
+            'fund_id' => ['required', 'integer', Rule::exists('funds', 'id')->where('mosque_id', $mosque->id)->where('is_active', true)],
+            'cash_account_id' => ['required', 'integer', Rule::exists('cash_accounts', 'id')->where('mosque_id', $mosque->id)->where('is_active', true)],
+            'category_id' => ['nullable', 'integer', Rule::exists('finance_categories', 'id')->where('mosque_id', $mosque->id)],
+            'witness_1_name' => ['required', 'string', 'max:100'],
+            'witness_2_name' => ['required', 'string', 'max:100'],
+            'notes' => ['nullable', 'string', 'max:255'],
+            'denominations' => ['required', 'array', 'min:1'],
+            'denominations.*' => ['integer', 'min:0', 'max:1000000'],
+        ]);
+
+        [$count, $created] = $this->finance->recordDonationBoxCount($mosque, $request->user(), $data, $key);
+        $count->load(['transaction:id,reference_no,amount,date,receipt_token,fund_id,cash_account_id', 'creator:id,name']);
+
+        return response()->json(['data' => $this->presentBoxCount($count)], $created ? 201 : 200);
+    }
+
+    public function receipt(Mosque $mosque, FinanceTransaction $transaction): JsonResponse
+    {
+        if ($transaction->flow !== 'in' || ! $transaction->receipt_token) {
+            throw new DomainRuleException('receipt_only_for_income', 'Kuitansi digital hanya tersedia untuk transaksi pemasukan.');
+        }
+        $transaction->load(['fund:id,name', 'account:id,name', 'reversedBy:id,reversal_of_id,reference_no']);
+        $reversed = $transaction->reversedBy !== null;
+
+        return response()->json(['data' => [
+            'receipt_no' => $transaction->reference_no,
+            'receipt_token' => $transaction->receipt_token,
+            'verify_url' => url("/verify/receipt/{$transaction->receipt_token}"),
+            'status' => $reversed ? 'reversed' : 'valid',
+            'reversed_reference' => $transaction->reversedBy?->reference_no,
+            'mosque_name' => $mosque->name,
+            'mosque_city' => $mosque->city,
+            'mosque_address' => $mosque->address,
+            'donor_name' => $transaction->donor_name ?: 'Hamba Allah',
+            'amount' => $transaction->amount,
+            'fund_name' => $transaction->fund?->name,
+            'account_name' => $transaction->account?->name,
+            'date' => $transaction->date->toDateString(),
+            'description' => $transaction->description,
+            'issued_at' => $transaction->created_at?->toIso8601String(),
+        ]]);
     }
 
     public function export(Request $request, Mosque $mosque): StreamedResponse
@@ -253,6 +334,7 @@ class FinanceController extends Controller
     private function filtered(Mosque $mosque, array $f)
     {
         $t = 'finance_transactions';
+        $like = DB::connection()->getDriverName() === 'sqlite' ? 'like' : 'ilike';
 
         return FinanceTransaction::where("{$t}.mosque_id", $mosque->id)
             ->when($f['from'] ?? null, fn ($q, $v) => $q->where("{$t}.date", '>=', $v))
@@ -260,13 +342,36 @@ class FinanceController extends Controller
             ->when($f['fund_id'] ?? null, fn ($q, $v) => $q->where("{$t}.fund_id", $v))
             ->when($f['cash_account_id'] ?? null, fn ($q, $v) => $q->where(fn ($w) => $w->where("{$t}.cash_account_id", $v)->orWhere("{$t}.to_cash_account_id", $v)))
             ->when($f['flow'] ?? null, fn ($q, $v) => $q->where("{$t}.flow", $v))
-            ->when($f['q'] ?? null, fn ($q, $v) => $q->where(fn ($w) => $w->where("{$t}.description", 'ilike', '%'.addcslashes($v, '%_\\').'%')->orWhere("{$t}.reference_no", $v)));
+            ->when($f['q'] ?? null, fn ($q, $v) => $q->where(fn ($w) => $w->where("{$t}.description", $like, '%'.addcslashes($v, '%_\\').'%')->orWhere("{$t}.reference_no", $v)));
     }
 
     /** Cegah CSV/formula injection saat dibuka di Excel. */
     private function csvSafe(?string $v): ?string
     {
         return $v !== null && preg_match('/^[=+\-@\t\r]/', $v) ? "'".$v : $v;
+    }
+
+    private function presentBoxCount(DonationBoxCount $c): array
+    {
+        return [
+            'id' => $c->id,
+            'date' => $c->date->toDateString(),
+            'box_name' => $c->box_name,
+            'denominations' => $c->denominations,
+            'total_amount' => $c->total_amount,
+            'witness_1_name' => $c->witness_1_name,
+            'witness_2_name' => $c->witness_2_name,
+            'notes' => $c->notes,
+            'created_by_name' => $c->creator?->name,
+            'transaction' => $c->transaction ? [
+                'id' => $c->transaction->id,
+                'reference_no' => $c->transaction->reference_no,
+                'amount' => $c->transaction->amount,
+                'date' => $c->transaction->date->toDateString(),
+                'receipt_token' => $c->transaction->receipt_token,
+            ] : null,
+            'created_at' => $c->created_at,
+        ];
     }
 
     private function present(FinanceTransaction $t): array
@@ -278,6 +383,8 @@ class FinanceController extends Controller
             'amount' => $t->amount,
             'date' => $t->date->toDateString(),
             'description' => $t->description,
+            'donor_name' => $t->donor_name,
+            'receipt_token' => $t->receipt_token,
             'fund' => $t->fund ? ['id' => $t->fund->id, 'code' => $t->fund->code, 'name' => $t->fund->name] : null,
             'account' => $t->account ? ['id' => $t->account->id, 'name' => $t->account->name] : null,
             'to_account' => $t->toAccount ? ['id' => $t->toAccount->id, 'name' => $t->toAccount->name] : null,

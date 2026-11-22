@@ -14,10 +14,11 @@ abstract class OfflineAudioStore {
 
 class FileOfflineAudioStore implements OfflineAudioStore {
   final http.Client client;
+  Future<Directory>? _supportDir;
   FileOfflineAudioStore(this.client);
 
   Future<Directory> _dir(Recitation r) async {
-    final base = await getApplicationSupportDirectory();
+    final base = await (_supportDir ??= getApplicationSupportDirectory());
     return Directory('${base.path}/audio/${r.id}');
   }
 

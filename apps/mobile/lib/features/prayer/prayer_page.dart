@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:personal_core/personal_core.dart';
 import 'package:shared_prayer/shared_prayer.dart';
@@ -11,6 +11,7 @@ import '../../core/format.dart';
 import '../../core/location_service.dart';
 import '../../core/providers.dart';
 import '../../ui/components.dart';
+import '../../ui/prayer_sky_icon.dart';
 import '../ibadah/qibla_page.dart' show coordinateId;
 
 class PrayerPage extends ConsumerStatefulWidget {
@@ -21,15 +22,6 @@ class PrayerPage extends ConsumerStatefulWidget {
 }
 
 class _PrayerPageState extends ConsumerState<PrayerPage> with WidgetsBindingObserver {
-  static const _icons = {
-    'Subuh': MoeslimIcons.sholatSubuh,
-    'Syuruq': MoeslimIcons.matahari,
-    'Dzuhur': MoeslimIcons.sholatDzuhur,
-    'Ashar': MoeslimIcons.sholatAshar,
-    'Maghrib': MoeslimIcons.sholatMaghrib,
-    'Isya': MoeslimIcons.sholatIsya,
-  };
-
   @override
   void initState() {
     super.initState();
@@ -230,7 +222,9 @@ class _PrayerPageState extends ConsumerState<PrayerPage> with WidgetsBindingObse
                           ),
                           child: ListTile(
                             dense: true,
-                            leading: Icon(_icons[label], color: goldInk),
+                            leading: label == 'Syuruq'
+                                ? Icon(MoeslimIcons.matahari, color: goldInk)
+                                : PrayerSkyIcon(label, color: goldInk),
                             title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -568,6 +562,14 @@ class _PrayerSettingsPageState extends ConsumerState<PrayerSettingsPage> with Wi
     final notifier = ref.read(settingsProvider.notifier);
     final gpsState = ref.watch(gpsControllerProvider);
     final adzanState = ref.watch(adzanControllerProvider);
+    ref.listen<String?>(
+      adzanControllerProvider.select((st) => st.lastError),
+      (_, err) {
+        if (err != null && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+        }
+      },
+    );
     final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -701,6 +703,38 @@ class _PrayerSettingsPageState extends ConsumerState<PrayerSettingsPage> with Wi
                       style: Theme.of(context).textTheme.labelLarge,
                     ),
                   ),
+                  if (adzanState.previewingMuadzinId != null)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                      child: Container(
+                        key: const Key('preview-playing-banner'),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: scheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(MoeslimIcons.adzan, size: 18, color: scheme.onPrimaryContainer),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Memutar adzan: ${adzanMuadzins.where((m) => m.id == adzanState.previewingMuadzinId).firstOrNull?.name ?? ''}',
+                                style: TextStyle(
+                                  color: scheme.onPrimaryContainer,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12.5,
+                                ),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () => ref.read(adzanControllerProvider.notifier).stopAdzan(),
+                              child: const Text('Hentikan'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   for (final m in adzanMuadzins)
                     ListTile(
                       key: Key('muadzin-option-${m.id}'),

@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 
 import '../../ui/components.dart';
@@ -26,6 +26,12 @@ final financeSummaryProvider = FutureProvider.autoDispose.family<Map<String, dyn
 final monthlyReportProvider = FutureProvider.autoDispose.family<Map<String, dynamic>, (String, int)>(
   (ref, k) => ref.watch(masjidApiProvider).monthlyReport(k.$1, k.$2),
 );
+final fridayReportProvider = FutureProvider.autoDispose.family<Map<String, dynamic>, (String, String?)>(
+  (ref, k) => ref.watch(masjidApiProvider).fridayReport(k.$1, date: k.$2),
+);
+final donationBoxCountsProvider = FutureProvider.autoDispose.family<List<Map<String, dynamic>>, String>(
+  (ref, id) => ref.watch(masjidApiProvider).donationBoxCounts(id),
+);
 final membersProvider = FutureProvider.autoDispose.family<Map<String, dynamic>, String>(
   (ref, id) => ref.watch(masjidApiProvider).members(id),
 );
@@ -47,15 +53,32 @@ final subscriptionProvider = FutureProvider.autoDispose.family<Map<String, dynam
 final auditLogsProvider = FutureProvider.autoDispose.family<List<Map<String, dynamic>>, String>(
   (ref, id) => ref.watch(masjidApiProvider).auditLogs(id),
 );
+final zakatProvider = FutureProvider.autoDispose.family<Map<String, dynamic>, (String, int)>(
+  (ref, k) => ref.watch(masjidApiProvider).zakat(k.$1, hijriYear: k.$2),
+);
+final qurbanProvider = FutureProvider.autoDispose.family<Map<String, dynamic>, (String, int)>(
+  (ref, k) => ref.watch(masjidApiProvider).qurbanAnimals(k.$1, hijriYear: k.$2),
+);
+final couponsProvider = FutureProvider.autoDispose.family<Map<String, dynamic>, (String, String, int)>(
+  (ref, k) => ref.watch(masjidApiProvider).coupons(k.$1, program: k.$2, hijriYear: k.$3),
+);
 
-/// Konteks masjid aktif untuk halaman-halaman Mosque: id, nama, kota, dan izin peran.
+/// Konteks masjid aktif untuk halaman-halaman Mosque: id, nama, kota, slug, dan izin peran.
 class MosqueCtx {
   final String id;
   final String name;
   final String? city;
+  final String? slug;
   final String role;
   final Set<String> permissions;
-  const MosqueCtx({required this.id, required this.name, this.city, required this.role, required this.permissions});
+  const MosqueCtx({
+    required this.id,
+    required this.name,
+    this.city,
+    this.slug,
+    required this.role,
+    required this.permissions,
+  });
 
   bool can(String p) => permissions.contains('*') || permissions.contains(p);
 }

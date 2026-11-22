@@ -26,6 +26,11 @@ class FinanceTransaction extends Model
         static::deleting(fn () => throw new LogicException('Transaksi keuangan tidak dapat dihapus.'));
     }
 
+    public function mosque(): BelongsTo
+    {
+        return $this->belongsTo(Mosque::class);
+    }
+
     public function fund(): BelongsTo
     {
         return $this->belongsTo(Fund::class);

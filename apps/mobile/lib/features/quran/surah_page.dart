@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:personal_core/personal_core.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
@@ -10,6 +10,7 @@ import 'audio/audio_providers.dart';
 import 'audio/quran_player_bar.dart';
 import 'murottal_page.dart';
 import 'quran_source.dart';
+import 'tafsir_search_page.dart';
 import 'tajweed_view.dart';
 
 /// Pembaca mushaf per surah (desain "Mushaf"): ornamen judul, ayat ber-nomor oktagon, terjemahan,
@@ -75,6 +76,20 @@ class _SurahPageState extends ConsumerState<SurahPage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<int?>(
+      quranPlayerProvider.select((p) => p.surah == surah.number && p.playing ? p.current?.ayah : null),
+      (prev, next) {
+        if (next != null && next != prev && _items.isAttached) {
+          _items.scrollTo(
+            index: next,
+            duration: const Duration(milliseconds: 280),
+            curve: Curves.easeOutCubic,
+            alignment: 0.15,
+          );
+        }
+      },
+    );
+
     final text = ref.watch(surahTextProvider(surah.number));
     final settings = ref.watch(settingsProvider).value;
     final scale = settings?.fontScale ?? 1.0;
@@ -88,12 +103,15 @@ class _SurahPageState extends ConsumerState<SurahPage> {
     final scheme = Theme.of(context).colorScheme;
     final t = Theme.of(context).textTheme;
 
-    Widget playButton(int ayah) => IconButton(
-      key: Key('play-ayah-$ayah'),
-      tooltip: 'Putar ayat $ayah',
-      icon: Icon(player.ayah == ayah && player.playing ? MoeslimIcons.suara : MoeslimIcons.play),
-      onPressed: canPlay ? () => ref.read(quranPlayerProvider.notifier).playAyah(ayah) : null,
-    );
+    Widget playButton(int ayah) {
+      final isPlayingThis = player.ayah == ayah && player.playing;
+      return IconButton(
+        key: Key('play-ayah-$ayah'),
+        tooltip: isPlayingThis ? 'Jeda ayat $ayah' : 'Putar mulai ayat $ayah',
+        icon: Icon(isPlayingThis ? MoeslimIcons.suara : MoeslimIcons.play),
+        onPressed: canPlay ? () => ref.read(quranPlayerProvider.notifier).playOrToggleFromAyah(ayah) : null,
+      );
+    }
 
     final header = ArchHeader(
       key: const Key('surah-header'),
@@ -199,8 +217,7 @@ class _SurahPageState extends ConsumerState<SurahPage> {
                       const Padding(
                         padding: EdgeInsets.all(24),
                         child: Text(
-                          'Teks Al-Qur\'an belum tersedia di perangkat.\n\nDataset mushaf dan terjemahan harus diimpor dari sumber '
-                          'resmi yang telah ditashih (Lajnah Pentashihan Mushaf Al-Qur\'an Kemenag) beserta izin distribusinya.',
+                          'Teks Al-Qur\'an belum tersedia di perangkat.',
                           textAlign: TextAlign.center,
                         ),
                       ),
@@ -235,6 +252,12 @@ class _SurahPageState extends ConsumerState<SurahPage> {
                             children: [
                               OctagonNumber(a.number),
                               const Spacer(),
+                              IconButton(
+                                key: Key('tafsir-ayah-${a.number}'),
+                                tooltip: 'Tafsir & catatan ayat ${a.number}',
+                                icon: const Icon(MoeslimIcons.buku),
+                                onPressed: () => showAyahTafsirSheet(context, ref, surah: surah, ayah: a),
+                              ),
                               playButton(a.number),
                               IconButton(
                                 tooltip: marked ? 'Hapus penanda' : 'Tandai ayat',

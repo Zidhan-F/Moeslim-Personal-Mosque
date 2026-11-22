@@ -1,9 +1,9 @@
 # Sumber Teks Al-Qur'an
 
-**Tanzil Quran Text (Uthmani)** — Copyright (C) Tanzil Project, https://tanzil.net
+**Tanzil Quran Text (Uthmani)**, Copyright (C) Tanzil Project, https://tanzil.net
 
 - Diperoleh dari edisi `quran-uthmani` (distribusi Tanzil melalui api alquran.cloud) yang dikemas dalam
-  paket npm `@faha1999/al-quran-database` (MIT) — berkas `src/data/ayah-editions/quran-uthmani.json`.
+  paket npm `@faha1999/al-quran-database` (MIT), berkas `src/data/ayah-editions/quran-uthmani.json`.
 - Diubah ke aset JSON per surah dengan `packages/personal_core/tool/import_quran.dart --strip-basmala`.
 - **Satu-satunya perubahan struktur:** sumber menyisipkan basmalah di awal ayat 1 setiap surah; basmalah
   dilepas dari ayat 1 (kembali ke struktur teks asli Tanzil) dan ditampilkan sebagai pembuka surah oleh
@@ -15,7 +15,7 @@
 kesesuaian dengan Mushaf Standar Indonesia oleh penelaah (lihat `docs/licensing/`).
 
 ## Terjemahan
-**Al-Qur'an dan Terjemahannya — Kementerian Agama RI** (`id.indonesian`, Tanzil.net, pembaruan 4 Juni 2010),
+**Al-Qur'an dan Terjemahannya (Kementerian Agama RI)** (`id.indonesian`, Tanzil.net, pembaruan 4 Juni 2010),
 dari paket npm `tanzil` (`public/trans-id.txt`). Disertakan atas keputusan pemilik produk untuk fitur Personal
 yang gratis; izin tertulis Kemenag belum dikonfirmasi.
 

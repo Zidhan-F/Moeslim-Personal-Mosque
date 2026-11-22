@@ -26,14 +26,15 @@ class MainActivity : FlutterActivity() {
             }
         }
 
-        MethodChannel(
+        val adzanChannel = MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
             "id.moeslim.moeslim_mobile/adzan_alarm"
-        ).setMethodCallHandler { call, result ->
+        )
+        adzanChannel.setMethodCallHandler { call, result ->
             when (call.method) {
                 "scheduleAlarms" -> {
                     val alarms = call.argument<List<Map<*, *>>>("alarms") ?: emptyList()
-                    val assetPath = call.argument<String>("assetPath") ?: "assets/audio/adzan/makkah.wav"
+                    val assetPath = call.argument<String>("assetPath") ?: "assets/audio/adzan/makkah.mp3"
                     val muadzinName = call.argument<String>("muadzinName") ?: "Muadzin"
                     AdzanAlarmReceiver.scheduleAlarms(applicationContext, alarms, assetPath, muadzinName)
                     result.success(true)
@@ -43,8 +44,19 @@ class MainActivity : FlutterActivity() {
                     result.success(true)
                 }
                 "playAdzan" -> {
-                    val assetPath = call.argument<String>("assetPath") ?: "assets/audio/adzan/makkah.wav"
-                    val ok = AdzanAudioPlayer.playAsset(applicationContext, assetPath)
+                    val assetPath = call.argument<String>("assetPath") ?: "assets/audio/adzan/makkah.mp3"
+                    val isPreview = call.argument<Boolean>("isPreview") ?: false
+                    val ok = AdzanAudioPlayer.playAsset(
+                        applicationContext,
+                        assetPath,
+                        isPreview = isPreview,
+                        onComplete = {
+                            try {
+                                adzanChannel.invokeMethod("onPlaybackCompleted", null)
+                            } catch (_: Exception) {
+                            }
+                        }
+                    )
                     result.success(ok)
                 }
                 "stopAdzan" -> {

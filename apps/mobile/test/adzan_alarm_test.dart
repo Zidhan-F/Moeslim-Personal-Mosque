@@ -20,15 +20,17 @@ import 'package:shared_prayer/shared_prayer.dart';
 import 'helpers.dart';
 
 void main() {
-  test('semua berkas audio adzan muadzin tersedia secara offline dan berformat WAV valid', () {
+  test('semua berkas audio adzan muadzin tersedia secara offline dan merupakan rekaman MP3 asli', () {
     expect(adzanMuadzins.length, greaterThanOrEqualTo(4));
     for (final m in adzanMuadzins) {
+      expect(m.assetPath.endsWith('.mp3'), isTrue, reason: 'Asset ${m.assetPath} harus berformat MP3');
       final file = File(m.assetPath);
       expect(file.existsSync(), isTrue, reason: 'Asset ${m.assetPath} untuk ${m.name} harus ada');
       final bytes = file.readAsBytesSync();
-      expect(bytes.length, greaterThan(10000));
-      expect(String.fromCharCodes(bytes.sublist(0, 4)), 'RIFF');
-      expect(String.fromCharCodes(bytes.sublist(8, 12)), 'WAVE');
+      expect(bytes.length, greaterThan(400000), reason: 'Asset ${m.assetPath} harus rekaman adzan penuh, bukan nada singkat');
+      final isId3 = String.fromCharCodes(bytes.sublist(0, 3)) == 'ID3';
+      final isMpegFrame = bytes[0] == 0xFF && (bytes[1] & 0xE0) == 0xE0;
+      expect(isId3 || isMpegFrame, isTrue, reason: 'Header MP3 ${m.assetPath} harus valid');
     }
   });
 
@@ -131,11 +133,22 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(backend.playedMuadzins.last.id, 'mishary');
+    expect(find.byKey(const Key('preview-playing-banner')), findsOneWidget);
 
-    // Tekan sekali lagi untuk menghentikan preview.
+    // Saat audio selesai diputar secara alami, status pratinjau otomatis berhenti.
+    backend.completePlayback();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('preview-playing-banner')), findsNothing);
+
+    // Putar lagi lalu tekan sekali lagi untuk menghentikan manual.
+    await tester.tap(misharyPreview);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('preview-playing-banner')), findsOneWidget);
+
     await tester.tap(misharyPreview);
     await tester.pumpAndSettle();
     expect(backend.stopCalls, greaterThanOrEqualTo(1));
+    expect(find.byKey(const Key('preview-playing-banner')), findsNothing);
   });
 
   testWidgets('saat waktu adzan tiba, suara adzan berkumandang dan banner alarm tampil hingga dimatikan', (tester) async {

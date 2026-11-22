@@ -1,4 +1,4 @@
-MoeslimIcons.ttf — glyph ikon UI & ikon waktu salat diturunkan dari Font Awesome 4
+MoeslimIcons.ttf: glyph ikon UI & ikon waktu salat diturunkan dari Font Awesome 4
 Copyright (c) Dave Gandy, Font Awesome (https://fontawesome.com/v4/)
 Glyph diubah posisinya, diskalakan, dan dikemas ulang sebagai font "MoeslimIcons" untuk Moeslim PM.
 Ikon Islami (adzan, masjid, kiblat, tasbih, dll.) dibuat untuk asset kit Moeslim PM.

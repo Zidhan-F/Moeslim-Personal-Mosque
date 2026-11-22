@@ -27,22 +27,46 @@ class Mosque extends Model
     public const DEFAULT_SETTINGS = [
         'pengurus_can_view_finance' => false,
         'display_show_finance' => false,
+        'display_show_qris' => false,
+        'qris_label' => 'Infaq Masjid',
+        'public_show_finance' => false,
         'iqamah_minutes' => ['fajr' => 10, 'dhuhr' => 10, 'asr' => 10, 'maghrib' => 5, 'isha' => 10],
+        'praying_minutes' => ['fajr' => 15, 'dhuhr' => 15, 'asr' => 15, 'maghrib' => 15, 'isha' => 15, 'jumuah' => 45],
+        'silent_prayer_screen' => true,
+        'silent_prayer_message' => 'Luruskan & Rapatkan Shaf • Harap Tenangkan Ponsel',
+        'iqamah_beep' => true,
         'prayer_adjustments' => ['fajr' => 0, 'dhuhr' => 0, 'asr' => 0, 'maghrib' => 0, 'isha' => 0],
         'hijri_offset_days' => 0,
     ];
 
-    protected $guarded = ['id', 'storage_used_bytes', 'needs_review', 'created_by'];
+    protected $guarded = ['id', 'storage_used_bytes', 'needs_review', 'created_by', 'qris_image_path', 'qris_image_bytes', 'display_override'];
 
     protected function casts(): array
     {
         return [
             'settings' => 'array',
+            'display_override' => 'array',
             'needs_review' => 'boolean',
             'latitude' => 'float',
             'longitude' => 'float',
             'storage_used_bytes' => 'integer',
+            'qris_image_bytes' => 'integer',
         ];
+    }
+
+    /** Override berita duka / darurat TV Display yang masih aktif. */
+    public function activeDisplayOverride(): ?array
+    {
+        $ov = $this->display_override;
+        if (! is_array($ov) || empty($ov['expires_at'])) {
+            return null;
+        }
+        $expiresAt = \Illuminate\Support\Carbon::parse($ov['expires_at']);
+        if ($expiresAt->isPast()) {
+            return null;
+        }
+
+        return $ov;
     }
 
     /** Tanggal hari ini menurut zona waktu masjid (bukan zona server). */
@@ -84,6 +108,36 @@ class Mosque extends Model
     public function transactions(): HasMany
     {
         return $this->hasMany(FinanceTransaction::class);
+    }
+
+    public function donationBoxCounts(): HasMany
+    {
+        return $this->hasMany(DonationBoxCount::class);
+    }
+
+    public function zakatCollections(): HasMany
+    {
+        return $this->hasMany(ZakatCollection::class);
+    }
+
+    public function zakatMustahiks(): HasMany
+    {
+        return $this->hasMany(ZakatMustahik::class);
+    }
+
+    public function qurbanAnimals(): HasMany
+    {
+        return $this->hasMany(QurbanAnimal::class);
+    }
+
+    public function qurbanParticipants(): HasMany
+    {
+        return $this->hasMany(QurbanParticipant::class);
+    }
+
+    public function distributionCoupons(): HasMany
+    {
+        return $this->hasMany(DistributionCoupon::class);
     }
 
     /** Lampiran transaksi (nama relasi dipakai oleh scoped route binding {attachment}). */

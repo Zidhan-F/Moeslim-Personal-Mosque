@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="52" viewBox="0 0 300 52">
+  <defs><linearGradient id="brass" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#F1DCAA"/><stop offset=".4" stop-color="#D8B775"/><stop offset=".55" stop-color="#A38143"/><stop offset="1" stop-color="#C9A562"/></linearGradient><radialGradient id="bead" cx=".3" cy=".25"><stop stop-color="#D5E0CF"/><stop offset=".4" stop-color="#78927E"/><stop offset="1" stop-color="#294B3C"/></radialGradient></defs>
+  <path d="M18 28 H124 M176 28 H282" stroke="#554125" opacity=".15" stroke-width="3"/>
+  <path d="M18 25 H124 M176 25 H282" stroke="url(#brass)" stroke-width="2"/>
+  <circle cx="150" cy="27" r="13" fill="#554125" opacity=".14"/>
+  <circle cx="150" cy="25" r="12" fill="url(#brass)"/>
+  <circle cx="150" cy="25" r="8" fill="url(#bead)"/>
+  <circle cx="128" cy="25" r="3" fill="url(#brass)"/><circle cx="172" cy="25" r="3" fill="url(#brass)"/>
+</svg>

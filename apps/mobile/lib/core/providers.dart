@@ -2,7 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal_core/personal_core.dart';
 import 'package:shared_prayer/shared_prayer.dart';
 
+import '../features/masjid/session.dart' show httpClientProvider;
 import 'format.dart';
+import 'nearby_mosque_online.dart';
 
 /// Di-override di main() dengan PrefsStore dan di test dengan InMemoryStore.
 final storeProvider = Provider<KeyValueStore>((ref) => throw UnimplementedError('storeProvider belum di-override'));
@@ -34,6 +36,37 @@ final tasbihRepoProvider = Provider((ref) => TasbihRepository(ref.watch(storePro
 final trackerRepoProvider = Provider((ref) => TrackerRepository(ref.watch(storeProvider)));
 final quranProgressProvider = Provider((ref) => QuranProgressRepository(ref.watch(storeProvider)));
 final favoriteMosqueRepoProvider = Provider((ref) => FavoriteMosqueRepository(ref.watch(storeProvider)));
+final guidedDzikirRepoProvider = Provider((ref) => GuidedDzikirRepository(ref.watch(storeProvider)));
+final ayahNoteRepoProvider = Provider((ref) => AyahNoteRepository(ref.watch(storeProvider)));
+final tahfidzRepoProvider = Provider((ref) => TahfidzRepository(ref.watch(storeProvider)));
+final hadithRepoProvider = Provider((ref) => HadithRepository(ref.watch(storeProvider)));
+final fastingRepoProvider = Provider((ref) => FastingRepository(ref.watch(storeProvider)));
+final homeWidgetRepoProvider = Provider((ref) => HomeWidgetRepository(ref.watch(storeProvider)));
+final asmaulHusnaRepoProvider = Provider((ref) => AsmaulHusnaRepository(ref.watch(storeProvider)));
+final khatamPlannerRepoProvider = Provider((ref) => KhatamPlannerRepository(ref.watch(storeProvider)));
+final autoDndRepoProvider = Provider((ref) => AutoDndRepository(ref.watch(storeProvider)));
+final onlineMosqueFinderProvider = Provider(
+  (ref) => OnlineMosqueFinder(client: ref.watch(httpClientProvider), store: ref.watch(storeProvider)),
+);
+final googleMosqueFinderProvider = Provider((ref) => GoogleMosqueFinder(client: ref.watch(httpClientProvider)));
+final nearbyMosqueRepoProvider = Provider((ref) => NearbyMosqueRepository(ref.watch(storeProvider)));
+final manasikRepoProvider = Provider((ref) => ManasikRepository(ref.watch(storeProvider)));
+final sedekahRepoProvider = Provider((ref) => SedekahRepository(ref.watch(storeProvider)));
+final muhasabahRepoProvider = Provider((ref) => MuhasabahRepository(ref.watch(storeProvider)));
+final sirahRepoProvider = Provider((ref) => SirahRepository(ref.watch(storeProvider)));
+final muslimahRepoProvider = Provider((ref) => MuslimahRepository(ref.watch(storeProvider)));
+final backupRestoreServiceProvider = Provider((ref) => BackupRestoreService(ref.watch(storeProvider)));
+final quranVocabRepoProvider = Provider((ref) => QuranVocabRepository(ref.watch(storeProvider)));
+final fridaySunnahRepoProvider = Provider((ref) => FridaySunnahRepository(ref.watch(storeProvider)));
+final ramadanDashboardRepoProvider = Provider((ref) => RamadanDashboardRepository(ref.watch(storeProvider)));
+final eidChecklistRepoProvider = Provider((ref) => EidChecklistRepository(ref.watch(storeProvider)));
+final shalawatCounterRepoProvider = Provider((ref) => ShalawatCounterRepository(ref.watch(storeProvider)));
+final hajatPrayerListRepoProvider = Provider((ref) => HajatPrayerListRepository(ref.watch(storeProvider)));
+final sunnahHabitRepoProvider = Provider((ref) => SunnahHabitRepository(ref.watch(storeProvider)));
+final babyNamesRepoProvider = Provider((ref) => BabyNamesRepository(ref.watch(storeProvider)));
+final debtLedgerRepoProvider = Provider((ref) => DebtLedgerRepository(ref.watch(storeProvider)));
+final seniorModeRepoProvider = Provider((ref) => SeniorModeRepository(ref.watch(storeProvider)));
+final worshipTimerRepoProvider = Provider((ref) => WorshipTimerRepository(ref.watch(storeProvider)));
 
 /// Status jadwal hari ini untuk lokasi aktif: waktu sholat, sholat berikutnya, dan sisa waktu.
 class PrayerStatus {

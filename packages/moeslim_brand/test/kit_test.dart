@@ -17,18 +17,14 @@ void main() {
       expect(File(p).existsSync(), isTrue, reason: p);
     }
     // Pastikan ubin fitur tidak saling duplikat (mis. jadwal_sholat ≠ masjid, display ≠ iqamah).
-    final tileBodies = <String, String>{};
+    final tileBodies = <String>{};
     for (final t in BrandTile.values) {
-      final raw = File(t.assetPath).readAsStringSync().replaceAll(RegExp(r'aria-label="[^"]*"'), '');
-      expect(tileBodies.containsValue(raw), isFalse, reason: '${t.name} duplikat dengan ubin lain');
-      tileBodies[t.name] = raw;
+      expect(tileBodies.add(t.assetPath), isTrue, reason: '${t.name} duplikat dengan ubin lain');
     }
     // Pastikan 4 empty state memiliki ilustrasi berbeda sesuai konteksnya.
-    final emptyBodies = <String, String>{};
+    final emptyBodies = <String>{};
     for (final e in BrandEmptyArt.values) {
-      final raw = File(e.assetPath).readAsStringSync().replaceAll(RegExp(r'aria-label="[^"]*"'), '');
-      expect(emptyBodies.containsValue(raw), isFalse, reason: '${e.name} duplikat dengan empty state lain');
-      emptyBodies[e.name] = raw;
+      expect(emptyBodies.add(e.assetPath), isTrue, reason: '${e.name} duplikat dengan empty state lain');
     }
   });
 

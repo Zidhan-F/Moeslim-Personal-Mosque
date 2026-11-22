@@ -3,12 +3,15 @@
 namespace App\Services;
 
 use App\Exceptions\DomainRuleException;
+use App\Models\DonationBoxCount;
 use App\Models\FinanceTransaction;
 use App\Models\Fund;
 use App\Models\Mosque;
 use App\Models\User;
 use App\Support\Audit;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class FinanceService
 {
@@ -42,6 +45,10 @@ class FinanceService
                 $this->guardRestrictedFund($mosque, (int) $data['fund_id'], (int) $data['amount']);
             }
 
+            $donorName = isset($data['donor_name']) && trim((string) $data['donor_name']) !== ''
+                ? mb_substr(trim((string) $data['donor_name']), 0, 120)
+                : null;
+
             $tx = FinanceTransaction::create([
                 'mosque_id' => $mosque->id,
                 'reference_no' => $this->nextReference($mosque, $data['date']),
@@ -53,6 +60,8 @@ class FinanceService
                 'category_id' => $data['flow'] === 'transfer' ? null : ($data['category_id'] ?? null),
                 'date' => $data['date'],
                 'description' => $data['description'],
+                'donor_name' => $data['flow'] === 'in' ? $donorName : null,
+                'receipt_token' => $data['flow'] === 'in' ? Str::random(24) : null,
                 'created_by' => $by->id,
                 'idempotency_key' => $idempotencyKey,
                 'request_hash' => $hash,
@@ -149,6 +158,160 @@ class FinanceService
     {
         return FinanceTransaction::where('mosque_id', $mosque->id)
             ->where('created_at', '>=', now($mosque->timezone)->startOfMonth()->utc())->count();
+    }
+
+    /**
+     * Hitung kotak amal multi-saksi -> entri buku kas immutable secara idempoten.
+     *
+     * @return array{0: DonationBoxCount, 1: bool}
+     */
+    public function recordDonationBoxCount(Mosque $mosque, User $by, array $data, string $idempotencyKey): array
+    {
+        $normalized = [];
+        $total = 0;
+        foreach (DonationBoxCount::ALLOWED_DENOMINATIONS as $denom) {
+            $qty = (int) ($data['denominations'][(string) $denom] ?? $data['denominations'][$denom] ?? 0);
+            if ($qty < 0) {
+                throw new DomainRuleException('invalid_denomination', 'Jumlah lembar pecahan tidak boleh negatif.');
+            }
+            if ($qty > 0) {
+                $normalized[(string) $denom] = $qty;
+                $total += $denom * $qty;
+            }
+        }
+        if ($total <= 0) {
+            throw new DomainRuleException('empty_donation_box', 'Minimal satu pecahan uang harus diisi.');
+        }
+
+        $txData = [
+            'flow' => 'in',
+            'amount' => $total,
+            'fund_id' => (int) $data['fund_id'],
+            'cash_account_id' => (int) $data['cash_account_id'],
+            'category_id' => $data['category_id'] ?? null,
+            'date' => $data['date'],
+            'description' => mb_substr("Hitung {$data['box_name']} (Saksi: {$data['witness_1_name']} & {$data['witness_2_name']})", 0, 255),
+            'donor_name' => $data['box_name'],
+        ];
+
+        return DB::transaction(function () use ($mosque, $by, $data, $idempotencyKey, $txData, $normalized, $total) {
+            [$tx, $created] = $this->record($mosque, $by, $txData, $idempotencyKey);
+            if (! $created) {
+                $existing = DonationBoxCount::where('mosque_id', $mosque->id)
+                    ->where('transaction_id', $tx->id)
+                    ->first();
+                if ($existing) {
+                    return [$existing, false];
+                }
+            }
+
+            $count = DonationBoxCount::create([
+                'mosque_id' => $mosque->id,
+                'transaction_id' => $tx->id,
+                'date' => $data['date'],
+                'box_name' => $data['box_name'],
+                'denominations' => $normalized,
+                'total_amount' => $total,
+                'witness_1_name' => $data['witness_1_name'],
+                'witness_2_name' => $data['witness_2_name'],
+                'notes' => $data['notes'] ?? null,
+                'created_by' => $by->id,
+            ]);
+            Audit::log($mosque, 'finance.donation_box_counted', $count, [
+                'box_name' => $count->box_name,
+                'total_amount' => $total,
+                'witnesses' => [$count->witness_1_name, $count->witness_2_name],
+            ]);
+
+            return [$count, true];
+        });
+    }
+
+    /** Laporan Kas Jumat 7 hari (Sabtu..Jumat) siap PDF, Poster, dan WhatsApp. */
+    public function fridayReport(Mosque $mosque, ?string $date = null): array
+    {
+        if ($date) {
+            $toCarbon = Carbon::parse($date, $mosque->timezone)->startOfDay();
+        } else {
+            $now = now($mosque->timezone)->startOfDay();
+            $toCarbon = $now->isFriday() ? $now : $now->copy()->previous(Carbon::FRIDAY);
+        }
+        $toDate = $toCarbon->toDateString();
+        $fromCarbon = $toCarbon->copy()->subDays(6);
+        $fromDate = $fromCarbon->toDateString();
+        $prevDate = $fromCarbon->copy()->subDay()->toDateString();
+
+        $openingFunds = $this->fundBalances($mosque, $prevDate);
+        $closingFunds = $this->fundBalances($mosque, $toDate);
+        $openingBalance = array_sum(array_column($openingFunds, 'balance'));
+        $closingBalance = array_sum(array_column($closingFunds, 'balance'));
+
+        $periodBase = FinanceTransaction::where('mosque_id', $mosque->id)
+            ->where('date', '>=', $fromDate)
+            ->where('date', '<=', $toDate);
+
+        $totals = (clone $periodBase)->selectRaw(
+            "coalesce(sum(case when flow='in' then amount end),0) as total_in, coalesce(sum(case when flow='out' then amount end),0) as total_out"
+        )->first();
+        $totalIn = (int) ($totals->total_in ?? 0);
+        $totalOut = (int) ($totals->total_out ?? 0);
+
+        $topIn = (clone $periodBase)->where('flow', 'in')->with('fund:id,name')
+            ->orderByDesc('amount')->orderByDesc('id')->limit(5)->get()
+            ->map(fn (FinanceTransaction $t) => [
+                'date' => $t->date->toDateString(),
+                'description' => $t->description,
+                'amount' => $t->amount,
+                'fund_name' => $t->fund?->name,
+            ])->all();
+
+        $topOut = (clone $periodBase)->where('flow', 'out')->with('fund:id,name')
+            ->orderByDesc('amount')->orderByDesc('id')->limit(5)->get()
+            ->map(fn (FinanceTransaction $t) => [
+                'date' => $t->date->toDateString(),
+                'description' => $t->description,
+                'amount' => $t->amount,
+                'fund_name' => $t->fund?->name,
+            ])->all();
+
+        $fmt = fn (int $n): string => number_format($n, 0, ',', '.');
+        $fundLines = collect($closingFunds)
+            ->map(fn ($f) => "- {$f['name']}: Rp{$fmt((int) $f['balance'])}")
+            ->implode("\n");
+
+        $waLines = [
+            '*LAPORAN KAS JUMAT*',
+            "*{$mosque->name}*",
+            "Periode: {$fromDate} s.d. {$toDate}",
+            '',
+            "Saldo Awal: Rp{$fmt($openingBalance)}",
+            "Pemasukan: +Rp{$fmt($totalIn)}",
+            "Pengeluaran: -Rp{$fmt($totalOut)}",
+            "*Saldo Akhir: Rp{$fmt($closingBalance)}*",
+        ];
+        if ($fundLines !== '') {
+            $waLines[] = '';
+            $waLines[] = 'Rincian Saldo Dana:';
+            $waLines[] = $fundLines;
+        }
+        $waLines[] = '';
+        $waLines[] = 'Jazakumullahu khairan katsiran atas infaq dan amanah jamaah.';
+
+        return [
+            'mosque_name' => $mosque->name,
+            'mosque_city' => $mosque->city,
+            'from' => $fromDate,
+            'to' => $toDate,
+            'opening_balance' => $openingBalance,
+            'total_in' => $totalIn,
+            'total_out' => $totalOut,
+            'net' => $totalIn - $totalOut,
+            'closing_balance' => $closingBalance,
+            'funds' => $closingFunds,
+            'top_in' => $topIn,
+            'top_out' => $topOut,
+            'whatsapp_text' => implode("\n", $waLines),
+        ];
     }
 
     private function guardRestrictedFund(Mosque $mosque, int $fundId, int $amount): void

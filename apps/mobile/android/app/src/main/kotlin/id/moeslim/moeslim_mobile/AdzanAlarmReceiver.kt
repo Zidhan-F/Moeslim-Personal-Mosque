@@ -8,44 +8,156 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import android.media.MediaPlayer
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
+import android.os.PowerManager
+import java.io.File
 
 object AdzanAudioPlayer {
     private var mediaPlayer: MediaPlayer? = null
+    private var audioManager: AudioManager? = null
+    private var focusRequest: AudioFocusRequest? = null
+    private var wakeLock: PowerManager.WakeLock? = null
+    private val mainHandler = Handler(Looper.getMainLooper())
 
-    fun playAsset(context: Context, assetPath: String): Boolean {
+    fun playAsset(
+        context: Context,
+        assetPath: String,
+        isPreview: Boolean = false,
+        onComplete: (() -> Unit)? = null
+    ): Boolean {
         stop()
+        val appContext = context.applicationContext
+        val am = appContext.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+        audioManager = am
+
+        val attrs = AudioAttributes.Builder()
+            .setUsage(if (isPreview) AudioAttributes.USAGE_MEDIA else AudioAttributes.USAGE_ALARM)
+            .setContentType(if (isPreview) AudioAttributes.CONTENT_TYPE_SPEECH else AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .build()
+
+        requestAudioFocus(am, attrs, isPreview)
+
+        if (!isPreview) {
+            try {
+                val pm = appContext.getSystemService(Context.POWER_SERVICE) as? PowerManager
+                wakeLock = pm?.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "moeslim:adzan_alarm")?.apply {
+                    setReferenceCounted(false)
+                    acquire(4 * 60 * 1000L)
+                }
+            } catch (_: Exception) {
+            }
+        }
+
         return try {
-            val afd = context.assets.openFd("flutter_assets/$assetPath")
             val mp = MediaPlayer()
-            mp.setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ALARM)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                    .build()
-            )
-            mp.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
-            afd.close()
-            mp.setOnCompletionListener { stop() }
+            mp.setAudioAttributes(attrs)
+            mp.setVolume(1.0f, 1.0f)
+
+            val fullKey = "flutter_assets/$assetPath"
+            var loaded = false
+            try {
+                val afd = appContext.assets.openFd(fullKey)
+                mp.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+                afd.close()
+                loaded = true
+            } catch (_: Exception) {
+                // Fallback bila aset terkompresi (mis. pada distribusi App Bundle).
+            }
+
+            if (!loaded) {
+                val tmp = File(appContext.cacheDir, "adzan_active_${assetPath.substringAfterLast('/')}")
+                appContext.assets.open(fullKey).use { input ->
+                    tmp.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                mp.setDataSource(tmp.absolutePath)
+            }
+
+            mp.setOnCompletionListener {
+                stop()
+                if (onComplete != null) {
+                    mainHandler.post { onComplete() }
+                }
+            }
+            mp.setOnErrorListener { _, _, _ ->
+                stop()
+                if (onComplete != null) {
+                    mainHandler.post { onComplete() }
+                }
+                true
+            }
             mp.prepare()
             mp.start()
             mediaPlayer = mp
             true
         } catch (_: Exception) {
+            stop()
             false
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun requestAudioFocus(am: AudioManager?, attrs: AudioAttributes, isPreview: Boolean) {
+        if (am == null) return
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val req = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+                    .setAudioAttributes(attrs)
+                    .setAcceptsDelayedFocusGain(false)
+                    .setOnAudioFocusChangeListener { change ->
+                        if (change == AudioManager.AUDIOFOCUS_LOSS) {
+                            stop()
+                        }
+                    }
+                    .build()
+                focusRequest = req
+                am.requestAudioFocus(req)
+            } else {
+                val stream = if (isPreview) AudioManager.STREAM_MUSIC else AudioManager.STREAM_ALARM
+                am.requestAudioFocus(null, stream, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+            }
+        } catch (_: Exception) {
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun abandonAudioFocus() {
+        val am = audioManager ?: return
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                focusRequest?.let { am.abandonAudioFocusRequest(it) }
+                focusRequest = null
+            } else {
+                am.abandonAudioFocus(null)
+            }
+        } catch (_: Exception) {
         }
     }
 
     fun stop() {
         try {
             mediaPlayer?.let {
-                if (it.isPlaying) it.stop()
+                try {
+                    if (it.isPlaying) it.stop()
+                } catch (_: Exception) {
+                }
                 it.release()
             }
         } catch (_: Exception) {
         } finally {
             mediaPlayer = null
+            abandonAudioFocus()
+            try {
+                if (wakeLock?.isHeld == true) wakeLock?.release()
+            } catch (_: Exception) {
+            }
+            wakeLock = null
         }
     }
 }
@@ -126,9 +238,9 @@ class AdzanAlarmReceiver : BroadcastReceiver() {
         val locationName = intent.getStringExtra("locationName") ?: ""
         val isFajr = intent.getBooleanExtra("isFajr", false)
         val muadzinName = intent.getStringExtra("muadzinName") ?: "Muadzin"
-        val assetPath = intent.getStringExtra("assetPath") ?: "assets/audio/adzan/makkah.wav"
+        val assetPath = intent.getStringExtra("assetPath") ?: "assets/audio/adzan/makkah.mp3"
 
-        AdzanAudioPlayer.playAsset(context, assetPath)
+        AdzanAudioPlayer.playAsset(context, assetPath, isPreview = false)
 
         if (nm != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(

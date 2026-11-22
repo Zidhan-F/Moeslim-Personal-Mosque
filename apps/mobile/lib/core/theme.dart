@@ -1,4 +1,4 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 
 /// Alias warna lama → token brand kit Moeslim PM (lihat packages/moeslim_brand).

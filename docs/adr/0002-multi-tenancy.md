@@ -1,4 +1,4 @@
-# ADR 0002 — Multi-tenant shared database dengan `mosque_id`
+# ADR 0002: Multi-tenant shared database dengan `mosque_id`
 Status: diterima
 
 **Keputusan**: satu database PostgreSQL, setiap tabel operasional membawa `mosque_id`.

@@ -56,11 +56,19 @@ class TrackerRepository {
 
   Future<double> progress(DateTime d) async => (await day(d)).length / TrackerItem.values.length;
 
-  /// Jumlah hari berturut-turut (berakhir di [until]) dengan lima sholat lengkap.
+  /// Jumlah hari berturut-turut (berakhir di [until]) dengan lima sholat lengkap
+  /// (hari uzur haid pada Mode Muslimah dijeda otomatis sehingga tidak memutus streak).
   Future<int> prayerStreak(DateTime until) async {
+    final uzurRaw = await _store.readJson('muslimah_uzur_days');
+    final uzurSet = uzurRaw is List ? {for (final x in uzurRaw) if (x is String) x} : <String>{};
     var streak = 0;
     var d = DateTime(until.year, until.month, until.day);
-    while (true) {
+    for (var guard = 0; guard < 730; guard++) {
+      final key = dayKey(d);
+      if (uzurSet.contains(key)) {
+        d = d.subtract(const Duration(days: 1));
+        continue;
+      }
       final items = await day(d);
       if (!TrackerItem.prayers.every(items.contains)) break;
       streak++;

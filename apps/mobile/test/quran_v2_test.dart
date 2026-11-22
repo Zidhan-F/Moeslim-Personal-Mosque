@@ -14,7 +14,7 @@ final manifest = AudioManifest.fromJson({
       'kind': 'murattal',
       'base_url': 'https://cdn.test/m',
       'license': 'L',
-      'attribution': 'Qari M — uji',
+      'attribution': 'Qari M (uji)',
       'surahs': 'all',
     },
   ],

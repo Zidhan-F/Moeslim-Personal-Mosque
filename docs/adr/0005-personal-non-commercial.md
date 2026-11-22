@@ -1,13 +1,13 @@
-# ADR 0005 — Satu aplikasi: Moeslim Personal (gratis) + Moeslim Mosque (fitur tambahan berbayar)
+# ADR 0005: Satu aplikasi: Moeslim Personal (gratis) + Moeslim Mosque (fitur tambahan berbayar)
 Status: diterima (keputusan pemilik produk)
 
 ## Keputusan
 **Satu aplikasi** dengan dua bagian:
-1. **Moeslim Personal — aplikasi utama.** Gratis, mandiri, dan **non-komersial**: tanpa iklan, tanpa
+1. **Moeslim Personal (aplikasi utama).** Gratis, mandiri, dan **non-komersial**: tanpa iklan, tanpa
    pembelian, tanpa fitur premium, tanpa akun, tanpa penjualan/pelacakan data. Semua fitur Personal
    (jadwal sholat, Al-Qur'an, audio murottal, tajwid, tasbih, tracker, kiblat, kalender, masjid
    yang diikuti) berfungsi penuh tanpa pernah menyentuh Mosque.
-2. **Moeslim Mosque — fitur tambahan opsional** untuk pengurus masjid (kas, agenda, petugas, inventaris,
+2. **Moeslim Mosque (fitur tambahan opsional)** untuk pengurus masjid (kas, agenda, petugas, inventaris,
    TV Display). Berbayar Rp59.000/bulan per masjid **hanya bila dipakai**. Pengguna yang tidak
    memakainya tidak terdampak apa pun.
 
@@ -36,4 +36,4 @@ Status: diterima (keputusan pemilik produk)
 3. **Tanpa SDK iklan/analytics pihak ketiga** di aplikasi.
 
 ## Alternatif yang ditolak
-Memisah menjadi dua aplikasi — ditolak pemilik produk: Mosque adalah fitur tambahan di aplikasi utama.
+Memisah menjadi dua aplikasi: ditolak pemilik produk: Mosque adalah fitur tambahan di aplikasi utama.

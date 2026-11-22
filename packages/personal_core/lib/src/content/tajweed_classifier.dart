@@ -3,7 +3,7 @@ import 'tajweed.dart';
 /// Pengklasifikasi tajwid berbasis aturan untuk teks **Tanzil Uthmani** (dipakai saat build, bukan di
 /// perangkat). Semantik disamakan dengan classifier cpfair/quran-tajweed (CC BY 4.0 untuk datanya):
 /// nama aturan, model huruf (huruf dasar + tanda Mn; spasi dihitung sebagai "huruf"; alif kecil U+0670
-/// berdiri sendiri), dan cakupan rentang tiap aturan. Implementasi ini ditulis ulang — bukan salinan
+/// berdiri sendiri), dan cakupan rentang tiap aturan. Implementasi ini ditulis ulang, bukan salinan
 /// pohon keputusan cpfair.
 ///
 /// Konvensi Tanzil yang dimanfaatkan: huruf yang melebur (idgham/ikhfa) ditulis TANPA sukun, iqlab
@@ -26,7 +26,7 @@ const _idghamGhunnah = 'يمون';
 const _idghamNoGhunnah = 'لر';
 const _heavy = 'هءحعخغ';
 
-/// Lafaz Allah (ل ل ّ َ ه + harakat akhir) — lam-nya bukan lam syamsiyah.
+/// Lafaz Allah (ل ل ّ َ ه + harakat akhir): lam-nya bukan lam syamsiyah.
 final _allahForms = [
   for (final h in [0x0650, 0x064F, 0x064E])
     String.fromCharCodes([0x0644, 0x0644, _shadda, 0x064E, 0x0647, h])
@@ -59,7 +59,7 @@ class _Letter {
   bool get fatha => has(0x064E);
   bool get explicitSukoon => has(_silentCircle) || has(_sukun);
 
-  /// Tanpa harakat & tanpa sukun (syaddah boleh) — di Tanzil menandai huruf yang melebur.
+  /// Tanpa harakat & tanpa sukun (syaddah boleh); di Tanzil menandai huruf yang melebur.
   bool get implicitSukoon => !vowelIncl;
   bool get procSukoon => explicitSukoon || !vowelIncl;
   bool get maddah => has(_maddah);

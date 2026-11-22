@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:shared_prayer/shared_prayer.dart';
 
@@ -117,8 +117,7 @@ class _HijriPageState extends ConsumerState<HijriPage> {
           const Padding(
             padding: EdgeInsets.all(12),
             child: Text(
-              'Tanggal Hijriah dihitung secara aritmetika dan dapat berbeda dengan penetapan resmi (sidang isbat). '
-              'Atur koreksi di Pengaturan Jadwal.',
+              'Koreksi tanggal Hijriah dapat diatur di Pengaturan Jadwal.',
               style: TextStyle(fontSize: 12),
             ),
           ),

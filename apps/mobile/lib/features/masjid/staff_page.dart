@@ -1,11 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 
 import '../../core/format.dart';
 import 'agenda_page.dart' show DateBadge;
 import 'masjid_api.dart';
 import 'mosque_providers.dart';
+import 'poster_share_sheet.dart';
 import 'session.dart';
 
 const dutyLabels = {
@@ -120,9 +121,27 @@ class _StaffPageState extends ConsumerState<StaffPage> {
           AsyncBody(
             value: staff,
             onRetry: () => ref.invalidate(staffProvider(key)),
-            data: (list) => Column(
-              children: [
-                for (var i = 0; i < 7; i++)
+            data: (list) {
+              final friday = _weekStart.add(const Duration(days: 4));
+              final fridayRows = list.where((a) => a['date'] == isoDate(friday)).toList();
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  OutlinedButton.icon(
+                    key: const Key('share-friday-staff'),
+                    onPressed: () => showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      showDragHandle: true,
+                      builder: (_) => PosterShareSheet(
+                        data: WaTextBuilder.forFridayStaff(ctx.name, friday, fridayRows),
+                      ),
+                    ),
+                    icon: const Icon(Icons.share_outlined),
+                    label: const Text('Poster & WA Petugas Jumat'),
+                  ),
+                  const SizedBox(height: 8),
+                  for (var i = 0; i < 7; i++)
                   Builder(
                     builder: (_) {
                       final day = _weekStart.add(Duration(days: i));
@@ -199,7 +218,8 @@ class _StaffPageState extends ConsumerState<StaffPage> {
                     textAlign: TextAlign.center,
                   ),
               ],
-            ),
+            );
+            },
           ),
         ],
       ),

@@ -83,6 +83,7 @@ List<ScheduledAdzanAlarm> computeUpcomingAdzanAlarms(PersonalSettings settings, 
 
 /// Abstraksi penjadwal alarm & pemutar suara adzan agar mudah diuji dan terhubung ke Android native.
 abstract class AdzanAlarmBackend {
+  Stream<void> get onCompleted;
   Future<void> syncAlarms(List<ScheduledAdzanAlarm> alarms, PersonalSettings settings);
   Future<void> playAdzan(AdzanMuadzin muadzin, {Prayer? prayer});
   Future<void> stopAdzan();
@@ -91,7 +92,20 @@ abstract class AdzanAlarmBackend {
 
 class PlatformAdzanAlarmBackend implements AdzanAlarmBackend {
   static const _channel = MethodChannel('id.moeslim.moeslim_mobile/adzan_alarm');
+  final _completed = StreamController<void>.broadcast();
   AudioPlayer? _player;
+  StreamSubscription<PlayerState>? _playerSub;
+
+  PlatformAdzanAlarmBackend() {
+    _channel.setMethodCallHandler((call) async {
+      if (call.method == 'onPlaybackCompleted' && !_completed.isClosed) {
+        _completed.add(null);
+      }
+    });
+  }
+
+  @override
+  Stream<void> get onCompleted => _completed.stream;
 
   @override
   Future<void> syncAlarms(List<ScheduledAdzanAlarm> alarms, PersonalSettings settings) async {
@@ -113,6 +127,7 @@ class PlatformAdzanAlarmBackend implements AdzanAlarmBackend {
 
   @override
   Future<void> playAdzan(AdzanMuadzin muadzin, {Prayer? prayer}) async {
+    await stopAdzan();
     var handledByNative = false;
     try {
       final res = await _channel.invokeMethod<bool>('playAdzan', {
@@ -121,18 +136,30 @@ class PlatformAdzanAlarmBackend implements AdzanAlarmBackend {
         'assetPath': muadzin.assetPath,
         'prayerLabel': prayer?.label,
         'isFajr': prayer == Prayer.fajr,
+        'isPreview': prayer == null,
       });
       handledByNative = res == true;
     } catch (_) {}
 
     if (!handledByNative) {
-      try {
-        final player = _player ??= AudioPlayer();
-        await player.stop();
-        await player.setAsset(muadzin.assetPath);
-        await player.play();
-      } catch (_) {}
+      final player = _ensurePlayer();
+      await player.setAsset(muadzin.assetPath);
+      await player.setVolume(1.0);
+      unawaited(player.play());
     }
+  }
+
+  AudioPlayer _ensurePlayer() {
+    final existing = _player;
+    if (existing != null) return existing;
+    final created = AudioPlayer();
+    _player = created;
+    _playerSub = created.playerStateStream.listen((st) {
+      if (st.processingState == ProcessingState.completed && !_completed.isClosed) {
+        _completed.add(null);
+      }
+    });
+    return created;
   }
 
   @override
@@ -147,9 +174,12 @@ class PlatformAdzanAlarmBackend implements AdzanAlarmBackend {
 
   @override
   Future<void> dispose() async {
+    _channel.setMethodCallHandler(null);
+    await _playerSub?.cancel();
     try {
       await _player?.dispose();
     } catch (_) {}
+    await _completed.close();
   }
 }
 
@@ -164,12 +194,14 @@ class AdzanAlarmState {
   final Prayer? ringingPrayer;
   final String? previewingMuadzinId;
   final String? lastTriggeredSlotKey;
+  final String? lastError;
 
   const AdzanAlarmState({
     this.scheduledAlarms = const [],
     this.ringingPrayer,
     this.previewingMuadzinId,
     this.lastTriggeredSlotKey,
+    this.lastError,
   });
 
   bool get isRinging => ringingPrayer != null;
@@ -184,12 +216,15 @@ class AdzanAlarmState {
     String? previewingMuadzinId,
     bool clearPreview = false,
     String? lastTriggeredSlotKey,
+    String? lastError,
+    bool clearError = false,
   }) =>
       AdzanAlarmState(
         scheduledAlarms: scheduledAlarms ?? this.scheduledAlarms,
         ringingPrayer: clearRinging ? null : (ringingPrayer ?? this.ringingPrayer),
         previewingMuadzinId: clearPreview ? null : (previewingMuadzinId ?? this.previewingMuadzinId),
         lastTriggeredSlotKey: lastTriggeredSlotKey ?? this.lastTriggeredSlotKey,
+        lastError: clearError ? null : (lastError ?? this.lastError),
       );
 }
 
@@ -201,6 +236,13 @@ class AdzanController extends Notifier<AdzanAlarmState> {
 
   @override
   AdzanAlarmState build() {
+    final completedSub = _backend.onCompleted.listen((_) {
+      if (state.isPlaying) {
+        state = state.copyWith(clearRinging: true, clearPreview: true);
+      }
+    });
+    ref.onDispose(completedSub.cancel);
+
     ref.listen<AsyncValue<PersonalSettings>>(settingsProvider, (_, next) {
       final s = next.value;
       final now = ref.read(nowProvider).value;
@@ -268,9 +310,14 @@ class AdzanController extends Notifier<AdzanAlarmState> {
           state = state.copyWith(
             ringingPrayer: p,
             clearPreview: true,
+            clearError: true,
             lastTriggeredSlotKey: slotKey,
           );
-          await _backend.playAdzan(s.muadzin, prayer: p);
+          try {
+            await _backend.playAdzan(s.muadzin, prayer: p);
+          } catch (_) {
+            state = state.copyWith(lastError: 'Gagal memutar suara adzan. Periksa volume perangkat.');
+          }
         }
         break;
       }
@@ -286,8 +333,16 @@ class AdzanController extends Notifier<AdzanAlarmState> {
     state = state.copyWith(
       previewingMuadzinId: muadzin.id,
       clearRinging: true,
+      clearError: true,
     );
-    await _backend.playAdzan(muadzin);
+    try {
+      await _backend.playAdzan(muadzin);
+    } catch (_) {
+      state = state.copyWith(
+        clearPreview: true,
+        lastError: 'Suara adzan belum dapat diputar. Pastikan volume media perangkat aktif.',
+      );
+    }
   }
 
   /// Picu alarm adzan untuk waktu salat [prayer] (untuk simulasi/uji alarm maupun saat waktu tiba).
@@ -296,13 +351,18 @@ class AdzanController extends Notifier<AdzanAlarmState> {
     state = state.copyWith(
       ringingPrayer: prayer,
       clearPreview: true,
+      clearError: true,
     );
-    await _backend.playAdzan(s.muadzin, prayer: prayer);
+    try {
+      await _backend.playAdzan(s.muadzin, prayer: prayer);
+    } catch (_) {
+      state = state.copyWith(lastError: 'Gagal memutar suara adzan. Periksa volume alarm perangkat.');
+    }
   }
 
   /// Hentikan suara adzan yang sedang berkumandang (alarm maupun pratinjau).
   Future<void> stopAdzan() async {
-    state = state.copyWith(clearRinging: true, clearPreview: true);
+    state = state.copyWith(clearRinging: true, clearPreview: true, clearError: true);
     await _backend.stopAdzan();
   }
 }

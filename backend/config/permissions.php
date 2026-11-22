@@ -11,6 +11,8 @@ return [
     'bendahara' => [
         'dashboard.view', 'members.view',
         'finance.view', 'finance.write', 'finance.export',
+        'zakat.view', 'zakat.write',
+        'qurban.view', 'qurban.write',
         'events.view', 'staff.view', 'inventory.view',
         'audit.view',
     ],
@@ -19,6 +21,8 @@ return [
         'events.view', 'events.write',
         'staff.view', 'staff.write',
         'inventory.view', 'inventory.write',
+        'zakat.view', 'zakat.write',
+        'qurban.view', 'qurban.write',
         'display.view',
         'audit.view',
     ],
@@ -31,7 +35,7 @@ return [
 
     // Prefix aksi audit yang boleh dilihat role non-admin ("Terbatas").
     'audit_scopes' => [
-        'bendahara' => ['finance.'],
-        'pengurus' => ['event.', 'announcement.', 'staff.', 'inventory.'],
+        'bendahara' => ['finance.', 'zakat.', 'qurban.', 'coupon.'],
+        'pengurus' => ['event.', 'announcement.', 'staff.', 'inventory.', 'zakat.', 'qurban.', 'coupon.'],
     ],
 ];

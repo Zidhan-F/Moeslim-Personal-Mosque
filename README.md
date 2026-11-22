@@ -1,11 +1,11 @@
-# Moeslim PM — Personal & Mosque
+# Moeslim PM: Personal & Mosque
 
-Satu aplikasi dengan dua menu: **Moeslim Personal** (aplikasi utama — gratis, non-komersial, tanpa akun,
-offline-first) dan **Moeslim Mosque** (fitur tambahan opsional untuk pengurus masjid — cloud, multi-tenant,
+Satu aplikasi dengan dua menu: **Moeslim Personal** (aplikasi utama: gratis, non-komersial, tanpa akun,
+offline-first) dan **Moeslim Mosque** (fitur tambahan opsional untuk pengurus masjid: cloud, multi-tenant,
 Rp59.000/bulan/masjid, maks. 5 pengurus & 5 TV Display). Lihat `docs/adr/0005-personal-non-commercial.md`.
 
 Fitur Personal: jadwal salat, Al-Qur'an (teks, terjemahan, tajwid, murottal), doa & dzikir, tasbih, kiblat,
-kalender Hijriah, dan catatan ibadah. (Fitur 7 Irama sudah dihapus — `docs/adr/0006-remove-naghom.md`.)
+kalender Hijriah, dan catatan ibadah. (Fitur 7 Irama sudah dihapus, lihat `docs/adr/0006-remove-naghom.md`.)
 
 | Path | Isi | Test |
 |---|---|---|
@@ -32,7 +32,7 @@ cd apps/masjid_display && flutter run --dart-define=API_BASE_URL=http://10.0.2.2
 ## Tampilan
 
 Ilustrasi (masjid, Al-Qur'an di rehal, lentera, Ka'bah, perisai login, pemandangan masjid TV, ornamen)
-digambar ulang sebagai vektor mengikuti paket visualisasi — sumber & cara render di `tools/illustrations/`.
+digambar ulang sebagai vektor mengikuti paket visualisasi; sumber & cara render di `tools/illustrations/`.
 
 Tangkapan layar hasil render (font & warna brand) ada di `docs/brand/screenshots/`:
 `personal/` (Onboarding, Beranda, Al-Qur'an, Mushaf, Murottal, Doa, Jadwal, Kiblat, Tasbih, Catatan Ibadah),
@@ -42,28 +42,28 @@ Laporan, Pengurus & Role, Agenda, Petugas, Inventaris, Konfigurasi TV, Konten, A
 
 ## Teks Al-Qur'an
 
-Aplikasi sudah memuat **teks Arab Al-Qur'an lengkap** (Tanzil Quran Text — Uthmani, 114 surah, 6.236 ayat)
+Aplikasi sudah memuat **teks Arab Al-Qur'an lengkap** (Tanzil Quran Text Uthmani, 114 surah, 6.236 ayat)
 dengan font mushaf **Amiri Quran**, di `apps/mobile/assets/quran/` (sumber & ketentuan: `SOURCE.md`).
 Terjemahan Indonesia (Kemenag) ikut dimuat, dan **seluruh 6.236 ayat berwarna tajwid** (18 hukum).
 
 ## Audio murottal
 
 Pemutar per surah/ayat dengan pilihan qari murattal. Repo tidak menyertakan audio; rekaman
-berlisensi didaftarkan lewat katalog — lihat `docs/audio-murattal.md`.
+berlisensi didaftarkan lewat katalog; lihat `docs/audio-murattal.md`.
 
 ## Pewarnaan tajwid
 
 Teks Al-Qur'an diwarnai sesuai 18 hukum tajwid untuk semua surah & ayat. Anotasi dibuat oleh pengklasifikasi
-tajwid bawaan (setara cpfair/quran-tajweed), dengan panduan warna & tombol on/off — lihat `docs/tajwid-warna.md`.
+tajwid bawaan (setara cpfair/quran-tajweed), dengan panduan warna & tombol on/off; lihat `docs/tajwid-warna.md`.
 
 ## Dokumen
 
-- `docs/tajwid-warna.md` — pewarnaan tajwid & format anotasi
-- `docs/licensing/` — register lisensi konten & surat permohonan izin
+- `docs/tajwid-warna.md`: pewarnaan tajwid & format anotasi
+- `docs/licensing/`: register lisensi konten & surat permohonan izin
 
-- `docs/audio-murattal.md` — pemutar audio & format katalog murottal
+- `docs/audio-murattal.md`: pemutar audio & format katalog murottal
 
-- `docs/blueprint.md` — spesifikasi (Blueprint v1.1)
-- `docs/adr/` — keputusan arsitektur
-- `docs/api.md` — referensi endpoint
-- `docs/plans/2026-11-20-moeslim-mvp.md` — rencana implementasi MVP
+- `docs/blueprint.md`: spesifikasi (Blueprint v1.1)
+- `docs/adr/`: keputusan arsitektur
+- `docs/api.md`: referensi endpoint
+- `docs/plans/2026-11-20-moeslim-mvp.md`: rencana implementasi MVP

@@ -38,11 +38,24 @@ class FakeAudioEngine implements AudioEngine {
   bool repeat = false;
   final _index = StreamController<int?>.broadcast();
   final _playing = StreamController<bool>.broadcast();
+  final _completed = StreamController<bool>.broadcast();
+  final _errors = StreamController<String>.broadcast();
 
   @override
   Stream<int?> get currentIndex => _index.stream;
   @override
   Stream<bool> get playing => _playing.stream;
+  @override
+  Stream<bool> get completed => _completed.stream;
+  @override
+  Stream<String> get errors => _errors.stream;
+
+  void emitCompleted() {
+    _playing.add(false);
+    _completed.add(true);
+  }
+
+  void emitError(String message) => _errors.add(message);
 
   double speed = 1;
   final _position = StreamController<Duration>.broadcast();
@@ -55,11 +68,15 @@ class FakeAudioEngine implements AudioEngine {
   @override
   Future<void> setSpeed(double s) async => speed = s;
   @override
-  Future<void> seek(Duration p) async => _position.add(p);
+  Future<void> seek(Duration p, {int? index}) async {
+    if (index != null) _index.add(index);
+    _position.add(p);
+  }
 
   @override
   Future<void> playAll(List<Uri> uris, {int startIndex = 0}) async {
     calls.add(uris);
+    _completed.add(false);
     _index.add(startIndex);
     _playing.add(true);
   }
@@ -182,10 +199,18 @@ class FakeDeclinationService implements DeclinationService {
 }
 
 class FakeAdzanAlarmBackend implements AdzanAlarmBackend {
+  final _completed = StreamController<void>.broadcast();
   List<ScheduledAdzanAlarm> syncedAlarms = const [];
   final List<AdzanMuadzin> playedMuadzins = [];
   final List<Prayer?> playedPrayers = [];
   int stopCalls = 0;
+
+  @override
+  Stream<void> get onCompleted => _completed.stream;
+
+  void completePlayback() {
+    if (!_completed.isClosed) _completed.add(null);
+  }
 
   @override
   Future<void> syncAlarms(List<ScheduledAdzanAlarm> alarms, PersonalSettings settings) async {
@@ -204,7 +229,9 @@ class FakeAdzanAlarmBackend implements AdzanAlarmBackend {
   }
 
   @override
-  Future<void> dispose() async {}
+  Future<void> dispose() async {
+    await _completed.close();
+  }
 }
 
 Future<ProviderContainer> pumpApp(

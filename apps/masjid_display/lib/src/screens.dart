@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:shared_prayer/shared_prayer.dart';
 
@@ -170,14 +170,18 @@ class TvPalette {
   };
 }
 
+/// Callback sinyal suara iqamah/masuk salat (di-override di test).
+final beepCallbackProvider = Provider<VoidCallback>((ref) => () => SystemSound.play(SystemSoundType.alert));
+
 /// Layar TV: bergantian antara Layar Utama (jam, jadwal, iqamah) dan Informasi Jamaah (agenda, kas, pengumuman).
-/// Menjelang azan (≤ 10 menit), saat iqamah, dan saat salat berlangsung, Layar Utama dikunci.
-class DisplayScreen extends ConsumerWidget {
+/// Mendukung Override Berita Duka/Darurat (#17), Layar Hening Otomatis Saat Salat/Khutbah Jumat (#11),
+/// Sinyal Beep Iqamah (#12), QRIS & Kas Jumat (#15), serta Papan Petugas Jumat (#16).
+class DisplayScreen extends ConsumerStatefulWidget {
   const DisplayScreen({super.key});
 
   static const lockBeforeAdhan = Duration(minutes: 10);
 
-  /// Detik ke-[infoFrom]..59 tiap menit menampilkan Informasi Jamaah (bila tidak dikunci).
+  /// Detik ke-40..59 tiap menit menampilkan Informasi Jamaah (bila tidak dikunci).
   static bool showInfoAt(DateTime now, ScheduleStatus status, {required bool hasInfo}) {
     if (!hasInfo) return false;
     if (status.phase != SchedulePhase.beforeAdhan || status.remaining <= lockBeforeAdhan) return false;
@@ -185,7 +189,38 @@ class DisplayScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DisplayScreen> createState() => _DisplayScreenState();
+}
+
+class _DisplayScreenState extends ConsumerState<DisplayScreen> {
+  SchedulePhase? _lastPhase;
+  Prayer? _lastPrayer;
+
+  static Map<String, dynamic>? _activeOverride(Map<String, dynamic> content, DateTime deviceUtc) {
+    final raw = content['override'];
+    if (raw is! Map) return null;
+    final map = Map<String, dynamic>.from(raw);
+    final exp = DateTime.tryParse('${map['expires_at'] ?? ''}');
+    if (exp == null || !exp.isAfter(deviceUtc)) return null;
+    return map;
+  }
+
+  void _checkBeep(ScheduleStatus status, {required bool enabled}) {
+    final prevPhase = _lastPhase;
+    final prevPrayer = _lastPrayer;
+    _lastPhase = status.phase;
+    _lastPrayer = status.prayer;
+    if (!enabled || prevPhase == null) return;
+    final enteredIqamah = prevPhase == SchedulePhase.beforeAdhan && status.phase == SchedulePhase.beforeIqamah;
+    final enteredPraying =
+        prevPhase == SchedulePhase.beforeIqamah && status.phase == SchedulePhase.praying && prevPrayer == status.prayer;
+    if (enteredIqamah || enteredPraying) {
+      ref.read(beepCallbackProvider)();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     ref.listen(nowProvider, (_, next) {
       final n = next.value;
       if (n != null) ref.read(displayControllerProvider.notifier).tick(n);
@@ -214,18 +249,45 @@ class DisplayScreen extends ConsumerWidget {
     }
 
     final mosque = Map<String, dynamic>.from(content['mosque'] as Map);
+    final mosqueSettings = Map<String, dynamic>.from((mosque['settings'] as Map?) ?? const {});
     final config = Map<String, dynamic>.from(((content['device'] as Map?)?['config'] as Map?) ?? const {});
     final palette = TvPalette.of(config['theme'] as String?);
     final schedule = DisplaySchedule.fromMosque(mosque);
-    final now = schedule.wallClock(device.add(state.clockSkew));
+    final correctedUtc = device.add(state.clockSkew);
+    final now = schedule.wallClock(correctedUtc);
     final status = schedule.statusAt(now);
+
+    final beepEnabled = mosqueSettings['iqamah_beep'] as bool? ?? true;
+    _checkBeep(status, enabled: beepEnabled);
+
+    // #17 Prioritas tertinggi: Override Berita Duka / Pengumuman Darurat.
+    final alertData = _activeOverride(content, correctedUtc);
+    if (alertData != null) {
+      return _OverrideScreen(mosque: mosque, alert: alertData, now: now);
+    }
+
+    // #11 Mode Layar Hening Otomatis Saat Salat & Khutbah Jumat.
+    final silentEnabled = mosqueSettings['silent_prayer_screen'] as bool? ?? true;
+    if (status.phase == SchedulePhase.praying && silentEnabled) {
+      final msg =
+          mosqueSettings['silent_prayer_message'] as String? ?? 'Luruskan & Rapatkan Shaf • Harap Tenangkan Ponsel';
+      return _SilentPrayerScreen(mosque: mosque, status: status, now: now, message: msg);
+    }
+
     final events = (content['events'] as List? ?? const []).cast<Map>();
     final announcements = (content['announcements'] as List? ?? const []).cast<Map>();
     final finance = content['finance'] as Map?;
+    final qris = content['qris'] as Map?;
+    final fridayStaff = config['show_staff'] == false ? null : content['friday_staff'] as Map?;
     final staff = config['show_staff'] == false
         ? const <Map>[]
         : (content['staff_today'] as List? ?? const []).cast<Map>();
-    final info = showInfoAt(now, status, hasInfo: events.isNotEmpty || announcements.isNotEmpty || finance != null);
+    final info = DisplayScreen.showInfoAt(
+      now,
+      status,
+      hasInfo:
+          events.isNotEmpty || announcements.isNotEmpty || finance != null || qris != null || fridayStaff != null,
+    );
 
     final ticker = [
       for (final a in announcements) '${a['title']}: ${a['body']}',
@@ -234,12 +296,15 @@ class DisplayScreen extends ConsumerWidget {
           '${e['title']}',
           if (e['starts_at'] != null) _eventTime(schedule, e['starts_at'] as String),
           if (e['speaker'] != null) '${e['speaker']}',
-        ].join(' — '),
+        ].join(' - '),
     ].join('   •   ');
 
     final syncText =
-        '${state.offline ? 'Offline — menampilkan data tersimpan. ' : ''}'
+        '${state.offline ? 'Offline: menampilkan data tersimpan. ' : ''}'
         'Terakhir sinkron ${state.lastSync != null ? _hm(state.lastSync!) : '-'}';
+
+    final baseUrl = ref.read(displayApiProvider).baseUrl;
+    final token = state.token;
 
     return Scaffold(
       body: DecoratedBox(
@@ -267,7 +332,11 @@ class DisplayScreen extends ConsumerWidget {
                               events: events,
                               announcements: announcements,
                               finance: finance,
+                              qris: qris,
+                              fridayStaff: fridayStaff,
                               staff: staff,
+                              apiBaseUrl: baseUrl,
+                              deviceToken: token,
                             )
                           : _MainScreen(
                               key: const ValueKey('main-screen'),
@@ -277,6 +346,7 @@ class DisplayScreen extends ConsumerWidget {
                               schedule: schedule,
                               status: status,
                               staff: staff,
+                              fridayStaff: fridayStaff,
                             ),
                     ),
                   ),
@@ -370,6 +440,7 @@ class _MainScreen extends StatelessWidget {
   final DisplaySchedule schedule;
   final ScheduleStatus status;
   final List<Map> staff;
+  final Map? fridayStaff;
   const _MainScreen({
     super.key,
     required this.palette,
@@ -378,6 +449,7 @@ class _MainScreen extends StatelessWidget {
     required this.schedule,
     required this.status,
     required this.staff,
+    this.fridayStaff,
   });
 
   @override
@@ -686,7 +758,11 @@ class _InfoScreen extends StatelessWidget {
   final List<Map> events;
   final List<Map> announcements;
   final Map? finance;
+  final Map? qris;
+  final Map? fridayStaff;
   final List<Map> staff;
+  final String apiBaseUrl;
+  final String? deviceToken;
   const _InfoScreen({
     super.key,
     required this.palette,
@@ -696,12 +772,18 @@ class _InfoScreen extends StatelessWidget {
     required this.events,
     required this.announcements,
     required this.finance,
+    this.qris,
+    this.fridayStaff,
     required this.staff,
+    required this.apiBaseUrl,
+    this.deviceToken,
   });
 
   @override
   Widget build(BuildContext context) {
     final hijri = HijriDate.fromGregorian(now, offsetDays: schedule.hijriOffset);
+    final fridayItems = ((fridayStaff?['items'] as List?) ?? const []).cast<Map>();
+    final hasQris = qris != null && qris!['enabled'] == true;
     return Column(
       children: [
         Row(
@@ -737,24 +819,47 @@ class _InfoScreen extends StatelessWidget {
                   palette: palette,
                   icon: MoeslimIcons.kegiatan,
                   title: 'Agenda Masjid',
-                  child: events.isEmpty
-                      ? const _Muted('Belum ada agenda terpublikasi')
-                      : Column(
-                          children: [
-                            for (final e in events.take(4))
-                              _AgendaRow(event: e, start: DateTime.tryParse('${e['starts_at']}'), schedule: schedule),
-                          ],
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (fridayItems.isNotEmpty) ...[
+                        _FridayStaffCard(
+                          key: const Key('friday-staff-board'),
+                          dateIso: fridayStaff?['date'] as String?,
+                          items: fridayItems,
                         ),
+                        const SizedBox(height: 16),
+                      ],
+                      if (events.isEmpty && fridayItems.isEmpty)
+                        const _Muted('Belum ada agenda terpublikasi')
+                      else
+                        for (final e in events.take(fridayItems.isNotEmpty ? 2 : 4))
+                          _AgendaRow(event: e, start: DateTime.tryParse('${e['starts_at']}'), schedule: schedule),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(width: 20),
               Expanded(
-                child: finance != null
+                child: finance != null || hasQris
                     ? _InfoPanel(
                         palette: palette,
                         icon: MoeslimIcons.keuangan,
-                        title: 'Rekap Kas Masjid',
-                        child: _FinanceSummary(finance: finance!),
+                        title: finance != null ? 'Rekap Kas Masjid' : 'Infaq Masjid',
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (finance != null) _FinanceSummary(finance: finance!),
+                            if (hasQris) ...[
+                              if (finance != null) const SizedBox(height: 14),
+                              _QrisCard(
+                                label: '${qris!['label'] ?? 'Infaq Masjid'}',
+                                imageUrl: '$apiBaseUrl/display/qris',
+                                token: deviceToken,
+                              ),
+                            ],
+                          ],
+                        ),
                       )
                     : _InfoPanel(
                         palette: palette,
@@ -769,7 +874,7 @@ class _InfoScreen extends StatelessWidget {
                                     Padding(
                                       padding: const EdgeInsets.symmetric(vertical: 6),
                                       child: Text(
-                                        '${_duty(s['duty_type'] as String)} — ${s['name']}',
+                                        '${_duty(s['duty_type'] as String)}: ${s['name']}',
                                         style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w600),
                                       ),
                                     ),
@@ -928,39 +1033,267 @@ class _FinanceSummary extends StatelessWidget {
   const _FinanceSummary({required this.finance});
 
   @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      const Text('Saldo kas saat ini', style: TextStyle(fontSize: 22)),
-      FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Text(
-          _rupiah(finance['balance'] as num),
-          key: const Key('finance-balance'),
-          style: const TextStyle(fontSize: 48, fontWeight: FontWeight.w800),
+  Widget build(BuildContext context) {
+    final hasWeek = finance['week_in'] != null;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Saldo kas saat ini', style: TextStyle(fontSize: 22)),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            _rupiah(finance['balance'] as num),
+            key: const Key('finance-balance'),
+            style: const TextStyle(fontSize: 44, fontWeight: FontWeight.w800),
+          ),
+        ),
+        const SizedBox(height: 14),
+        _FlowLine(
+          icon: MoeslimIcons.arahAtas,
+          label: hasWeek ? 'Pemasukan pekan Jumat' : 'Pemasukan bulan ini',
+          value: _rupiah((hasWeek ? finance['week_in'] : finance['month_in']) as num),
+          color: _emerald,
+        ),
+        const SizedBox(height: 10),
+        _FlowLine(
+          icon: MoeslimIcons.arahBawah,
+          label: hasWeek ? 'Pengeluaran pekan Jumat' : 'Pengeluaran bulan ini',
+          value: _rupiah((hasWeek ? finance['week_out'] : finance['month_out']) as num),
+          color: const Color(0xFFB3261E),
+        ),
+        const SizedBox(height: 14),
+        const Text(
+          'Laporan kas lengkap dapat diminta kepada pengurus masjid.',
+          style: TextStyle(fontSize: 16, fontStyle: FontStyle.italic),
+        ),
+      ],
+    );
+  }
+}
+
+class _QrisCard extends StatelessWidget {
+  final String label;
+  final String imageUrl;
+  final String? token;
+  const _QrisCard({required this.label, required this.imageUrl, this.token});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    key: const Key('tv-qris-card'),
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(
+      color: _emerald.withValues(alpha: .08),
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: _gold.withValues(alpha: .55)),
+    ),
+    child: Row(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            width: 112,
+            height: 112,
+            color: Colors.white,
+            padding: const EdgeInsets.all(6),
+            child: Image.network(
+              imageUrl,
+              headers: {if (token != null) 'Authorization': 'Bearer $token'},
+              fit: BoxFit.contain,
+              errorBuilder: (_, _, _) => const Center(child: Icon(Icons.qr_code_2_rounded, size: 72, color: _deep)),
+            ),
+          ),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Scan QRIS', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: _emerald)),
+              const SizedBox(height: 4),
+              Text(label, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 4),
+              const Text('Salurkan infaq terbaik langsung ke rekening resmi masjid.', style: TextStyle(fontSize: 15)),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _FridayStaffCard extends StatelessWidget {
+  final String? dateIso;
+  final List<Map> items;
+  const _FridayStaffCard({super.key, required this.dateIso, required this.items});
+
+  @override
+  Widget build(BuildContext context) {
+    final parsed = dateIso == null ? null : DateTime.tryParse(dateIso!);
+    final dateText = parsed == null ? '' : '${parsed.day} ${_months[parsed.month - 1]} ${parsed.year}';
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _emerald.withValues(alpha: .1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _emerald.withValues(alpha: .35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(MoeslimIcons.petugas, color: _emerald, size: 24),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  dateText.isEmpty ? 'Petugas Salat Jumat' : 'Petugas Salat Jumat ($dateText)',
+                  style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          for (final s in items)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 3),
+              child: Text(
+                '${_duty(s['duty_type'] as String)}: ${s['name']}',
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// #11 Layar Hening Otomatis saat Salat / Khutbah Jumat (gelap tenang, tidak menyilaukan jemaah).
+class _SilentPrayerScreen extends StatelessWidget {
+  final Map<String, dynamic> mosque;
+  final ScheduleStatus status;
+  final DateTime now;
+  final String message;
+
+  const _SilentPrayerScreen({
+    required this.mosque,
+    required this.status,
+    required this.now,
+    required this.message,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final title = status.isJumuah ? 'Khutbah & Sholat Jumat' : 'Sholat ${status.prayer.label}';
+    return Scaffold(
+      key: const Key('silent-prayer-screen'),
+      backgroundColor: const Color(0xFF020C0A),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(48),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(MoeslimIcons.masjid, size: 80, color: _gold.withValues(alpha: .75)),
+              const SizedBox(height: 24),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: BrandColors.cream, fontSize: 64, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Color(0xFFB5C9C2), fontSize: 32, fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 36),
+              Text(
+                '${mosque['name']}  •  ${_hm(now)}',
+                style: TextStyle(color: _gold.withValues(alpha: .8), fontSize: 24, fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
         ),
       ),
-      const SizedBox(height: 18),
-      _FlowLine(
-        icon: MoeslimIcons.arahAtas,
-        label: 'Pemasukan bulan ini',
-        value: _rupiah(finance['month_in'] as num),
-        color: _emerald,
+    );
+  }
+}
+
+/// #17 Layar Override Penuh untuk Berita Duka atau Pengumuman Darurat Instan.
+class _OverrideScreen extends StatelessWidget {
+  final Map<String, dynamic> mosque;
+  final Map<String, dynamic> alert;
+  final DateTime now;
+
+  const _OverrideScreen({required this.mosque, required this.alert, required this.now});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDuka = alert['type'] == 'duka';
+    final bg = isDuka ? const Color(0xFF0B1917) : const Color(0xFF4A1210);
+    final accent = isDuka ? _gold : const Color(0xFFFFCF70);
+    return Scaffold(
+      key: const Key('tv-override-screen'),
+      backgroundColor: bg,
+      body: Padding(
+        padding: const EdgeInsets.all(56),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '${mosque['name']}',
+                  style: const TextStyle(color: BrandColors.cream, fontSize: 28, fontWeight: FontWeight.w700),
+                ),
+                Text(
+                  '${_hm(now)}:${_two(now.second)}',
+                  style: TextStyle(color: accent, fontSize: 36, fontWeight: FontWeight.w800),
+                ),
+              ],
+            ),
+            const Spacer(),
+            if (isDuka)
+              Text(
+                "Inna Lillahi wa Inna Ilaihi Raji'un",
+                textAlign: TextAlign.center,
+                style: TextStyle(color: accent, fontSize: 40, fontWeight: FontWeight.w700, fontStyle: FontStyle.italic),
+              )
+            else
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                decoration: BoxDecoration(color: accent, borderRadius: BorderRadius.circular(32)),
+                child: const Text(
+                  'PENGUMUMAN PENTING',
+                  style: TextStyle(color: Color(0xFF2B0A09), fontSize: 28, fontWeight: FontWeight.w800),
+                ),
+              ),
+            const SizedBox(height: 24),
+            Text(
+              '${alert['title']}',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white, fontSize: 64, fontWeight: FontWeight.w800, height: 1.15),
+            ),
+            const SizedBox(height: 24),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1300),
+              child: Text(
+                '${alert['body']}',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: BrandColors.cream, fontSize: 38, height: 1.4),
+              ),
+            ),
+            const Spacer(),
+            Text(
+              'Disiarkan oleh Pengurus ${mosque['name']}',
+              style: const TextStyle(color: Color(0xFFB5C9C2), fontSize: 22),
+            ),
+          ],
+        ),
       ),
-      const SizedBox(height: 10),
-      _FlowLine(
-        icon: MoeslimIcons.arahBawah,
-        label: 'Pengeluaran bulan ini',
-        value: _rupiah(finance['month_out'] as num),
-        color: const Color(0xFFB3261E),
-      ),
-      const SizedBox(height: 18),
-      const Text(
-        'Laporan kas lengkap dapat diminta kepada pengurus masjid.',
-        style: TextStyle(fontSize: 17, fontStyle: FontStyle.italic),
-      ),
-    ],
-  );
+    );
+  }
 }
 
 class _FlowLine extends StatelessWidget {
