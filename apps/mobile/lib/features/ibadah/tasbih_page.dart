@@ -6,8 +6,17 @@ import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:personal_core/personal_core.dart';
 
+import '../../core/l10n.dart';
 import '../../core/providers.dart';
 import '../../ui/components.dart';
+
+const Map<String, String> _dzikirMeaningEn = {
+  'tasbih': 'Glory be to Allah',
+  'tahmid': 'All praise is due to Allah',
+  'takbir': 'Allah is the Greatest',
+  'tahlil': 'There is no deity worthy of worship except Allah',
+  'istighfar': 'I seek forgiveness from Allah',
+};
 
 class TasbihPage extends ConsumerStatefulWidget {
   const TasbihPage({super.key});
@@ -71,19 +80,22 @@ class _TasbihPageState extends ConsumerState<TasbihPage> {
     final v = await showModalBottomSheet<int>(
       context: context,
       showDragHandle: true,
-      builder: (_) => SafeArea(
+      builder: (sheetContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Padding(
-              padding: EdgeInsets.only(bottom: 8),
-              child: Text('Target dzikir', style: TextStyle(fontWeight: FontWeight.w700)),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                sheetContext.tr('Target dzikir', 'Dhikr target'),
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
             ),
             for (final t in [33, 99, 100, 1000])
               ListTile(
-                title: Text('$t kali'),
+                title: Text(sheetContext.tr('$t kali', '$t times')),
                 trailing: t == _target ? const Icon(MoeslimIcons.berhasil, color: BrandColors.emerald) : null,
-                onTap: () => Navigator.pop(context, t),
+                onTap: () => Navigator.pop(sheetContext, t),
               ),
           ],
         ),
@@ -94,6 +106,9 @@ class _TasbihPageState extends ConsumerState<TasbihPage> {
     setState(() => _target = v);
   }
 
+  String _meaningFor(BuildContext context, Dzikir d) =>
+      context.isEn ? (_dzikirMeaningEn[d.id] ?? d.meaning) : d.meaning;
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -102,13 +117,16 @@ class _TasbihPageState extends ConsumerState<TasbihPage> {
     final shown = _count != 0 && inRound == 0 ? _target : inRound;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Dzikir & Tasbih'), centerTitle: true),
+      appBar: AppBar(title: Text(context.tr('Dzikir & Tasbih', 'Dhikr & Tasbih')), centerTitle: true),
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
             child: PillTabs(
-              labels: const ['Tasbih', 'Dzikir Harian'],
+              labels: [
+                context.tr('Tasbih', 'Tasbih'),
+                context.tr('Dzikir Harian', 'Daily Dhikr'),
+              ],
               index: _tab,
               onChanged: (i) => setState(() => _tab = i),
             ),
@@ -141,14 +159,20 @@ class _TasbihPageState extends ConsumerState<TasbihPage> {
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Text('Target Dzikir', style: t.bodySmall),
-                                      Text('$_target kali', style: t.labelLarge),
+                                      Text(context.tr('Target Dzikir', 'Dhikr Target'), style: t.bodySmall),
+                                      Text(context.tr('$_target kali', '$_target times'), style: t.labelLarge),
                                       Text(
                                         '$shown',
                                         key: const Key('tasbih-count'),
                                         style: t.displayMedium?.copyWith(fontWeight: FontWeight.w800),
                                       ),
-                                      Text('/ $_target • putaran ${_count ~/ _target}', style: t.bodySmall),
+                                      Text(
+                                        context.tr(
+                                          '/ $_target • putaran ${_count ~/ _target}',
+                                          '/ $_target • round ${_count ~/ _target}',
+                                        ),
+                                        style: t.bodySmall,
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -179,7 +203,7 @@ class _TasbihPageState extends ConsumerState<TasbihPage> {
                               color: scheme.primary.withValues(alpha: d.id == _dzikir.id ? 1 : .3),
                             ),
                             title: Text(d.latin, style: const TextStyle(fontWeight: FontWeight.w600)),
-                            subtitle: Text(d.meaning),
+                            subtitle: Text(_meaningFor(context, d)),
                             trailing: d.id == _dzikir.id
                                 ? Icon(MoeslimIcons.berhasil, color: scheme.primary)
                                 : const Icon(Icons.circle_outlined),
@@ -193,7 +217,7 @@ class _TasbihPageState extends ConsumerState<TasbihPage> {
                         key: const Key('edit-target'),
                         onPressed: _editTarget,
                         icon: const Icon(MoeslimIcons.target),
-                        label: const Text('Ubah Target Dzikir'),
+                        label: Text(context.tr('Ubah Target Dzikir', 'Change Dhikr Target')),
                       ),
                       const SizedBox(height: 80),
                     ],
@@ -231,7 +255,7 @@ class _TasbihPageState extends ConsumerState<TasbihPage> {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     IconButton.outlined(
-                      tooltip: 'Reset',
+                      tooltip: context.tr('Reset', 'Reset'),
                       iconSize: 28,
                       onPressed: _reset,
                       icon: const Icon(MoeslimIcons.ulang),
@@ -241,7 +265,7 @@ class _TasbihPageState extends ConsumerState<TasbihPage> {
                       onTap: _tap,
                       child: Semantics(
                         button: true,
-                        label: 'Tambah satu',
+                        label: context.tr('Tambah satu', 'Add one'),
                         child: Container(
                           width: 96,
                           height: 96,
@@ -266,7 +290,7 @@ class _TasbihPageState extends ConsumerState<TasbihPage> {
                     ),
                     IconButton.outlined(
                       key: const Key('tasbih-minus'),
-                      tooltip: 'Kurangi',
+                      tooltip: context.tr('Kurangi', 'Decrease'),
                       iconSize: 28,
                       onPressed: _minus,
                       icon: const Icon(MoeslimIcons.kurangi),

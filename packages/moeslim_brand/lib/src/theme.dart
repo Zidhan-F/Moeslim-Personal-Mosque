@@ -75,7 +75,8 @@ abstract final class BrandTheme {
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: card,
         indicatorColor: scheme.primary.withValues(alpha: .16),
-        labelTextStyle: WidgetStatePropertyAll(text.labelMedium?.copyWith(fontWeight: FontWeight.w600)),
+        labelPadding: const EdgeInsets.symmetric(horizontal: 2),
+        labelTextStyle: WidgetStatePropertyAll(text.labelMedium?.copyWith(fontSize: 12, fontWeight: FontWeight.w600)),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(

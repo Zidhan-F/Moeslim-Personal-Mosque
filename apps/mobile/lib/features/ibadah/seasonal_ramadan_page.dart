@@ -6,6 +6,7 @@ import 'package:personal_core/personal_core.dart';
 import 'package:shared_prayer/shared_prayer.dart';
 
 import '../../core/format.dart';
+import '../../core/l10n.dart';
 import '../../core/providers.dart';
 import '../../ui/components.dart';
 
@@ -22,10 +23,10 @@ class _SeasonalRamadanPageState extends ConsumerState<SeasonalRamadanPage> {
   List<RamadanDayChecklist> _ramadanDays = const [];
   Set<String> _eidChecks = {};
 
-  // Qurban & Aqiqah state
-  final _cowPriceCtrl = TextEditingController(text: '24500000');
-  final _cowWeightCtrl = TextEditingController(text: '280');
-  final _goatPriceCtrl = TextEditingController(text: '3200000');
+  // Qurban & Aqiqah state (kosong secara default; contoh tampil sebagai hintText)
+  final _cowPriceCtrl = TextEditingController();
+  final _cowWeightCtrl = TextEditingController();
+  final _goatPriceCtrl = TextEditingController();
   bool _isBabyBoy = true;
   DateTime _babyBirthDate = DateTime(2026, 5, 1);
 
@@ -68,19 +69,56 @@ class _SeasonalRamadanPageState extends ConsumerState<SeasonalRamadanPage> {
     }
   }
 
+  ({String title, String desc}) _eidSunnahText(BuildContext context, EidSunnahItem item) {
+    if (!context.isEn) return (title: item.title, desc: item.description);
+    return switch (item.id) {
+      'zakat_fitrah' => (
+          title: 'Pay Zakat al-Fitr Before Eid al-Fitr Prayer',
+          desc: 'Obligatory to fulfill before the Eid al-Fitr prayer so it counts as purifying charity (Sunan Abi Dawud no. 1609).',
+        ),
+      'mandi_id' => (
+          title: 'Take the Eid Morning Bath & Wear Your Best Attire',
+          desc: 'Narrated from Ibn Umar (RA) that he bathed and wore his finest clothing on the morning of Eid.',
+        ),
+      'makan_sebelum_id' => (
+          title: 'Eat Odd Dates (Eid al-Fitr) or Delay Eating (Eid al-Adha)',
+          desc: 'On Eid al-Fitr, eat an odd number of dates before heading out; on Eid al-Adha, delay eating until after the Eid prayer (Sahih al-Bukhari no. 953).',
+        ),
+      'takbiran' => (
+          title: 'Recite the Eid Takbir',
+          desc: 'Proclaim the takbir from the night of Eid until the imam ascends the pulpit (and until the end of the Days of Tashriq, 13 Dhu al-Hijjah, for Eid al-Adha).',
+        ),
+      'jalan_berbeda' => (
+          title: 'Take Different Routes Going and Returning',
+          desc: 'The Prophet (PBUH) used to take one route to the Eid prayer and return by a different route (Sahih al-Bukhari no. 986).',
+        ),
+      'tahniah_id' => (
+          title: 'Exchange Eid Greetings: Taqabbalallahu Minna wa Minkum',
+          desc: 'The Companions\' greeting on Eid: "May Allah accept good deeds from us and from you."',
+        ),
+      _ => (title: item.title, desc: item.description),
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider).value ?? PersonalSettings.defaults;
     final status = ref.watch(prayerStatusProvider).value;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Ramadan, Hari Besar & Hijriah'), centerTitle: true),
+      appBar: AppBar(title: Text(context.tr('Ramadan, Hari Besar & Hijriah', 'Ramadan, Eid & Hijri Tools')), centerTitle: true),
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: PillTabs(
-              labels: const ['Ramadan 30H', 'Kurban & Aqiqah', 'Umur Hijriah', 'Imsakiyah', 'Panduan Id'],
+              labels: [
+                context.tr('Ramadan 30H', '30D Ramadan'),
+                context.tr('Kurban & Aqiqah', 'Qurban & Aqiqah'),
+                context.tr('Umur Hijriah', 'Hijri Age'),
+                context.tr('Imsakiyah', 'Imsakiyah'),
+                context.tr('Panduan Id', 'Eid Guide'),
+              ],
               index: _tab,
               onChanged: (i) => setState(() => _tab = i),
             ),
@@ -118,17 +156,23 @@ class _SeasonalRamadanPageState extends ConsumerState<SeasonalRamadanPage> {
               ArchHeader(
                 child: Column(
                   children: [
-                    Text('Dasbor Ibadah Ramadan 30 Hari', style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                    Text(
+                      context.tr('Dasbor Ibadah Ramadan 30 Hari', '30-Day Ramadan Worship Dashboard'),
+                      style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                    ),
                     if (status != null) ...[
                       const SizedBox(height: 4),
                       Text(
-                        'Imsak: ${hhmm(status.today.fajr.subtract(const Duration(minutes: 10)))} · Subuh: ${hhmm(status.today.fajr)} · Maghrib: ${hhmm(status.today.maghrib)}',
+                        'Imsak: ${hhmm(status.today.fajr.subtract(const Duration(minutes: 10)))} · ${context.prayerLabel(Prayer.fajr)}: ${hhmm(status.today.fajr)} · ${context.prayerLabel(Prayer.maghrib)}: ${hhmm(status.today.maghrib)}',
                         style: t.bodySmall?.copyWith(color: scheme.primary, fontWeight: FontWeight.w700),
                       ),
                     ],
                     const SizedBox(height: 8),
                     Text(
-                      'Puasa: $fastCount/30 · Tarawih: $tarawihCount/30 · Tilawah: $juzCount/30 Juz · I\'tikaf: $itikafCount/10',
+                      context.tr(
+                        'Puasa: $fastCount/30 · Tarawih: $tarawihCount/30 · Tilawah: $juzCount/30 Juz · I\'tikaf: $itikafCount/10',
+                        'Fasting: $fastCount/30 · Tarawih: $tarawihCount/30 · Quran: $juzCount/30 Juz · I\'tikaf: $itikafCount/10',
+                      ),
                       key: const Key('ramadan-dashboard-summary'),
                       textAlign: TextAlign.center,
                       style: t.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
@@ -143,7 +187,13 @@ class _SeasonalRamadanPageState extends ConsumerState<SeasonalRamadanPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text('Doa Malam Lailatul Qadar (10 Malam Terakhir)', style: t.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+                      Text(
+                        context.tr(
+                          'Doa Malam Lailatul Qadar (10 Malam Terakhir)',
+                          'Laylat al-Qadr Supplication (Last 10 Nights)',
+                        ),
+                        style: t.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                      ),
                       const SizedBox(height: 6),
                       Text(
                         'اللَّهُمَّ إِنَّكَ عَفُوٌّ تُحِبُّ الْعَفْوَ فَاعْفُ عَنِّي',
@@ -152,7 +202,10 @@ class _SeasonalRamadanPageState extends ConsumerState<SeasonalRamadanPage> {
                         style: quranTextStyle(fontSize: 24, color: scheme.primary),
                       ),
                       Text(
-                        'Allahumma innaka \'Afuwwun tuhibbul-\'afwa fa\'fu \'anni. (HR. Tirmidzi no. 3513)',
+                        context.tr(
+                          'Allahumma innaka \'Afuwwun tuhibbul-\'afwa fa\'fu \'anni. (HR. Tirmidzi no. 3513)',
+                          'Allahumma innaka \'Afuwwun tuhibbul-\'afwa fa\'fu \'anni. (Jami\' at-Tirmidhi no. 3513)',
+                        ),
                         style: t.bodySmall,
                       ),
                     ],
@@ -177,7 +230,10 @@ class _SeasonalRamadanPageState extends ConsumerState<SeasonalRamadanPage> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Ramadan Hari ke-${day.dayNumber}${day.isOddNightLailatulQadar ? ' · Malam Ganjil Lailatul Qadar' : ''}',
+                        context.tr(
+                          'Ramadan Hari ke-${day.dayNumber}${day.isOddNightLailatulQadar ? ' · Malam Ganjil Lailatul Qadar' : ''}',
+                          'Ramadan Day ${day.dayNumber}${day.isOddNightLailatulQadar ? ' · Odd Night of Laylat al-Qadr' : ''}',
+                        ),
                         style: TextStyle(
                           fontWeight: FontWeight.w700,
                           color: day.isOddNightLailatulQadar ? scheme.primary : null,
@@ -193,7 +249,7 @@ class _SeasonalRamadanPageState extends ConsumerState<SeasonalRamadanPage> {
                   children: [
                     FilterChip(
                       key: Key('ramadan-fast-${day.dayNumber}'),
-                      label: const Text('Puasa'),
+                      label: Text(context.tr('Puasa', 'Fasting')),
                       selected: day.fasting,
                       onSelected: (v) async {
                         final next = await ref.read(ramadanDashboardRepoProvider).saveDay(day.copyWith(fasting: v));
@@ -238,9 +294,9 @@ class _SeasonalRamadanPageState extends ConsumerState<SeasonalRamadanPage> {
 
   // 32. Panduan & Kalkulator Kurban + Aqiqah
   Widget _buildQurbanAqiqahTab(BuildContext context) {
-    final cowPrice = int.tryParse(_cowPriceCtrl.text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 24500000;
-    final cowWeight = double.tryParse(_cowWeightCtrl.text.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 280;
-    final goatPrice = int.tryParse(_goatPriceCtrl.text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 3200000;
+    final cowPrice = int.tryParse(_cowPriceCtrl.text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+    final cowWeight = double.tryParse(_cowWeightCtrl.text.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0;
+    final goatPrice = int.tryParse(_goatPriceCtrl.text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
     final calc = calculateQurbanAndAqiqah(
       cowPriceRupiah: cowPrice,
       liveWeightKg: cowWeight,
@@ -254,7 +310,12 @@ class _SeasonalRamadanPageState extends ConsumerState<SeasonalRamadanPage> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const SectionHeader('1. Kalkulator Patungan Kurban Sapi (1/7) & Distribusi Daging'),
+        SectionHeader(
+          context.tr(
+            '1. Kalkulator Patungan Kurban Sapi (1/7) & Distribusi Daging',
+            '1. Cow Qurban Share (1/7) & Meat Distribution Calculator',
+          ),
+        ),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -265,35 +326,59 @@ class _SeasonalRamadanPageState extends ConsumerState<SeasonalRamadanPage> {
                   key: const Key('qurban-cow-price'),
                   controller: _cowPriceCtrl,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Harga 1 Ekor Sapi Kurban (Rp)', prefixText: 'Rp '),
+                  decoration: InputDecoration(
+                    labelText: context.tr('Harga 1 Ekor Sapi Kurban (Rp)', 'Price of 1 Qurban Cow (Rp)'),
+                    hintText: context.tr('Contoh: 24500000', 'Example: 24500000'),
+                    floatingLabelBehavior: FloatingLabelBehavior.always,
+                    prefixText: 'Rp ',
+                  ),
                   onChanged: (_) => setState(() {}),
                 ),
                 const SizedBox(height: 10),
                 TextField(
                   controller: _cowWeightCtrl,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Estimasi Bobot Hidup Sapi (Kg)', suffixText: 'kg'),
+                  decoration: InputDecoration(
+                    labelText: context.tr('Estimasi Bobot Hidup Sapi (Kg)', 'Estimated Live Weight (kg)'),
+                    hintText: context.tr('Contoh: 280', 'Example: 280'),
+                    floatingLabelBehavior: FloatingLabelBehavior.always,
+                    suffixText: 'kg',
+                  ),
                   onChanged: (_) => setState(() {}),
                 ),
                 const Divider(height: 20),
                 Text(
-                  'Patungan per Orang (1/7 Sapi): ${rupiah(calc.cowSharePerPerson)}',
+                  context.tr(
+                    'Patungan per Orang (1/7 Sapi): ${rupiah(calc.cowSharePerPerson)}',
+                    'Share per Person (1/7 Cow): ${rupiah(calc.cowSharePerPerson)}',
+                  ),
                   key: const Key('qurban-cow-share-output'),
                   style: t.titleMedium?.copyWith(color: scheme.primary, fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Estimasi Daging Bersih (~35%): ${calc.estimatedMeatKg.toStringAsFixed(1)} kg\n'
-                  '• 1/3 Shohibul Kurban & Keluarga: ${calc.familyPortionKg.toStringAsFixed(1)} kg\n'
-                  '• 1/3 Kerabat & Tetangga: ${calc.neighborsPortionKg.toStringAsFixed(1)} kg\n'
-                  '• 1/3 Fakir & Miskin: ${calc.poorPortionKg.toStringAsFixed(1)} kg',
+                  context.tr(
+                    'Estimasi Daging Bersih (~35%): ${calc.estimatedMeatKg.toStringAsFixed(1)} kg\n'
+                    '• 1/3 Shohibul Kurban & Keluarga: ${calc.familyPortionKg.toStringAsFixed(1)} kg\n'
+                    '• 1/3 Kerabat & Tetangga: ${calc.neighborsPortionKg.toStringAsFixed(1)} kg\n'
+                    '• 1/3 Fakir & Miskin: ${calc.poorPortionKg.toStringAsFixed(1)} kg',
+                    'Estimated Net Meat (~35%): ${calc.estimatedMeatKg.toStringAsFixed(1)} kg\n'
+                    '• 1/3 Qurban Owner & Family: ${calc.familyPortionKg.toStringAsFixed(1)} kg\n'
+                    '• 1/3 Relatives & Neighbors: ${calc.neighborsPortionKg.toStringAsFixed(1)} kg\n'
+                    '• 1/3 Poor & Needy: ${calc.poorPortionKg.toStringAsFixed(1)} kg',
+                  ),
                   style: t.bodySmall,
                 ),
               ],
             ),
           ),
         ),
-        const SectionHeader('2. Kalkulator Aqiqah & Hitung Hari ke-7 Kelahiran'),
+        SectionHeader(
+          context.tr(
+            '2. Kalkulator Aqiqah & Hitung Hari ke-7 Kelahiran',
+            '2. Aqiqah Calculator & 7th Day Birth Counter',
+          ),
+        ),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -301,9 +386,9 @@ class _SeasonalRamadanPageState extends ConsumerState<SeasonalRamadanPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SegmentedButton<bool>(
-                  segments: const [
-                    ButtonSegment(value: true, label: Text('Anak Laki-laki (2 Kambing)')),
-                    ButtonSegment(value: false, label: Text('Anak Perempuan (1 Kambing)')),
+                  segments: [
+                    ButtonSegment(value: true, label: Text(context.tr('Anak Laki-laki (2 Kambing)', 'Baby Boy (2 Goats)'))),
+                    ButtonSegment(value: false, label: Text(context.tr('Anak Perempuan (1 Kambing)', 'Baby Girl (1 Goat)'))),
                   ],
                   selected: {_isBabyBoy},
                   onSelectionChanged: (v) => setState(() => _isBabyBoy = v.first),
@@ -312,13 +397,23 @@ class _SeasonalRamadanPageState extends ConsumerState<SeasonalRamadanPage> {
                 TextField(
                   controller: _goatPriceCtrl,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Harga 1 Ekor Kambing Aqiqah (Rp)', prefixText: 'Rp '),
+                  decoration: InputDecoration(
+                    labelText: context.tr('Harga 1 Ekor Kambing Aqiqah (Rp)', 'Price of 1 Aqiqah Goat (Rp)'),
+                    hintText: context.tr('Contoh: 3200000', 'Example: 3200000'),
+                    floatingLabelBehavior: FloatingLabelBehavior.always,
+                    prefixText: 'Rp ',
+                  ),
                   onChanged: (_) => setState(() {}),
                 ),
                 const SizedBox(height: 10),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: Text('Tanggal Lahir Anak: ${shortDate(_babyBirthDate)}'),
+                  title: Text(
+                    context.tr(
+                      'Tanggal Lahir Anak: ${context.shortDateText(_babyBirthDate)}',
+                      'Baby Birth Date: ${context.shortDateText(_babyBirthDate)}',
+                    ),
+                  ),
                   trailing: OutlinedButton(
                     onPressed: () async {
                       final picked = await showDatePicker(
@@ -329,19 +424,27 @@ class _SeasonalRamadanPageState extends ConsumerState<SeasonalRamadanPage> {
                       );
                       if (picked != null) setState(() => _babyBirthDate = picked);
                     },
-                    child: const Text('Ubah Tanggal'),
+                    child: Text(context.tr('Ubah Tanggal', 'Change Date')),
                   ),
                 ),
                 const Divider(height: 20),
                 Text(
-                  'Kebutuhan: ${calc.aqiqahGoatsRequired} ekor kambing · Estimasi Biaya: ${rupiah(calc.aqiqahTotalCost)}',
+                  context.tr(
+                    'Kebutuhan: ${calc.aqiqahGoatsRequired} ekor kambing · Estimasi Biaya: ${rupiah(calc.aqiqahTotalCost)}',
+                    'Required: ${calc.aqiqahGoatsRequired} ${calc.aqiqahGoatsRequired == 1 ? 'goat' : 'goats'} · Est. Cost: ${rupiah(calc.aqiqahTotalCost)}',
+                  ),
                   style: t.titleMedium?.copyWith(color: scheme.primary, fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '• Hari ke-7 (Utama): ${longDate(calc.aqiqahDay7)}\n'
-                  '• Hari ke-14 (Alternatif): ${longDate(calc.aqiqahDay14)}\n'
-                  '• Hari ke-21 (Alternatif): ${longDate(calc.aqiqahDay21)}',
+                  context.tr(
+                    '• Hari ke-7 (Utama): ${context.longDateText(calc.aqiqahDay7)}\n'
+                    '• Hari ke-14 (Alternatif): ${context.longDateText(calc.aqiqahDay14)}\n'
+                    '• Hari ke-21 (Alternatif): ${context.longDateText(calc.aqiqahDay21)}',
+                    '• Day 7 (Recommended): ${context.longDateText(calc.aqiqahDay7)}\n'
+                    '• Day 14 (Alternative): ${context.longDateText(calc.aqiqahDay14)}\n'
+                    '• Day 21 (Alternative): ${context.longDateText(calc.aqiqahDay21)}',
+                  ),
                   style: t.bodySmall,
                 ),
               ],
@@ -371,7 +474,9 @@ class _SeasonalRamadanPageState extends ConsumerState<SeasonalRamadanPage> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const SectionHeader('Kalkulator Umur Hijriah & Konversi Tanggal Lahir'),
+        SectionHeader(
+          context.tr('Kalkulator Umur Hijriah & Konversi Tanggal Lahir', 'Hijri Age Calculator & Birth Date Converter'),
+        ),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -380,8 +485,18 @@ class _SeasonalRamadanPageState extends ConsumerState<SeasonalRamadanPage> {
               children: [
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: Text('Tanggal Lahir (Masehi): ${longDate(_birthDateForAge)}'),
-                  subtitle: Text('Bertepatan dengan: ${age.birthHijri}'),
+                  title: Text(
+                    context.tr(
+                      'Tanggal Lahir (Masehi): ${context.longDateText(_birthDateForAge)}',
+                      'Birth Date (Gregorian): ${context.longDateText(_birthDateForAge)}',
+                    ),
+                  ),
+                  subtitle: Text(
+                    context.tr(
+                      'Bertepatan dengan: ${context.hijriText(age.birthHijri)}',
+                      'Corresponds to: ${context.hijriText(age.birthHijri)}',
+                    ),
+                  ),
                   trailing: OutlinedButton(
                     key: const Key('hijri-pick-birthdate'),
                     onPressed: () async {
@@ -393,22 +508,30 @@ class _SeasonalRamadanPageState extends ConsumerState<SeasonalRamadanPage> {
                       );
                       if (picked != null) setState(() => _birthDateForAge = picked);
                     },
-                    child: const Text('Pilih Tanggal'),
+                    child: Text(context.tr('Pilih Tanggal', 'Pick Date')),
                   ),
                 ),
                 const Divider(),
                 Text(
-                  'Usia Hijriah: ${age.hijriYears} tahun, ${age.hijriMonths} bulan, ${age.hijriDays} hari',
+                  context.tr(
+                    'Usia Hijriah: ${age.hijriYears} tahun, ${age.hijriMonths} bulan, ${age.hijriDays} hari',
+                    'Hijri Age: ${age.hijriYears} years, ${age.hijriMonths} months, ${age.hijriDays} days',
+                  ),
                   key: const Key('hijri-age-output'),
                   style: t.titleMedium?.copyWith(color: scheme.primary, fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 4),
-                Text('Usia Masehi: ${age.gregorianYears} tahun (selisih ±11 hari per tahun dengan kalender kamariah)'),
+                Text(
+                  context.tr(
+                    'Usia Masehi: ${age.gregorianYears} tahun (selisih ±11 hari per tahun dengan kalender kamariah)',
+                    'Gregorian Age: ${age.gregorianYears} years (~11 days difference per year with the lunar calendar)',
+                  ),
+                ),
               ],
             ),
           ),
         ),
-        const SectionHeader('Konverter Tanggal Hijriah ke Masehi'),
+        SectionHeader(context.tr('Konverter Tanggal Hijriah ke Masehi', 'Hijri to Gregorian Date Converter')),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -420,7 +543,7 @@ class _SeasonalRamadanPageState extends ConsumerState<SeasonalRamadanPage> {
                     Expanded(
                       child: DropdownButtonFormField<int>(
                         initialValue: _convertHijriDay,
-                        decoration: const InputDecoration(labelText: 'Tgl'),
+                        decoration: InputDecoration(labelText: context.tr('Tgl', 'Day')),
                         items: [for (var d = 1; d <= 30; d++) DropdownMenuItem(value: d, child: Text('$d'))],
                         onChanged: (v) {
                           if (v != null) setState(() => _convertHijriDay = v);
@@ -432,10 +555,10 @@ class _SeasonalRamadanPageState extends ConsumerState<SeasonalRamadanPage> {
                       flex: 2,
                       child: DropdownButtonFormField<int>(
                         initialValue: _convertHijriMonth,
-                        decoration: const InputDecoration(labelText: 'Bulan Hijriah'),
+                        decoration: InputDecoration(labelText: context.tr('Bulan Hijriah', 'Hijri Month')),
                         items: [
                           for (var m = 1; m <= 12; m++)
-                            DropdownMenuItem(value: m, child: Text('$m. ${HijriDate(1447, m, 1).monthName}')),
+                            DropdownMenuItem(value: m, child: Text('$m. ${HijriDate(1447, m, 1).monthNameFor(context.lang)}')),
                         ],
                         onChanged: (v) {
                           if (v != null) setState(() => _convertHijriMonth = v);
@@ -446,9 +569,10 @@ class _SeasonalRamadanPageState extends ConsumerState<SeasonalRamadanPage> {
                     Expanded(
                       child: DropdownButtonFormField<int>(
                         initialValue: _convertHijriYear,
-                        decoration: const InputDecoration(labelText: 'Tahun'),
+                        decoration: InputDecoration(labelText: context.tr('Tahun', 'Year')),
                         items: [
-                          for (var y = 1400; y <= 1460; y++) DropdownMenuItem(value: y, child: Text('$y H')),
+                          for (var y = 1400; y <= 1460; y++)
+                            DropdownMenuItem(value: y, child: Text(context.isEn ? '$y AH' : '$y H')),
                         ],
                         onChanged: (v) {
                           if (v != null) setState(() => _convertHijriYear = v);
@@ -459,7 +583,10 @@ class _SeasonalRamadanPageState extends ConsumerState<SeasonalRamadanPage> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Bertepatan dengan Masehi: ${longDate(convertedGreg)}',
+                  context.tr(
+                    'Bertepatan dengan Masehi: ${context.longDateText(convertedGreg)}',
+                    'Corresponds to Gregorian: ${context.longDateText(convertedGreg)}',
+                  ),
                   style: t.titleMedium?.copyWith(color: scheme.primary, fontWeight: FontWeight.w700),
                 ),
               ],
@@ -477,17 +604,39 @@ class _SeasonalRamadanPageState extends ConsumerState<SeasonalRamadanPage> {
 
     void copyPrintableTable() {
       final buf = StringBuffer();
-      buf.writeln('JADWAL IMSAKIYAH & SALAT BULANAN - ${settings.effectiveLocationName.toUpperCase()}');
-      buf.writeln('Bulan: $_imsakiyahMonth/$_imsakiyahYear · Metode: ${settings.method.label}');
-      buf.writeln('Tgl | Hijriah | Imsak | Subuh | Dzuhur | Ashar | Maghrib | Isya');
+      buf.writeln(
+        context.tr(
+          'JADWAL IMSAKIYAH & SALAT BULANAN - ${settings.effectiveLocationName.toUpperCase()}',
+          'MONTHLY IMSAKIYAH & PRAYER SCHEDULE - ${settings.effectiveLocationName.toUpperCase()}',
+        ),
+      );
+      buf.writeln(
+        context.tr(
+          'Bulan: $_imsakiyahMonth/$_imsakiyahYear · Metode: ${context.methodLabel(settings.method)}',
+          'Month: $_imsakiyahMonth/$_imsakiyahYear · Method: ${context.methodLabel(settings.method)}',
+        ),
+      );
+      buf.writeln(
+        context.tr(
+          'Tgl | Hijriah | Imsak | Subuh | Dzuhur | Ashar | Maghrib | Isya',
+          'Day | Hijri | Imsak | Fajr | Dhuhr | Asr | Maghrib | Isha',
+        ),
+      );
       for (final r in rows) {
         buf.writeln(
-          '${r.gregorian.day.toString().padLeft(2, '0')} | ${r.hijri} | ${hhmm(r.imsak)} | ${hhmm(r.times.fajr)} | ${hhmm(r.times.dhuhr)} | ${hhmm(r.times.asr)} | ${hhmm(r.times.maghrib)} | ${hhmm(r.times.isha)}',
+          '${r.gregorian.day.toString().padLeft(2, '0')} | ${context.hijriText(r.hijri)} | ${hhmm(r.imsak)} | ${hhmm(r.times.fajr)} | ${hhmm(r.times.dhuhr)} | ${hhmm(r.times.asr)} | ${hhmm(r.times.maghrib)} | ${hhmm(r.times.isha)}',
         );
       }
       Clipboard.setData(ClipboardData(text: buf.toString()));
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tabel Jadwal Imsakiyah 1 bulan penuh disalin untuk dicetak/dibagikan.')),
+        SnackBar(
+          content: Text(
+            context.tr(
+              'Tabel Jadwal Imsakiyah 1 bulan penuh disalin untuk dicetak/dibagikan.',
+              'Full monthly Imsakiyah table copied for printing or sharing.',
+            ),
+          ),
+        ),
       );
     }
 
@@ -500,7 +649,7 @@ class _SeasonalRamadanPageState extends ConsumerState<SeasonalRamadanPage> {
             child: Row(
               children: [
                 IconButton(
-                  tooltip: 'Bulan sebelumnya',
+                  tooltip: context.tr('Bulan sebelumnya', 'Previous month'),
                   onPressed: () => setState(() {
                     if (_imsakiyahMonth == 1) {
                       _imsakiyahMonth = 12;
@@ -519,12 +668,18 @@ class _SeasonalRamadanPageState extends ConsumerState<SeasonalRamadanPage> {
                         textAlign: TextAlign.center,
                         style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                       ),
-                      Text('${rows.first.hijri} s.d. ${rows.last.hijri}', style: t.bodySmall),
+                      Text(
+                        context.tr(
+                          '${context.hijriText(rows.first.hijri)} s.d. ${context.hijriText(rows.last.hijri)}',
+                          '${context.hijriText(rows.first.hijri)} to ${context.hijriText(rows.last.hijri)}',
+                        ),
+                        style: t.bodySmall,
+                      ),
                     ],
                   ),
                 ),
                 IconButton(
-                  tooltip: 'Bulan berikutnya',
+                  tooltip: context.tr('Bulan berikutnya', 'Next month'),
                   onPressed: () => setState(() {
                     if (_imsakiyahMonth == 12) {
                       _imsakiyahMonth = 1;
@@ -544,7 +699,9 @@ class _SeasonalRamadanPageState extends ConsumerState<SeasonalRamadanPage> {
           key: const Key('copy-monthly-imsakiyah-btn'),
           onPressed: copyPrintableTable,
           icon: const Icon(MoeslimIcons.cetak),
-          label: const Text('Salin Tabel Imsakiyah 1 Bulan Siap Cetak'),
+          label: Text(
+            context.tr('Salin Tabel Imsakiyah 1 Bulan Siap Cetak', 'Copy Printable Monthly Imsakiyah Table'),
+          ),
         ),
         const SizedBox(height: 8),
         Card(
@@ -553,14 +710,14 @@ class _SeasonalRamadanPageState extends ConsumerState<SeasonalRamadanPage> {
             padding: const EdgeInsets.all(8),
             child: DataTable(
               columnSpacing: 14,
-              columns: const [
-                DataColumn(label: Text('Tgl')),
-                DataColumn(label: Text('Imsak')),
-                DataColumn(label: Text('Subuh')),
-                DataColumn(label: Text('Dzuhur')),
-                DataColumn(label: Text('Ashar')),
-                DataColumn(label: Text('Maghrib')),
-                DataColumn(label: Text('Isya')),
+              columns: [
+                DataColumn(label: Text(context.tr('Tgl', 'Day'))),
+                const DataColumn(label: Text('Imsak')),
+                DataColumn(label: Text(context.prayerLabel(Prayer.fajr))),
+                DataColumn(label: Text(context.prayerLabel(Prayer.dhuhr))),
+                DataColumn(label: Text(context.prayerLabel(Prayer.asr))),
+                DataColumn(label: Text(context.prayerLabel(Prayer.maghrib))),
+                DataColumn(label: Text(context.prayerLabel(Prayer.isha))),
               ],
               rows: [
                 for (final r in rows)
@@ -597,7 +754,13 @@ class _SeasonalRamadanPageState extends ConsumerState<SeasonalRamadanPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('Lafaz Takbiran Hari Raya Idul Fitri & Idul Adha', style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                Text(
+                  context.tr(
+                    'Lafaz Takbiran Hari Raya Idul Fitri & Idul Adha',
+                    'Eid al-Fitr & Eid al-Adha Takbir Recitation',
+                  ),
+                  style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                ),
                 const SizedBox(height: 10),
                 Text(
                   'اللَّهُ أَكْبَرُ اللَّهُ أَكْبَرُ اللَّهُ أَكْبَرُ، لَا إِلَٰهَ إِلَّا اللَّهُ وَاللَّهُ أَكْبَرُ، اللَّهُ أَكْبَرُ وَلِلَّهِ الْحَمْدُ',
@@ -612,27 +775,41 @@ class _SeasonalRamadanPageState extends ConsumerState<SeasonalRamadanPage> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Artinya: "Allah Mahabesar, Allah Mahabesar, Allah Mahabesar. Tiada Tuhan selain Allah dan Allah Mahabesar. Allah Mahabesar dan segala puji bagi Allah."',
+                  context.tr(
+                    'Artinya: "Allah Mahabesar, Allah Mahabesar, Allah Mahabesar. Tiada Tuhan selain Allah dan Allah Mahabesar. Allah Mahabesar dan segala puji bagi Allah."',
+                    'Meaning: "Allah is the Greatest, Allah is the Greatest, Allah is the Greatest. There is no deity worthy of worship except Allah, and Allah is the Greatest. Allah is the Greatest, and all praise belongs to Allah."',
+                  ),
                   style: t.bodySmall,
                 ),
               ],
             ),
           ),
         ),
-        const SectionHeader('Checklist Sunnah Pagi Hari Raya (Idul Fitri & Idul Adha)'),
-        for (final item in eidSunnahChecklistCatalog)
-          Card(
-            child: CheckboxListTile(
-              key: Key('eid-check-${item.id}'),
-              title: Text(item.title, style: const TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: Text(item.description),
-              value: _eidChecks.contains(item.id),
-              onChanged: (_) async {
-                final next = await ref.read(eidChecklistRepoProvider).toggle(item.id);
-                setState(() => _eidChecks = next);
-              },
-            ),
+        SectionHeader(
+          context.tr(
+            'Checklist Sunnah Pagi Hari Raya (Idul Fitri & Idul Adha)',
+            'Eid Morning Sunnah Checklist (Eid al-Fitr & Eid al-Adha)',
           ),
+        ),
+        for (final item in eidSunnahChecklistCatalog) ...[
+          Builder(
+            builder: (context) {
+              final loc = _eidSunnahText(context, item);
+              return Card(
+                child: CheckboxListTile(
+                  key: Key('eid-check-${item.id}'),
+                  title: Text(loc.title, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: Text(loc.desc),
+                  value: _eidChecks.contains(item.id),
+                  onChanged: (_) async {
+                    final next = await ref.read(eidChecklistRepoProvider).toggle(item.id);
+                    setState(() => _eidChecks = next);
+                  },
+                ),
+              );
+            },
+          ),
+        ],
       ],
     );
   }

@@ -3,6 +3,7 @@ import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:personal_core/personal_core.dart';
 
+import '../../core/l10n.dart';
 import '../../core/providers.dart';
 import '../../ui/components.dart';
 import 'khatam_planner_page.dart';
@@ -48,13 +49,18 @@ class _QuranPageState extends ConsumerState<QuranPage> {
             ? TextField(
                 key: const Key('surah-search'),
                 autofocus: true,
-                decoration: const InputDecoration(hintText: 'Cari surah (nama atau nomor)', border: InputBorder.none),
+                decoration: InputDecoration(
+                  hintText: context.tr('Cari surah (nama atau nomor)', 'Search surah (name or number)'),
+                  border: InputBorder.none,
+                ),
                 onChanged: (v) => setState(() => _query = v),
               )
-            : const Text("Al-Qur'an"),
+            : Text(context.tr("Al-Qur'an", "Qur'an")),
         actions: [
           IconButton(
-            tooltip: _searching ? 'Tutup pencarian' : 'Cari surah',
+            tooltip: _searching
+                ? context.tr('Tutup pencarian', 'Close search')
+                : context.tr('Cari surah', 'Search surah'),
             icon: Icon(_searching ? MoeslimIcons.tutup : MoeslimIcons.pencarian),
             onPressed: () => setState(() {
               _searching = !_searching;
@@ -115,11 +121,11 @@ class _SurahTab extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Daftar Surah\nAl-Qur\'an',
+                            context.tr('Daftar Surah\nAl-Qur\'an', 'Surahs of\nthe Qur\'an'),
                             style: Theme.of(context).textTheme.titleLarge?.copyWith(color: BrandColors.emerald),
                           ),
                           const SizedBox(height: 4),
-                          const Text('114 Surah • 6.236 Ayat'),
+                          Text(context.tr('114 Surah • 6.236 Ayat', '114 Surahs • 6,236 Verses')),
                         ],
                       ),
                     ),
@@ -136,7 +142,12 @@ class _SurahTab extends StatelessWidget {
           child: ListTile(
             leading: OctagonNumber(s.number),
             title: Text(s.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: Text('${s.revelation} • ${s.ayahCount} Ayat'),
+            subtitle: Text(
+              context.tr(
+                '${s.revelation} • ${s.ayahCount} Ayat',
+                '${context.surahRev(s)} • ${s.ayahCount} Verses',
+              ),
+            ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -168,7 +179,12 @@ class _JuzTab extends StatelessWidget {
           key: Key('juz-${i + 1}'),
           leading: OctagonNumber(i + 1),
           title: Text('Juz ${i + 1}', style: const TextStyle(fontWeight: FontWeight.w600)),
-          subtitle: Text('Mulai ${surahs[s - 1].name} ayat $a'),
+          subtitle: Text(
+            context.tr(
+              'Mulai ${surahs[s - 1].name} ayat $a',
+              'Starts at ${surahs[s - 1].name}, verse $a',
+            ),
+          ),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => onOpen(s, a),
         ),
@@ -195,15 +211,18 @@ class _MushafTab extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Lanjut baca', style: TextStyle(color: BrandColors.cream)),
+                    Text(context.tr('Lanjut baca', 'Continue reading'), style: const TextStyle(color: BrandColors.cream)),
                     Text(
                       lastRead == null ? 'Al-Fatihah' : surahs[lastRead.surah - 1].name,
                       style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700),
                     ),
                     Text(
                       lastRead == null
-                          ? 'Mulai membaca'
-                          : 'Ayat ${lastRead.ayah} • Juz ${juzOf(lastRead.surah, lastRead.ayah)}',
+                          ? context.tr('Mulai membaca', 'Start reading')
+                          : context.tr(
+                              'Ayat ${lastRead.ayah} • Juz ${juzOf(lastRead.surah, lastRead.ayah)}',
+                              'Verse ${lastRead.ayah} • Juz ${juzOf(lastRead.surah, lastRead.ayah)}',
+                            ),
                       style: const TextStyle(color: BrandColors.cream),
                     ),
                   ],
@@ -213,7 +232,7 @@ class _MushafTab extends ConsumerWidget {
                 key: const Key('continue-reading'),
                 onPressed: () => onOpen(lastRead?.surah ?? 1, lastRead?.ayah),
                 icon: const Icon(MoeslimIcons.play),
-                label: const Text('Buka'),
+                label: Text(context.tr('Buka', 'Open')),
               ),
             ],
           ),
@@ -223,20 +242,36 @@ class _MushafTab extends ConsumerWidget {
           child: ListTile(
             key: const Key('open-murottal'),
             leading: const Icon(MoeslimIcons.audio, color: BrandColors.emerald),
-            title: const Text('Murottal Al-Qur\'an', style: TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: const Text('Dengarkan per ayat atau per surah dengan qari pilihan'),
+            title: Text(
+              context.tr('Murottal Al-Qur\'an', 'Qur\'an Audio Recitation'),
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(
+              context.tr(
+                'Dengarkan per ayat atau per surah dengan qari pilihan',
+                'Listen verse by verse or by surah with selected reciters',
+              ),
+            ),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () =>
-                Navigator.of(context)
-                    .push(MaterialPageRoute(builder: (_) => MurottalPage(initialSurah: lastRead?.surah ?? 1))),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => MurottalPage(initialSurah: lastRead?.surah ?? 1)),
+            ),
           ),
         ),
         Card(
           child: ListTile(
             key: const Key('open-tafsir-search'),
             leading: const Icon(MoeslimIcons.buku, color: BrandColors.emerald),
-            title: const Text('Tafsir Ringkas & Pencarian Ayat', style: TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: const Text('Cari kata di 6.236 ayat, indeks tematik & catatan tadabbur pribadi'),
+            title: Text(
+              context.tr('Tafsir Ringkas & Pencarian Ayat', 'Concise Tafsir & Verse Search'),
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(
+              context.tr(
+                'Cari kata di 6.236 ayat, indeks tematik & catatan tadabbur pribadi',
+                'Search 6,236 verses, thematic index & personal reflection notes',
+              ),
+            ),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const TafsirSearchPage())),
           ),
@@ -245,8 +280,16 @@ class _MushafTab extends ConsumerWidget {
           child: ListTile(
             key: const Key('open-tahfidz'),
             leading: const Icon(MoeslimIcons.target, color: BrandColors.emerald),
-            title: const Text('Mode Hafalan (Tahfidz & Muraja\'ah)', style: TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: const Text('Uji sambung ayat, tutup teks Arab, progres surah & jadwal muraja\'ah'),
+            title: Text(
+              context.tr('Mode Hafalan (Tahfidz & Muraja\'ah)', 'Memorization Mode (Tahfidz & Review)'),
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(
+              context.tr(
+                'Uji sambung ayat, tutup teks Arab, progres surah & jadwal muraja\'ah',
+                'Verse continuation drills, hidden Arabic mode, surah progress & review schedule',
+              ),
+            ),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => TahfidzPage(initialSurah: lastRead?.surah ?? 112)),
@@ -257,8 +300,16 @@ class _MushafTab extends ConsumerWidget {
           child: ListTile(
             key: const Key('open-khatam-planner'),
             leading: const Icon(MoeslimIcons.kalender, color: BrandColors.emerald),
-            title: const Text('Perencana Khatam Al-Qur\'an', style: TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: const Text('Target 30/60/90 hari dengan pembagian halaman per waktu salat'),
+            title: Text(
+              context.tr('Perencana Khatam Al-Qur\'an', 'Qur\'an Khatam Planner'),
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(
+              context.tr(
+                'Target 30/60/90 hari dengan pembagian halaman per waktu salat',
+                '30/60/90-day goals with pages split across daily prayers',
+              ),
+            ),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const KhatamPlannerPage())),
           ),
@@ -267,8 +318,16 @@ class _MushafTab extends ConsumerWidget {
           child: ListTile(
             key: const Key('open-tajweed-learning'),
             leading: const Icon(Icons.school_outlined, color: BrandColors.emerald),
-            title: const Text('Belajar Tajwid & Makharijul Huruf', style: TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: const Text('Materi hukum tajwid, 5 area makhraj huruf & kuis interaktif'),
+            title: Text(
+              context.tr('Belajar Tajwid & Makharijul Huruf', 'Learn Tajweed & Articulation Points'),
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(
+              context.tr(
+                'Materi hukum tajwid, 5 area makhraj huruf & kuis interaktif',
+                'Tajweed rules, 5 letter articulation areas & interactive quiz',
+              ),
+            ),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const TajweedLearningPage())),
           ),
@@ -277,17 +336,33 @@ class _MushafTab extends ConsumerWidget {
           child: ListTile(
             key: const Key('open-quran-study-suite'),
             leading: const Icon(MoeslimIcons.quranTerbuka, color: BrandColors.emerald),
-            title: const Text('Pendalaman Al-Qur\'an, Kata per Kata & Fokus Tilawah', style: TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: const Text('Terjemah per kata, Asbabun Nuzul, Flashcard Arab, Sajdah & Fokus Tilawah'),
+            title: Text(
+              context.tr(
+                'Pendalaman Al-Qur\'an, Kata per Kata & Fokus Tilawah',
+                'Qur\'an Study, Word by Word & Focus Reading',
+              ),
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(
+              context.tr(
+                'Terjemah per kata, Asbabun Nuzul, Flashcard Arab, Sajdah & Fokus Tilawah',
+                'Word-by-word meanings, Asbabun Nuzul, Arabic flashcards, Sajdah & Focus Reading',
+              ),
+            ),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const QuranStudySuitePage())),
           ),
         ),
-        SectionHeader('Penanda (${bookmarks.length})'),
+        SectionHeader(context.tr('Penanda (${bookmarks.length})', 'Bookmarks (${bookmarks.length})')),
         if (bookmarks.isEmpty)
-          const Padding(
-            padding: EdgeInsets.all(8),
-            child: Text('Belum ada penanda. Ketuk ikon penanda pada ayat saat membaca.'),
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: Text(
+              context.tr(
+                'Belum ada penanda. Ketuk ikon penanda pada ayat saat membaca.',
+                'No bookmarks yet. Tap the bookmark icon on any verse while reading.',
+              ),
+            ),
           ),
         for (final b in bookmarks)
           Card(

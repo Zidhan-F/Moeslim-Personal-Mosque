@@ -166,5 +166,125 @@
     "source": "exec-92e173a5-f7cf-4197-a90e-df8304219004.png",
     "alpha": true,
     "bytes": 38280
+  },
+  {
+    "name": "target",
+    "source": "exec-a0b721fd-f786-4a41-a7e5-31aab930539f.png",
+    "alpha": true,
+    "bytes": 38854
+  },
+  {
+    "name": "eye",
+    "source": "exec-b60a902e-3264-4989-acda-d0a40d0662a7.png",
+    "alpha": true,
+    "bytes": 42872
+  },
+  {
+    "name": "mute",
+    "source": "exec-4658741d-f9ec-4029-b1e6-2b6d0984bb4c.png",
+    "alpha": true,
+    "bytes": 36848
+  },
+  {
+    "name": "settings",
+    "source": "exec-f07d0b55-aad3-4b55-a755-51888d7d18f7.png",
+    "alpha": true,
+    "bytes": 47904
+  },
+  {
+    "name": "sun",
+    "source": "exec-cb791438-85b0-48ce-a914-567ee1b9e21b.png",
+    "alpha": true,
+    "bytes": 39730
+  },
+  {
+    "name": "star",
+    "source": "exec-2c08bfc0-3f16-40fc-a97f-93e5d8a449f4.png",
+    "alpha": true,
+    "bytes": 43580
+  },
+  {
+    "name": "heart",
+    "source": "exec-f2ab16f0-f8ed-4ab7-bf46-a48e13646396.png",
+    "alpha": true,
+    "bytes": 37966
+  },
+  {
+    "name": "share",
+    "source": "exec-48c369c7-c982-4ef6-bc75-bd41683c9ef1.png",
+    "alpha": true,
+    "bytes": 44294
+  },
+  {
+    "name": "database",
+    "source": "exec-c5d72520-54d1-4e6a-ad7b-8cbd4e999b31.png",
+    "alpha": true,
+    "bytes": 41700
+  },
+  {
+    "name": "info",
+    "source": "exec-36590998-6fd3-46af-b927-ff93beb4ac44.png",
+    "alpha": true,
+    "bytes": 41570
+  },
+  {
+    "name": "committee",
+    "source": "exec-ffc79830-f844-43c2-a2d9-ba003643323a.png",
+    "alpha": true,
+    "bytes": 68848
+  },
+  {
+    "name": "staffDuty",
+    "source": "exec-b15c3bfc-8551-413f-b494-5c8848961812.png",
+    "alpha": true,
+    "bytes": 46520
+  },
+  {
+    "name": "announcement",
+    "source": "exec-72e3e4db-6c5f-480b-b703-e68064a4e1c1.png",
+    "alpha": true,
+    "bytes": 36980
+  },
+  {
+    "name": "barChart",
+    "source": "exec-3e624e22-107f-415f-84bb-2590e6556235.png",
+    "alpha": true,
+    "bytes": 28806
+  },
+  {
+    "name": "qurban",
+    "source": "exec-7973c4eb-c330-4711-8742-1d8343c63de0.png",
+    "alpha": true,
+    "bytes": 61734
+  },
+  {
+    "name": "webGlobe",
+    "source": "exec-1e34813b-7b83-44e4-8f55-23cfb6c41d6f.png",
+    "alpha": true,
+    "bytes": 49074
+  },
+  {
+    "name": "zakat",
+    "source": "exec-a4389c53-31ec-4a71-a0e2-b6a4f338488d.png",
+    "alpha": true,
+    "bytes": 65562
+  },
+  {
+    "name": "inventory",
+    "source": "exec-5a2d34e2-a168-4d17-abcd-5c8914fadf7f.png",
+    "alpha": true,
+    "bytes": 57250
+  },
+  {
+    "name": "imam",
+    "source": "exec-68c7ddbe-ff5b-4378-86bd-97c43cbbf986.png",
+    "alpha": true,
+    "bytes": 71698
+  },
+  {
+    "name": "muslimah",
+    "source": "exec-5f9d400b-c9c7-4e02-aae6-c7f464cb35ec.png",
+    "alpha": true,
+    "bytes": 40984
   }
 ]

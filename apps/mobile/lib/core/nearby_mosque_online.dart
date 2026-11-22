@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:personal_core/personal_core.dart';
 import 'package:shared_prayer/shared_prayer.dart';
 
-/// Pencarian masjid lewat Google Places API (New) — data sama dengan Google Maps.
+/// Pencarian masjid lewat Google Places API (New), data sama dengan Google Maps.
 ///
 /// Aktif hanya bila dikonfigurasi saat build:
 ///  - `--dart-define=PLACES_PROXY_URL=https://server-anda/places` (disarankan; key tetap di server), atau
@@ -14,7 +14,8 @@ class GoogleMosqueFinder {
   static const proxyUrl = String.fromEnvironment('PLACES_PROXY_URL');
   static const apiKey = String.fromEnvironment('PLACES_API_KEY');
   static const _direct = 'https://places.googleapis.com/v1/places:searchNearby';
-  static const _fields = 'places.id,places.displayName,places.formattedAddress,places.location,places.rating,places.userRatingCount';
+  static const _fields =
+      'places.id,places.displayName,places.formattedAddress,places.location,places.rating,places.userRatingCount';
 
   final http.Client client;
   final String proxy;
@@ -23,7 +24,11 @@ class GoogleMosqueFinder {
 
   bool get enabled => proxy.isNotEmpty || key.isNotEmpty;
 
-  Future<List<NearbyMosqueItem>> search(Coordinates o, {int radiusMeters = 5000}) async {
+  Future<List<NearbyMosqueItem>> search(
+    Coordinates o, {
+    int radiusMeters = 5000,
+    AppLanguage lang = AppLanguage.id,
+  }) async {
     final res = await client
         .post(
           Uri.parse(proxy.isNotEmpty ? proxy : _direct),
@@ -36,7 +41,7 @@ class GoogleMosqueFinder {
             'includedTypes': ['mosque'],
             'maxResultCount': 20,
             'rankPreference': 'DISTANCE',
-            'languageCode': 'id',
+            'languageCode': lang.code,
             'locationRestriction': {
               'circle': {
                 'center': {'latitude': o.latitude, 'longitude': o.longitude},
@@ -47,10 +52,11 @@ class GoogleMosqueFinder {
         )
         .timeout(const Duration(seconds: 20));
     if (res.statusCode != 200) throw Exception('Places HTTP ${res.statusCode}');
-    return parse(utf8.decode(res.bodyBytes));
+    return parse(utf8.decode(res.bodyBytes), lang: lang);
   }
 
-  static List<NearbyMosqueItem> parse(String body) {
+  static List<NearbyMosqueItem> parse(String body, {AppLanguage lang = AppLanguage.id}) {
+    final isEn = lang == AppLanguage.en;
     final json = jsonDecode(body);
     final places = (json is Map ? json['places'] : null) as List? ?? const [];
     final out = <NearbyMosqueItem>[];
@@ -63,14 +69,19 @@ class GoogleMosqueFinder {
       final name = ((p['displayName'] as Map?)?['text'] as String?)?.trim();
       final rating = (p['rating'] as num?)?.toDouble();
       final count = p['userRatingCount'] as num?;
+      final isSmall = (name ?? '').toLowerCase().contains('musholla');
       out.add(NearbyMosqueItem(
         id: 'gmaps_${p['id']}',
-        name: (name == null || name.isEmpty) ? 'Masjid' : name,
-        kind: (name ?? '').toLowerCase().contains('musholla') ? 'Musholla' : 'Masjid',
+        name: (name == null || name.isEmpty) ? (isEn ? 'Mosque' : 'Masjid') : name,
+        kind: isSmall ? (isEn ? 'Prayer Room' : 'Musholla') : (isEn ? 'Mosque' : 'Masjid'),
         address: (p['formattedAddress'] as String?) ?? '',
         latitude: lat,
         longitude: lon,
-        facilities: rating == null ? 'Dari Google Maps' : 'Rating Google ${rating.toStringAsFixed(1)} (${count ?? 0} ulasan)',
+        facilities: rating == null
+            ? (isEn ? 'From Google Maps' : 'Dari Google Maps')
+            : (isEn
+                ? 'Google rating ${rating.toStringAsFixed(1)} (${count ?? 0} reviews)'
+                : 'Rating Google ${rating.toStringAsFixed(1)} (${count ?? 0} ulasan)'),
       ));
     }
     return out;
@@ -95,13 +106,18 @@ class OnlineMosqueFinder {
   OnlineMosqueFinder({required this.client, required this.store, DateTime Function()? now})
       : now = now ?? DateTime.now;
 
-  String _cacheKey(Coordinates c) =>
-      '$_cachePrefix${c.latitude.toStringAsFixed(2)}_${c.longitude.toStringAsFixed(2)}';
+  String _cacheKey(Coordinates c, AppLanguage lang) => lang == AppLanguage.en
+      ? '$_cachePrefix${c.latitude.toStringAsFixed(2)}_${c.longitude.toStringAsFixed(2)}_en'
+      : '$_cachePrefix${c.latitude.toStringAsFixed(2)}_${c.longitude.toStringAsFixed(2)}';
 
   /// Hasil cache (maks 24 jam) dipakai dulu; bila tidak ada, ambil dari jaringan.
   /// Melempar exception bila jaringan gagal dan tidak ada cache sama sekali.
-  Future<List<NearbyMosqueItem>> search(Coordinates origin, {int radiusMeters = 5000}) async {
-    final key = _cacheKey(origin);
+  Future<List<NearbyMosqueItem>> search(
+    Coordinates origin, {
+    int radiusMeters = 5000,
+    AppLanguage lang = AppLanguage.id,
+  }) async {
+    final key = _cacheKey(origin, lang);
     final cached = await store.readJson(key);
     List<NearbyMosqueItem>? stale;
     if (cached is Map && cached['items'] is List) {
@@ -114,7 +130,7 @@ class OnlineMosqueFinder {
       stale = items;
     }
     try {
-      final items = await _fetch(origin, radiusMeters);
+      final items = await _fetch(origin, radiusMeters, lang);
       await store.writeJson(key, {
         'at': now().toIso8601String(),
         'items': [for (final m in items) m.toJson()],
@@ -126,7 +142,7 @@ class OnlineMosqueFinder {
     }
   }
 
-  Future<List<NearbyMosqueItem>> _fetch(Coordinates o, int radius) async {
+  Future<List<NearbyMosqueItem>> _fetch(Coordinates o, int radius, AppLanguage lang) async {
     final around = '(around:$radius,${o.latitude},${o.longitude})';
     final query = '[out:json][timeout:25];('
         'node["amenity"="place_of_worship"]["religion"="muslim"]$around;'
@@ -147,16 +163,19 @@ class OnlineMosqueFinder {
           lastError = 'HTTP ${res.statusCode}';
           continue;
         }
-        return parseOverpass(utf8.decode(res.bodyBytes));
+        return parseOverpass(utf8.decode(res.bodyBytes), lang: lang);
       } catch (e) {
         lastError = e;
       }
     }
-    throw Exception('Pencarian masjid gagal: $lastError');
+    throw Exception(
+      lang == AppLanguage.en ? 'Mosque search failed: $lastError' : 'Pencarian masjid gagal: $lastError',
+    );
   }
 
   /// Mengubah respons Overpass menjadi daftar masjid (tanpa duplikat, harus bernama atau berkoordinat).
-  static List<NearbyMosqueItem> parseOverpass(String body) {
+  static List<NearbyMosqueItem> parseOverpass(String body, {AppLanguage lang = AppLanguage.id}) {
+    final isEn = lang == AppLanguage.en;
     final json = jsonDecode(body);
     final elements = (json is Map ? json['elements'] : null) as List? ?? const [];
     final out = <NearbyMosqueItem>[];
@@ -174,21 +193,21 @@ class OnlineMosqueFinder {
           lower.contains('musala') ||
           lower.contains('surau') ||
           lower.contains('langgar');
-      final kind = isSmall ? 'Musholla' : 'Masjid';
+      final kind = isSmall ? (isEn ? 'Prayer Room' : 'Musholla') : (isEn ? 'Mosque' : 'Masjid');
       out.add(NearbyMosqueItem(
         id: 'osm_${e['type']}_${e['id']}',
-        name: (name == null || name.isEmpty) ? '$kind (tanpa nama)' : name,
+        name: (name == null || name.isEmpty) ? (isEn ? '$kind (unnamed)' : '$kind (tanpa nama)') : name,
         kind: kind,
-        address: _address(tags),
+        address: _address(tags, lang),
         latitude: lat,
         longitude: lon,
-        facilities: _facilities(tags),
+        facilities: _facilities(tags, lang),
       ));
     }
     return out;
   }
 
-  static String _address(Map<String, dynamic> t) {
+  static String _address(Map<String, dynamic> t, AppLanguage lang) {
     final full = t['addr:full'] as String?;
     if (full != null && full.trim().isNotEmpty) return full.trim();
     final street = [t['addr:street'], t['addr:housenumber']].whereType<String>().join(' ').trim();
@@ -197,16 +216,19 @@ class OnlineMosqueFinder {
       t['addr:suburb'],
       t['addr:city'] ?? t['addr:subdistrict'],
     ].whereType<String>().where((s) => s.trim().isNotEmpty).toList();
-    return parts.isEmpty ? 'Alamat belum tercatat di peta' : parts.join(', ');
+    return parts.isEmpty
+        ? (lang == AppLanguage.en ? 'Address not listed on map' : 'Alamat belum tercatat di peta')
+        : parts.join(', ');
   }
 
-  static String _facilities(Map<String, dynamic> t) {
+  static String _facilities(Map<String, dynamic> t, AppLanguage lang) {
+    final isEn = lang == AppLanguage.en;
     final f = <String>[
-      if (t['wheelchair'] == 'yes') 'Akses Disabilitas',
-      if (t['toilets'] == 'yes') 'Toilet',
-      if (t['drinking_water'] == 'yes') 'Air Minum',
-      if (t['parking'] != null && t['parking'] != 'no') 'Parkir',
+      if (t['wheelchair'] == 'yes') (isEn ? 'Wheelchair Access' : 'Akses Disabilitas'),
+      if (t['toilets'] == 'yes') (isEn ? 'Restrooms' : 'Toilet'),
+      if (t['drinking_water'] == 'yes') (isEn ? 'Drinking Water' : 'Air Minum'),
+      if (t['parking'] != null && t['parking'] != 'no') (isEn ? 'Parking' : 'Parkir'),
     ];
-    return f.isEmpty ? 'Belum ada data fasilitas' : f.join(', ');
+    return f.isEmpty ? (isEn ? 'No facility data yet' : 'Belum ada data fasilitas') : f.join(', ');
   }
 }

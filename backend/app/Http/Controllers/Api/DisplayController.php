@@ -6,12 +6,14 @@ use App\Exceptions\DomainRuleException;
 use App\Http\Controllers\Controller;
 use App\Models\DisplayDevice;
 use App\Models\DisplayPairingCode;
+use App\Models\DisplayPairingSession;
 use App\Models\Mosque;
 use App\Services\DisplayContent;
 use App\Support\Audit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -244,22 +246,205 @@ class DisplayController extends Controller
         });
     }
 
+    /** Reverse QR pairing: TV web (/tv) membuat sesi sementara sebelum dipindai pengurus. */
+    public function createSession(): JsonResponse
+    {
+        $sessionId = (string) Str::ulid();
+        $pollSecret = Str::random(40);
+
+        do {
+            $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        } while (DisplayPairingSession::active()->where('code', $code)->exists());
+
+        $session = DisplayPairingSession::create([
+            'session_id' => $sessionId,
+            'secret_hash' => DisplayPairingSession::hashSecret($pollSecret),
+            'code' => $code,
+            'expires_at' => now()->addMinutes(DisplayPairingSession::TTL_MINUTES),
+        ]);
+
+        return response()->json([
+            'session_id' => $session->session_id,
+            'poll_secret' => $pollSecret,
+            'code' => $session->code,
+            'qr_payload' => 'MOESLIMTV:'.$session->session_id,
+            'expires_at' => $session->expires_at->toIso8601String(),
+        ], 201);
+    }
+
+    /** Pengurus memindai QR (atau mengetik kode 6 digit) dari layar TV untuk menghubungkannya ke masjid. */
+    public function approveSession(Request $request, Mosque $mosque): JsonResponse
+    {
+        $data = $request->validate([
+            'session_id' => ['nullable', 'string', 'max:64'],
+            'code' => ['nullable', 'digits:6'],
+            'name' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $rawSessionId = isset($data['session_id']) ? trim($data['session_id']) : null;
+        if ($rawSessionId !== null && Str::startsWith(strtoupper($rawSessionId), 'MOESLIMTV:')) {
+            $rawSessionId = substr($rawSessionId, strlen('MOESLIMTV:'));
+        }
+        $code = $data['code'] ?? null;
+
+        if (empty($rawSessionId) && empty($code)) {
+            throw ValidationException::withMessages([
+                'code' => 'Pindai QR di layar TV atau masukkan 6 digit kode sesi TV.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($request, $mosque, $rawSessionId, $code, $data) {
+            $lockedMosque = Mosque::whereKey($mosque->id)->lockForUpdate()->firstOrFail();
+            $this->guardLimit($lockedMosque);
+
+            $query = DisplayPairingSession::pendingApproval()->lockForUpdate();
+            if (! empty($rawSessionId)) {
+                $query->where('session_id', $rawSessionId);
+            } else {
+                $query->where('code', $code);
+            }
+
+            $session = $query->first();
+            if (! $session) {
+                throw ValidationException::withMessages([
+                    'code' => 'QR atau kode sesi TV tidak ditemukan, sudah terhubung, atau kedaluwarsa.',
+                ]);
+            }
+
+            $token = Str::random(64);
+            $name = trim((string) ($data['name'] ?? ''));
+            $device = $lockedMosque->displayDevices()->create([
+                'name' => $name !== '' ? $name : 'TV Display Web',
+                'token_hash' => DisplayDevice::hashToken($token),
+                'status' => 'active',
+                'config' => [],
+                'paired_at' => now(),
+            ]);
+
+            $session->forceFill([
+                'mosque_id' => $lockedMosque->id,
+                'display_device_id' => $device->id,
+                'encrypted_token' => Crypt::encryptString($token),
+                'approved_at' => now(),
+                'approved_by' => $request->user()->id,
+            ])->save();
+
+            Audit::log($lockedMosque, 'display.paired_qr', $device, ['name' => $device->name], 'device', $device->id);
+
+            return response()->json(['data' => $device], 201);
+        });
+    }
+
+    /** TV web (/tv) polling status sesi QR; token hanya diserahkan sekali lalu dihapus dari sesi. */
+    public function pollSession(Request $request, string $sessionId): JsonResponse
+    {
+        $data = $request->validate([
+            'poll_secret' => ['required', 'string', 'max:80'],
+        ]);
+
+        return DB::transaction(function () use ($sessionId, $data) {
+            $session = DisplayPairingSession::where('session_id', $sessionId)->lockForUpdate()->first();
+            if (! $session) {
+                return response()->json(['status' => 'not_found', 'message' => 'Sesi pairing tidak ditemukan.'], 404);
+            }
+
+            if (! hash_equals($session->secret_hash, DisplayPairingSession::hashSecret($data['poll_secret']))) {
+                return response()->json(['status' => 'forbidden', 'message' => 'Rahasia sesi tidak valid.'], 403);
+            }
+
+            if ($session->claimed_at !== null || $session->expires_at->isPast()) {
+                return response()->json(['status' => 'expired']);
+            }
+
+            if ($session->approved_at === null || $session->encrypted_token === null) {
+                return response()->json([
+                    'status' => 'pending',
+                    'expires_at' => $session->expires_at->toIso8601String(),
+                ]);
+            }
+
+            $token = Crypt::decryptString($session->encrypted_token);
+            $session->forceFill([
+                'encrypted_token' => null,
+                'claimed_at' => now(),
+            ])->save();
+
+            $device = $session->displayDevice;
+            $mosque = $session->mosque;
+
+            return response()->json([
+                'status' => 'paired',
+                'token' => $token,
+                'device' => ['id' => $device?->id, 'name' => $device?->name ?? 'TV Display Web'],
+                'mosque' => ['id' => $mosque?->id, 'name' => $mosque?->name ?? 'Masjid'],
+            ]);
+        });
+    }
+
+    /** Kunci `device.config` yang boleh diatur pengurus (tema warna & widget TV Display). */
+    public const CONFIG_KEYS = [
+        'theme', 'rotation_seconds', 'show_staff', 'language',
+        'custom_background', 'custom_background_2', 'custom_accent',
+        'show_illustration', 'show_pattern', 'show_seconds', 'show_hijri', 'show_sunrise',
+        'show_ticker', 'show_info_screen', 'info_seconds', 'large_clock', 'ticker_text',
+    ];
+
     public function update(Request $request, Mosque $mosque, DisplayDevice $displayDevice): JsonResponse
     {
+        $hex = ['sometimes', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'];
         $data = $request->validate([
             'name' => ['sometimes', 'string', 'max:100'],
             'config' => ['sometimes', 'array'],
-            'config.theme' => ['sometimes', 'in:auto,light,dark'],
+            'config.theme' => ['sometimes', 'in:auto,light,dark,navy,maroon,custom'],
             'config.rotation_seconds' => ['sometimes', 'integer', 'between:5,120'],
             'config.show_staff' => ['sometimes', 'boolean'],
+            'config.language' => ['sometimes', 'in:id,en'],
+            'config.custom_background' => $hex,
+            'config.custom_background_2' => $hex,
+            'config.custom_accent' => $hex,
+            'config.show_illustration' => ['sometimes', 'boolean'],
+            'config.show_pattern' => ['sometimes', 'boolean'],
+            'config.show_seconds' => ['sometimes', 'boolean'],
+            'config.show_hijri' => ['sometimes', 'boolean'],
+            'config.show_sunrise' => ['sometimes', 'boolean'],
+            'config.show_ticker' => ['sometimes', 'boolean'],
+            'config.show_info_screen' => ['sometimes', 'boolean'],
+            'config.info_seconds' => ['sometimes', 'integer', 'in:10,20,30'],
+            'config.large_clock' => ['sometimes', 'boolean'],
+            'config.ticker_text' => ['sometimes', 'nullable', 'string', 'max:160'],
         ]);
         if (isset($data['config'])) {
-            $data['config'] = array_intersect_key($data['config'], array_flip(['theme', 'rotation_seconds', 'show_staff']))
-                + ($displayDevice->config ?? []);
+            $incoming = array_intersect_key($data['config'], array_flip(self::CONFIG_KEYS));
+            if (array_key_exists('ticker_text', $incoming)) {
+                $incoming['ticker_text'] = trim((string) $incoming['ticker_text']);
+            }
+            $data['config'] = $incoming + ($displayDevice->config ?? []);
         }
         $displayDevice->update($data);
+        if (isset($data['config'])) {
+            Audit::log($mosque, 'display.design_updated', $displayDevice, array_keys($data['config']));
+        }
 
         return response()->json(['data' => $displayDevice]);
+    }
+
+    /** Pratinjau untuk pengurus: konten yang sama persis dengan yang diterima TV Display. */
+    public function preview(Mosque $mosque, DisplayContent $builder): JsonResponse
+    {
+        return response()->json([
+            'data' => $builder->build($mosque),
+            'server_time' => now()->toIso8601String(),
+        ]);
+    }
+
+    /** Gambar QRIS untuk pratinjau pengurus. */
+    public function adminQrisImage(Mosque $mosque)
+    {
+        abort_unless($mosque->qris_image_path, 404);
+        $disk = Storage::disk(config('filesystems.attachments_disk', 'local'));
+        abort_unless($disk->exists($mosque->qris_image_path), 404);
+
+        return $disk->response($mosque->qris_image_path);
     }
 
     public function revoke(Mosque $mosque, DisplayDevice $displayDevice): JsonResponse

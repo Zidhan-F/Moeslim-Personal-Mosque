@@ -1,21 +1,67 @@
 import 'package:shared_prayer/shared_prayer.dart';
 
+import '../content/l10n_core.dart';
 import 'key_value_store.dart';
 import 'tracker_repository.dart';
 
 enum FastingType {
-  ramadan('Puasa Ramadan', 'Fardhu bagi setiap muslim yang mukallaf di bulan Ramadan.'),
-  qadha('Qadha Ramadan', 'Mengganti utang puasa wajib Ramadan di hari lain.'),
-  seninKamis('Puasa Senin-Kamis', 'Sunnah rutin setiap hari Senin dan Kamis.'),
-  ayyamulBidh('Puasa Ayyamul Bidh', 'Sunnah tanggal 13, 14, dan 15 setiap bulan Hijriah.'),
-  arafah('Puasa Arafah (9 Dzulhijjah)', 'Menghapus dosa setahun yang lalu dan setahun yang akan datang (bagi yang tidak wukuf).'),
-  asyura('Puasa Tasu\'a & Asyura', 'Sunnah tanggal 9 dan 10 Muharram; menghapus dosa setahun yang lalu.'),
-  syawal('Puasa 6 Hari Syawal', 'Berpuasa Ramadan lalu diikuti 6 hari di bulan Syawal senilai puasa setahun penuh.'),
-  daud('Puasa Sunnah Daud / Mutlak', 'Puasa sunnah selang-seling sehari puasa sehari berbuka atau sunnah mutlak.');
+  ramadan(
+    'Puasa Ramadan',
+    'Fardhu bagi setiap muslim yang mukallaf di bulan Ramadan.',
+    'Ramadan Fast',
+    'Obligatory fast for every accountable Muslim during the month of Ramadan.',
+  ),
+  qadha(
+    'Qadha Ramadan',
+    'Mengganti utang puasa wajib Ramadan di hari lain.',
+    'Ramadan Make-up (Qada)',
+    'Making up missed obligatory Ramadan fasts on other days.',
+  ),
+  seninKamis(
+    'Puasa Senin-Kamis',
+    'Sunnah rutin setiap hari Senin dan Kamis.',
+    'Monday & Thursday Fast',
+    'Regular voluntary Sunnah fast every Monday and Thursday.',
+  ),
+  ayyamulBidh(
+    'Puasa Ayyamul Bidh',
+    'Sunnah tanggal 13, 14, dan 15 setiap bulan Hijriah.',
+    'Ayyamul Bidh (White Days)',
+    'Voluntary Sunnah fast on the 13th, 14th, and 15th of each Hijri month.',
+  ),
+  arafah(
+    'Puasa Arafah (9 Dzulhijjah)',
+    'Menghapus dosa setahun yang lalu dan setahun yang akan datang (bagi yang tidak wukuf).',
+    'Day of Arafah (9 Dhul-Hijjah)',
+    'Expiates sins of the past year and the coming year (for those not performing Hajj).',
+  ),
+  asyura(
+    'Puasa Tasu\'a & Asyura',
+    'Sunnah tanggal 9 dan 10 Muharram; menghapus dosa setahun yang lalu.',
+    'Tasu\'a & Ashura Fast',
+    'Voluntary fast on the 9th and 10th of Muharram; expiates sins of the past year.',
+  ),
+  syawal(
+    'Puasa 6 Hari Syawal',
+    'Berpuasa Ramadan lalu diikuti 6 hari di bulan Syawal senilai puasa setahun penuh.',
+    'Six Days of Shawwal',
+    'Fasting Ramadan followed by six days in Shawwal carries the reward of fasting a full year.',
+  ),
+  daud(
+    'Puasa Sunnah Daud / Mutlak',
+    'Puasa sunnah selang-seling sehari puasa sehari berbuka atau sunnah mutlak.',
+    'Fast of Dawud / Voluntary',
+    'Alternating day fast (fasting one day and breaking the next) or general voluntary fast.',
+  );
 
   final String label;
   final String description;
-  const FastingType(this.label, this.description);
+  final String labelEn;
+  final String descriptionEn;
+  const FastingType(this.label, this.description, this.labelEn, this.descriptionEn);
+
+  String labelFor(AppLanguage lang) => lang == AppLanguage.en ? labelEn : label;
+  String descriptionFor(AppLanguage lang) => lang == AppLanguage.en ? descriptionEn : description;
 }
 
 class FastingDayStatus {
@@ -23,6 +69,7 @@ class FastingDayStatus {
   final HijriDate hijri;
   final bool isForbidden;
   final String? forbiddenReason;
+  final String? forbiddenReasonEn;
   final List<FastingType> recommended;
 
   const FastingDayStatus({
@@ -30,39 +77,56 @@ class FastingDayStatus {
     required this.hijri,
     required this.isForbidden,
     this.forbiddenReason,
+    this.forbiddenReasonEn,
     required this.recommended,
   });
+
+  String? forbiddenReasonFor(AppLanguage lang) =>
+      lang == AppLanguage.en ? (forbiddenReasonEn ?? forbiddenReason) : forbiddenReason;
 }
 
-FastingDayStatus evaluateFastingDate(DateTime date, {int hijriOffset = 0}) {
+FastingDayStatus evaluateFastingDate(
+  DateTime date, {
+  int hijriOffset = 0,
+  AppLanguage lang = AppLanguage.id,
+}) {
   final cleanDate = DateTime(date.year, date.month, date.day);
   final h = HijriDate.fromGregorian(cleanDate, offsetDays: hijriOffset);
 
   // Hari haram berpuasa: 1 Syawal, 10 Dzulhijjah, dan Hari Tasyrik (11, 12, 13 Dzulhijjah)
   if (h.month == 10 && h.day == 1) {
+    const idReason = 'Hari Raya Idul Fitri (1 Syawal): diharamkan berpuasa.';
+    const enReason = 'Eid al-Fitr (1 Shawwal): fasting is forbidden.';
     return FastingDayStatus(
       gregorian: cleanDate,
       hijri: h,
       isForbidden: true,
-      forbiddenReason: 'Hari Raya Idul Fitri (1 Syawal): diharamkan berpuasa.',
+      forbiddenReason: tr(lang, idReason, enReason),
+      forbiddenReasonEn: enReason,
       recommended: const [],
     );
   }
   if (h.month == 12 && h.day == 10) {
+    const idReason = 'Hari Raya Idul Adha (10 Dzulhijjah): diharamkan berpuasa.';
+    const enReason = 'Eid al-Adha (10 Dhul-Hijjah): fasting is forbidden.';
     return FastingDayStatus(
       gregorian: cleanDate,
       hijri: h,
       isForbidden: true,
-      forbiddenReason: 'Hari Raya Idul Adha (10 Dzulhijjah): diharamkan berpuasa.',
+      forbiddenReason: tr(lang, idReason, enReason),
+      forbiddenReasonEn: enReason,
       recommended: const [],
     );
   }
   if (h.month == 12 && (h.day == 11 || h.day == 12 || h.day == 13)) {
+    final idReason = 'Hari Tasyrik (${h.day} Dzulhijjah): hari makan, minum, dan berdzikir kepada Allah.';
+    final enReason = 'Days of Tashriq (${h.day} Dhul-Hijjah): days of eating, drinking, and remembering Allah.';
     return FastingDayStatus(
       gregorian: cleanDate,
       hijri: h,
       isForbidden: true,
-      forbiddenReason: 'Hari Tasyrik (${h.day} Dzulhijjah): hari makan, minum, dan berdzikir kepada Allah.',
+      forbiddenReason: tr(lang, idReason, enReason),
+      forbiddenReasonEn: enReason,
       recommended: const [],
     );
   }

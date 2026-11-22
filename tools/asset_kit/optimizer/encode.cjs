@@ -6,7 +6,10 @@ async function main() {
   const manifest = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
   const target = path.resolve(__dirname, '../../../packages/moeslim_brand/assets/3d');
   fs.mkdirSync(path.join(target, 'thumbs'), { recursive: true });
-  const report = [];
+  const reportPath = path.join(__dirname, 'encoded.json');
+  const report = fs.existsSync(reportPath)
+    ? JSON.parse(fs.readFileSync(reportPath, 'utf8')).filter(entry => !(entry.name in manifest))
+    : [];
   for (const [name, source] of Object.entries(manifest)) {
     const width = name === 'scene' ? 1536 : 768;
     const input = sharp(source);
@@ -18,7 +21,7 @@ async function main() {
       .webp({ quality: 86, alphaQuality: 100, effort: 6 }).toFile(path.join(target, 'thumbs', `${name}.webp`));
     report.push({ name, source: path.basename(source), alpha: metadata.hasAlpha, bytes: fs.statSync(output).size });
   }
-  fs.writeFileSync(path.join(__dirname, 'encoded.json'), JSON.stringify(report, null, 2) + '\n');
+  fs.writeFileSync(reportPath, JSON.stringify(report, null, 2) + '\n');
   console.log(JSON.stringify(report));
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

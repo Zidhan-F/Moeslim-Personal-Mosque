@@ -4,8 +4,10 @@ import 'package:moeslim_brand/material_3d.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:shared_prayer/shared_prayer.dart';
 
 import '../../core/format.dart';
+import '../../core/l10n.dart';
 import '../../ui/components.dart';
 import 'finance_pro_pages.dart' show saveBoundaryPng;
 import 'masjid_api.dart';
@@ -19,6 +21,16 @@ const _zakatTypeLabels = {
   'fidyah': 'Fidyah',
 };
 
+const _zakatTypeLabelsEn = {
+  'fitrah_money': 'Fitrah (Cash)',
+  'fitrah_rice': 'Fitrah (Rice)',
+  'maal': 'Zakat Maal',
+  'fidyah': 'Fidyah',
+};
+
+String _zakatTypeLabel(Object? k, AppLanguage lang) =>
+    (lang == AppLanguage.en ? _zakatTypeLabelsEn[k] : _zakatTypeLabels[k]) ?? '$k';
+
 const _asnafLabels = {
   'fakir': 'Fakir',
   'miskin': 'Miskin',
@@ -30,6 +42,20 @@ const _asnafLabels = {
   'ibnu_sabil': 'Ibnu Sabil',
 };
 
+const _asnafLabelsEn = {
+  'fakir': 'Fakir',
+  'miskin': 'Miskin',
+  'amil': 'Amil',
+  'muallaf': 'Muallaf',
+  'riqab': 'Riqab',
+  'gharimin': 'Gharimin',
+  'fisabilillah': 'Fisabilillah',
+  'ibnu_sabil': 'Ibn al-Sabil',
+};
+
+String _asnafLabel(Object? k, AppLanguage lang) =>
+    (lang == AppLanguage.en ? _asnafLabelsEn[k] : _asnafLabels[k]) ?? '$k';
+
 const _speciesLabels = {
   'sapi': 'Sapi',
   'kambing': 'Kambing',
@@ -37,6 +63,17 @@ const _speciesLabels = {
   'kerbau': 'Kerbau',
   'unta': 'Unta',
 };
+
+const _speciesLabelsEn = {
+  'sapi': 'Cow',
+  'kambing': 'Goat',
+  'domba': 'Sheep',
+  'kerbau': 'Buffalo',
+  'unta': 'Camel',
+};
+
+String _speciesLabel(Object? k, AppLanguage lang) =>
+    (lang == AppLanguage.en ? _speciesLabelsEn[k] : _speciesLabels[k]) ?? '$k';
 
 const _slaughterLabels = {
   'registered': 'Terdaftar',
@@ -46,11 +83,32 @@ const _slaughterLabels = {
   'distributed': 'Didistribusikan',
 };
 
+const _slaughterLabelsEn = {
+  'registered': 'Registered',
+  'slaughtered': 'Slaughtered',
+  'skinned': 'Skinned',
+  'packaged': 'Packaged',
+  'distributed': 'Distributed',
+};
+
+String _slaughterLabel(Object? k, AppLanguage lang) =>
+    (lang == AppLanguage.en ? _slaughterLabelsEn[k] : _slaughterLabels[k]) ?? '$k';
+
 const _paymentLabels = {
   'unpaid': ('Belum Lunas', MosqueColors.expense),
   'dp': ('DP', MosqueColors.warning),
   'paid': ('Lunas', MosqueColors.income),
 };
+
+const _paymentLabelsEn = {
+  'unpaid': ('Unpaid', MosqueColors.expense),
+  'dp': ('Deposit', MosqueColors.warning),
+  'paid': ('Paid', MosqueColors.income),
+};
+
+(String, Color) _paymentBadge(Object? k, AppLanguage lang) =>
+    (lang == AppLanguage.en ? _paymentLabelsEn[k] : _paymentLabels[k]) ??
+    (lang == AppLanguage.en ? ('Unpaid', MosqueColors.expense) : ('Belum', MosqueColors.expense));
 
 int defaultHijriYear() => ((DateTime.now().year - 622) * 33 ~/ 32);
 
@@ -67,19 +125,28 @@ class _ZakatPageState extends ConsumerState<ZakatPage> {
   int _tab = 0;
   int _year = defaultHijriYear();
 
-  Future<void> _distribute(Map<String, dynamic> m) async {
+  Future<void> _distribute(BuildContext context, Map<String, dynamic> m) async {
+    final isEn = context.isEn;
     try {
       await ref.read(masjidApiProvider).distributeMustahik(widget.ctx.id, m['id'] as int);
       ref.invalidate(zakatProvider((widget.ctx.id, _year)));
-      if (mounted) showSnack(context, '${m['name']} ditandai sudah menerima zakat.');
+      if (context.mounted) {
+        showSnack(
+          context,
+          isEn
+              ? '${m['name']} marked as having received zakat.'
+              : '${m['name']} ditandai sudah menerima zakat.',
+        );
+      }
     } on ApiException catch (e) {
-      if (mounted) showSnack(context, e.message);
+      if (context.mounted) showSnack(context, e.message);
     }
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => mosqueScoped(context, (context) {
     final ctx = widget.ctx;
+    final lang = context.lang;
     final key = (ctx.id, _year);
     final zakat = ref.watch(zakatProvider(key));
     final canWrite = ctx.can('zakat.write');
@@ -91,7 +158,9 @@ class _ZakatPageState extends ConsumerState<ZakatPage> {
               heroTag: null,
               key: Key(_tab == 0 ? 'add-zakat-collection' : 'add-zakat-mustahik'),
               icon: const Icon(MoeslimIcons.tambah),
-              label: Text(_tab == 0 ? 'Catat Muzakki' : 'Tambah Mustahik'),
+              label: Text(
+                _tab == 0 ? context.tr('Catat Muzakki', 'Record Donor') : context.tr('Tambah Mustahik', 'Add Recipient'),
+              ),
               onPressed: () => showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
@@ -113,7 +182,10 @@ class _ZakatPageState extends ConsumerState<ZakatPage> {
             ),
             const SizedBox(height: 10),
             PillTabs(
-              labels: const ['Muzakki (Masuk)', 'Mustahik (Salur)'],
+              labels: [
+                context.tr('Muzakki (Masuk)', 'Muzakki (In)'),
+                context.tr('Mustahik (Salur)', 'Mustahik (Out)'),
+              ],
               index: _tab,
               onChanged: (i) => setState(() => _tab = i),
             ),
@@ -138,22 +210,31 @@ class _ZakatPageState extends ConsumerState<ZakatPage> {
                       children: [
                         StatTile(
                           icon: MoeslimIcons.keuangan,
-                          label: 'Zakat Uang',
+                          label: context.tr('Zakat Uang', 'Cash Zakat'),
                           value: rupiah((sum['total_money_in'] as num?) ?? 0),
-                          caption: '${sum['total_souls'] ?? 0} jiwa',
+                          caption: context.tr('${sum['total_souls'] ?? 0} jiwa', '${sum['total_souls'] ?? 0} people'),
                         ),
                         StatTile(
                           icon: MoeslimIcons.saldo,
-                          label: 'Zakat Beras',
+                          label: context.tr('Zakat Beras', 'Rice Zakat'),
                           value: '${sum['total_rice_in_kg'] ?? 0} kg',
-                          caption: '${sum['distributed_mustahik'] ?? 0}/${sum['total_mustahik'] ?? 0} mustahik',
+                          caption: context.tr(
+                            '${sum['distributed_mustahik'] ?? 0}/${sum['total_mustahik'] ?? 0} mustahik',
+                            '${sum['distributed_mustahik'] ?? 0}/${sum['total_mustahik'] ?? 0} recipients',
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 12),
                     if (_tab == 0)
                       collections.isEmpty
-                          ? const EmptyState(MoeslimIcons.keuangan, 'Belum ada penerimaan zakat pada tahun ini')
+                          ? EmptyState(
+                              MoeslimIcons.keuangan,
+                              context.tr(
+                                'Belum ada penerimaan zakat pada tahun ini',
+                                'No zakat collections recorded this year',
+                              ),
+                            )
                           : Column(
                               children: [
                                 for (final c in collections)
@@ -162,7 +243,7 @@ class _ZakatPageState extends ConsumerState<ZakatPage> {
                                     child: ListTile(
                                       title: Text('${c['muzakki_name']}', style: const TextStyle(fontWeight: FontWeight.w700)),
                                       subtitle: Text(
-                                        '${_zakatTypeLabels[c['type']] ?? c['type']} • ${c['souls_count']} jiwa • ${c['date']}',
+                                        '${_zakatTypeLabel(c['type'], lang)} • ${c['souls_count']} ${context.tr('jiwa', 'people')} • ${c['date']}',
                                       ),
                                       trailing: Column(
                                         mainAxisAlignment: MainAxisAlignment.center,
@@ -175,7 +256,7 @@ class _ZakatPageState extends ConsumerState<ZakatPage> {
                                             ),
                                           if (((c['rice_kg'] as num?) ?? 0) > 0)
                                             Text(
-                                              '${c['rice_kg']} kg beras',
+                                              context.tr('${c['rice_kg']} kg beras', '${c['rice_kg']} kg rice'),
                                               style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5),
                                             ),
                                         ],
@@ -186,7 +267,13 @@ class _ZakatPageState extends ConsumerState<ZakatPage> {
                             )
                     else
                       mustahiks.isEmpty
-                          ? const EmptyState(MoeslimIcons.jamaah, 'Belum ada daftar mustahik pada tahun ini')
+                          ? EmptyState(
+                              MoeslimIcons.jamaah,
+                              context.tr(
+                                'Belum ada daftar mustahik pada tahun ini',
+                                'No recipients listed this year',
+                              ),
+                            )
                           : Column(
                               children: [
                                 for (final m in mustahiks)
@@ -208,7 +295,7 @@ class _ZakatPageState extends ConsumerState<ZakatPage> {
                                                         style: const TextStyle(fontWeight: FontWeight.w700),
                                                       ),
                                                     ),
-                                                    StatusBadge(_asnafLabels[m['asnaf']] ?? '${m['asnaf']}'),
+                                                    StatusBadge(_asnafLabel(m['asnaf'], lang)),
                                                   ],
                                                 ),
                                                 if (m['address'] != null)
@@ -217,7 +304,8 @@ class _ZakatPageState extends ConsumerState<ZakatPage> {
                                                 Text(
                                                   [
                                                     if (((m['money_amount'] as num?) ?? 0) > 0) rupiah(m['money_amount'] as num),
-                                                    if (((m['rice_kg'] as num?) ?? 0) > 0) '${m['rice_kg']} kg beras',
+                                                    if (((m['rice_kg'] as num?) ?? 0) > 0)
+                                                      context.tr('${m['rice_kg']} kg beras', '${m['rice_kg']} kg rice'),
                                                   ].join(' • '),
                                                   style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5),
                                                 ),
@@ -226,12 +314,16 @@ class _ZakatPageState extends ConsumerState<ZakatPage> {
                                           ),
                                           const SizedBox(width: 8),
                                           if (m['status'] == 'distributed')
-                                            const StatusBadge('Tersalur', icon: MoeslimIcons.check, color: MosqueColors.income)
+                                            StatusBadge(
+                                              context.tr('Tersalur', 'Distributed'),
+                                              icon: MoeslimIcons.check,
+                                              color: MosqueColors.income,
+                                            )
                                           else if (canWrite)
                                             FilledButton.tonal(
                                               key: Key('distribute-mustahik-${m['id']}'),
-                                              onPressed: () => _distribute(m),
-                                              child: const Text('Salurkan'),
+                                              onPressed: () => _distribute(context, m),
+                                              child: Text(context.tr('Salurkan', 'Distribute')),
                                             ),
                                         ],
                                       ),
@@ -247,7 +339,7 @@ class _ZakatPageState extends ConsumerState<ZakatPage> {
         ),
       ),
     );
-  }
+  });
 }
 
 class _ZakatCollectionSheet extends ConsumerStatefulWidget {
@@ -262,7 +354,7 @@ class _ZakatCollectionSheet extends ConsumerStatefulWidget {
 class _ZakatCollectionSheetState extends ConsumerState<_ZakatCollectionSheet> {
   String _type = 'fitrah_money';
   final _name = TextEditingController();
-  final _souls = TextEditingController(text: '1');
+  final _souls = TextEditingController();
   final _money = TextEditingController();
   final _rice = TextEditingController();
   bool _recordFinance = true;
@@ -270,7 +362,8 @@ class _ZakatCollectionSheetState extends ConsumerState<_ZakatCollectionSheet> {
   String? _error;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => mosqueScoped(context, (context) {
+    final lang = context.lang;
     final canFinance = widget.ctx.can('finance.write');
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(20, 0, 20, 20 + MediaQuery.viewInsetsOf(context).bottom),
@@ -278,19 +371,30 @@ class _ZakatCollectionSheetState extends ConsumerState<_ZakatCollectionSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Catat Penerimaan Zakat (${widget.hijriYear} H)', style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            context.tr(
+              'Catat Penerimaan Zakat (${widget.hijriYear} H)',
+              'Record Zakat Collection (${widget.hijriYear} AH)',
+            ),
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
             initialValue: _type,
-            decoration: const InputDecoration(labelText: 'Jenis Zakat'),
-            items: [for (final e in _zakatTypeLabels.entries) DropdownMenuItem(value: e.key, child: Text(e.value))],
+            decoration: InputDecoration(labelText: context.tr('Jenis Zakat', 'Zakat Type')),
+            items: [
+              for (final e in _zakatTypeLabels.entries)
+                DropdownMenuItem(value: e.key, child: Text(_zakatTypeLabel(e.key, lang))),
+            ],
             onChanged: (v) => setState(() => _type = v ?? _type),
           ),
           const SizedBox(height: 10),
           TextField(
             key: const Key('muzakki-name'),
             controller: _name,
-            decoration: const InputDecoration(labelText: 'Nama Muzakki / Kepala Keluarga *'),
+            decoration: InputDecoration(
+              labelText: context.tr('Nama Muzakki / Kepala Keluarga *', 'Donor / Head of Household Name *'),
+            ),
           ),
           const SizedBox(height: 10),
           Row(
@@ -301,7 +405,11 @@ class _ZakatCollectionSheetState extends ConsumerState<_ZakatCollectionSheet> {
                   controller: _souls,
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  decoration: const InputDecoration(labelText: 'Jumlah Jiwa'),
+                  decoration: InputDecoration(
+                    labelText: context.tr('Jumlah Jiwa', 'Number of People'),
+                    hintText: context.tr('Contoh: 1', 'Example: 1'),
+                    floatingLabelBehavior: FloatingLabelBehavior.always,
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
@@ -311,7 +419,7 @@ class _ZakatCollectionSheetState extends ConsumerState<_ZakatCollectionSheet> {
                   controller: _money,
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  decoration: const InputDecoration(labelText: 'Uang (Rp)', prefixText: 'Rp '),
+                  decoration: InputDecoration(labelText: context.tr('Uang (Rp)', 'Cash (Rp)'), prefixText: 'Rp '),
                 ),
               ),
             ],
@@ -321,12 +429,20 @@ class _ZakatCollectionSheetState extends ConsumerState<_ZakatCollectionSheet> {
             key: const Key('muzakki-rice'),
             controller: _rice,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(labelText: 'Beras (kg, opsional)', hintText: 'Contoh: 2.7'),
+            decoration: InputDecoration(
+              labelText: context.tr('Beras (kg, opsional)', 'Rice (kg, optional)'),
+              hintText: context.tr('Contoh: 2.7', 'Example: 2.7'),
+            ),
           ),
           if (canFinance)
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Catat otomatis ke Buku Kas (Dana Zakat)'),
+              title: Text(
+                context.tr(
+                  'Catat otomatis ke Buku Kas (Dana Zakat)',
+                  'Automatically record to Cash Ledger (Zakat Fund)',
+                ),
+              ),
               value: _recordFinance,
               onChanged: (v) => setState(() => _recordFinance = v),
             ),
@@ -362,12 +478,12 @@ class _ZakatCollectionSheetState extends ConsumerState<_ZakatCollectionSheet> {
                       if (mounted) setState(() => _busy = false);
                     }
                   },
-            child: const Text('Simpan Penerimaan'),
+            child: Text(context.tr('Simpan Penerimaan', 'Save Collection')),
           ),
         ],
       ),
     );
-  }
+  });
 }
 
 class _ZakatMustahikSheet extends ConsumerStatefulWidget {
@@ -384,90 +500,102 @@ class _ZakatMustahikSheetState extends ConsumerState<_ZakatMustahikSheet> {
   final _name = TextEditingController();
   final _address = TextEditingController();
   final _money = TextEditingController();
-  final _rice = TextEditingController(text: '3.5');
+  final _rice = TextEditingController();
   bool _busy = false;
   String? _error;
 
   @override
-  Widget build(BuildContext context) => SingleChildScrollView(
-    padding: EdgeInsets.fromLTRB(20, 0, 20, 20 + MediaQuery.viewInsetsOf(context).bottom),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text('Tambah Mustahik (${widget.hijriYear} H)', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 12),
-        TextField(
-          key: const Key('mustahik-name'),
-          controller: _name,
-          decoration: const InputDecoration(labelText: 'Nama Penerima *'),
-        ),
-        const SizedBox(height: 10),
-        DropdownButtonFormField<String>(
-          initialValue: _asnaf,
-          decoration: const InputDecoration(labelText: 'Golongan Asnaf'),
-          items: [for (final e in _asnafLabels.entries) DropdownMenuItem(value: e.key, child: Text(e.value))],
-          onChanged: (v) => setState(() => _asnaf = v ?? _asnaf),
-        ),
-        const SizedBox(height: 10),
-        TextField(
-          controller: _address,
-          decoration: const InputDecoration(labelText: 'Alamat / RT RW'),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _money,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: const InputDecoration(labelText: 'Uang (Rp)'),
+  Widget build(BuildContext context) => mosqueScoped(context, (context) {
+    final lang = context.lang;
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(20, 0, 20, 20 + MediaQuery.viewInsetsOf(context).bottom),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            context.tr('Tambah Mustahik (${widget.hijriYear} H)', 'Add Recipient (${widget.hijriYear} AH)'),
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            key: const Key('mustahik-name'),
+            controller: _name,
+            decoration: InputDecoration(labelText: context.tr('Nama Penerima *', 'Recipient Name *')),
+          ),
+          const SizedBox(height: 10),
+          DropdownButtonFormField<String>(
+            initialValue: _asnaf,
+            decoration: InputDecoration(labelText: context.tr('Golongan Asnaf', 'Asnaf Category')),
+            items: [
+              for (final e in _asnafLabels.entries) DropdownMenuItem(value: e.key, child: Text(_asnafLabel(e.key, lang))),
+            ],
+            onChanged: (v) => setState(() => _asnaf = v ?? _asnaf),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _address,
+            decoration: InputDecoration(labelText: context.tr('Alamat / RT RW', 'Address / Neighborhood')),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _money,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: InputDecoration(labelText: context.tr('Uang (Rp)', 'Cash (Rp)')),
+                ),
               ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: TextField(
-                controller: _rice,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Beras (kg)'),
+              const SizedBox(width: 10),
+              Expanded(
+                child: TextField(
+                  controller: _rice,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                    labelText: context.tr('Beras (kg)', 'Rice (kg)'),
+                    hintText: context.tr('Contoh: 3.5', 'Example: 3.5'),
+                    floatingLabelBehavior: FloatingLabelBehavior.always,
+                  ),
+                ),
               ),
-            ),
-          ],
-        ),
-        if (_error != null) Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-        const SizedBox(height: 12),
-        FilledButton(
-          key: const Key('save-mustahik'),
-          onPressed: _busy
-              ? null
-              : () async {
-                  setState(() {
-                    _busy = true;
-                    _error = null;
-                  });
-                  try {
-                    await ref.read(masjidApiProvider).createZakatMustahik(widget.ctx.id, {
-                      'hijri_year': widget.hijriYear,
-                      'name': _name.text.trim(),
-                      'asnaf': _asnaf,
-                      if (_address.text.trim().isNotEmpty) 'address': _address.text.trim(),
-                      'money_amount': int.tryParse(_money.text.trim()) ?? 0,
-                      'rice_kg': double.tryParse(_rice.text.trim().replaceAll(',', '.')) ?? 0,
+            ],
+          ),
+          if (_error != null) Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+          const SizedBox(height: 12),
+          FilledButton(
+            key: const Key('save-mustahik'),
+            onPressed: _busy
+                ? null
+                : () async {
+                    setState(() {
+                      _busy = true;
+                      _error = null;
                     });
-                    ref.invalidate(zakatProvider((widget.ctx.id, widget.hijriYear)));
-                    if (context.mounted) Navigator.pop(context);
-                  } on ApiException catch (e) {
-                    setState(() => _error = e.message);
-                  } finally {
-                    if (mounted) setState(() => _busy = false);
-                  }
-                },
-          child: const Text('Simpan Mustahik'),
-        ),
-      ],
-    ),
-  );
+                    try {
+                      await ref.read(masjidApiProvider).createZakatMustahik(widget.ctx.id, {
+                        'hijri_year': widget.hijriYear,
+                        'name': _name.text.trim(),
+                        'asnaf': _asnaf,
+                        if (_address.text.trim().isNotEmpty) 'address': _address.text.trim(),
+                        'money_amount': int.tryParse(_money.text.trim()) ?? 0,
+                        'rice_kg': double.tryParse(_rice.text.trim().replaceAll(',', '.')) ?? 0,
+                      });
+                      ref.invalidate(zakatProvider((widget.ctx.id, widget.hijriYear)));
+                      if (context.mounted) Navigator.pop(context);
+                    } on ApiException catch (e) {
+                      setState(() => _error = e.message);
+                    } finally {
+                      if (mounted) setState(() => _busy = false);
+                    }
+                  },
+            child: Text(context.tr('Simpan Mustahik', 'Save Recipient')),
+          ),
+        ],
+      ),
+    );
+  });
 }
 
 /// Halaman Kurban Lengkap (Patungan 1/7, Progres Sembelih) & Kupon Distribusi QR Anti-Dobel (#22, #23).
@@ -492,9 +620,10 @@ class _QurbanPageState extends ConsumerState<QurbanPage> {
     super.dispose();
   }
 
-  Future<void> _redeem([String? scanned]) async {
+  Future<void> _redeem(BuildContext context, [String? scanned]) async {
     final code = (scanned ?? _couponCode.text).trim().toUpperCase();
     if (code.isEmpty) return;
+    final isEn = context.isEn;
     setState(() {
       _redeeming = true;
       _redeemResult = null;
@@ -504,7 +633,14 @@ class _QurbanPageState extends ConsumerState<QurbanPage> {
       ref.invalidate(couponsProvider((widget.ctx.id, 'qurban', _year)));
       _couponCode.clear();
       if (mounted) {
-        setState(() => _redeemResult = (true, 'Kupon ${data['code']} (${data['recipient_name']}) berhasil ditukar.'));
+        setState(
+          () => _redeemResult = (
+            true,
+            isEn
+                ? 'Coupon ${data['code']} (${data['recipient_name']}) successfully redeemed.'
+                : 'Kupon ${data['code']} (${data['recipient_name']}) berhasil ditukar.',
+          ),
+        );
       }
     } on ApiException catch (e) {
       if (mounted) setState(() => _redeemResult = (false, e.message));
@@ -513,29 +649,31 @@ class _QurbanPageState extends ConsumerState<QurbanPage> {
     }
   }
 
-  Future<void> _openScanner() async {
+  Future<void> _openScanner(BuildContext context) async {
     final code = await Navigator.of(context).push<String>(MaterialPageRoute(builder: (_) => const _QrScannerPage()));
-    if (code != null && code.isNotEmpty && mounted) {
+    if (code != null && code.isNotEmpty && context.mounted) {
       _couponCode.text = code;
-      await _redeem(code);
+      await _redeem(context, code);
     }
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => mosqueScoped(context, (context) {
     final ctx = widget.ctx;
     final canWrite = ctx.can('qurban.write');
     final qurban = ref.watch(qurbanProvider((ctx.id, _year)));
     final coupons = ref.watch(couponsProvider((ctx.id, 'qurban', _year)));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Kurban & Kupon QR'), centerTitle: true),
+      appBar: AppBar(title: Text(context.tr('Kurban & Kupon QR', 'Qurban & QR Coupons')), centerTitle: true),
       floatingActionButton: canWrite
           ? FloatingActionButton.extended(
               heroTag: null,
               key: Key(_tab == 0 ? 'add-animal' : 'add-coupons'),
               icon: const Icon(MoeslimIcons.tambah),
-              label: Text(_tab == 0 ? 'Tambah Hewan' : 'Terbitkan Kupon'),
+              label: Text(
+                _tab == 0 ? context.tr('Tambah Hewan', 'Add Animal') : context.tr('Terbitkan Kupon', 'Issue Coupons'),
+              ),
               onPressed: () => showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
@@ -557,7 +695,10 @@ class _QurbanPageState extends ConsumerState<QurbanPage> {
             _HijriYearBar(year: _year, onChanged: (y) => setState(() => _year = y)),
             const SizedBox(height: 10),
             PillTabs(
-              labels: const ['Hewan & Patungan', 'Kupon QR & Scan'],
+              labels: [
+                context.tr('Hewan & Patungan', 'Animals & Shares'),
+                context.tr('Kupon QR & Scan', 'QR Coupons & Scan'),
+              ],
               index: _tab,
               onChanged: (i) => setState(() => _tab = i),
             ),
@@ -582,21 +723,30 @@ class _QurbanPageState extends ConsumerState<QurbanPage> {
                         children: [
                           StatTile(
                             icon: MoeslimIcons.kegiatan,
-                            label: 'Hewan Kurban',
+                            label: context.tr('Hewan Kurban', 'Qurban Animals'),
                             value: '${sum['total_animals'] ?? 0}',
-                            caption: '${sum['slaughtered_count'] ?? 0} sudah disembelih',
+                            caption: context.tr(
+                              '${sum['slaughtered_count'] ?? 0} sudah disembelih',
+                              '${sum['slaughtered_count'] ?? 0} slaughtered',
+                            ),
                           ),
                           StatTile(
                             icon: MoeslimIcons.jamaah,
-                            label: 'Shohibul Qurban',
+                            label: context.tr('Shohibul Qurban', 'Participants'),
                             value: '${sum['total_participants'] ?? 0}',
-                            caption: '${sum['total_meat_packs'] ?? 0} bungkus daging',
+                            caption: context.tr(
+                              '${sum['total_meat_packs'] ?? 0} bungkus daging',
+                              '${sum['total_meat_packs'] ?? 0} meat packs',
+                            ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 12),
                       if (animals.isEmpty)
-                        const EmptyState(MoeslimIcons.kegiatan, 'Belum ada hewan kurban terdaftar')
+                        EmptyState(
+                          MoeslimIcons.kegiatan,
+                          context.tr('Belum ada hewan kurban terdaftar', 'No qurban animals registered yet'),
+                        )
                       else
                         for (final a in animals) _AnimalCard(ctx: ctx, hijriYear: _year, animal: a, canWrite: canWrite),
                     ],
@@ -615,7 +765,13 @@ class _QurbanPageState extends ConsumerState<QurbanPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            const Text('Verifikasi & Tukar Kupon (Anti-Dobel)', style: TextStyle(fontWeight: FontWeight.w700)),
+                            Text(
+                              context.tr(
+                                'Verifikasi & Tukar Kupon (Anti-Dobel)',
+                                'Verify & Redeem Coupon (Anti-Duplicate)',
+                              ),
+                              style: const TextStyle(fontWeight: FontWeight.w700),
+                            ),
                             const SizedBox(height: 8),
                             Row(
                               children: [
@@ -624,19 +780,19 @@ class _QurbanPageState extends ConsumerState<QurbanPage> {
                                     key: const Key('coupon-code-input'),
                                     controller: _couponCode,
                                     textCapitalization: TextCapitalization.characters,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Kode Kupon',
+                                    decoration: InputDecoration(
+                                      labelText: context.tr('Kode Kupon', 'Coupon Code'),
                                       hintText: 'QBN-XXXXXX',
                                       isDense: true,
                                     ),
-                                    onSubmitted: (_) => _redeem(),
+                                    onSubmitted: (_) => _redeem(context),
                                   ),
                                 ),
                                 const SizedBox(width: 8),
                                 IconButton.filledTonal(
                                   key: const Key('open-qr-scanner'),
-                                  tooltip: 'Pindai QR Kamera',
-                                  onPressed: _redeeming ? null : _openScanner,
+                                  tooltip: context.tr('Pindai QR Kamera', 'Scan QR with Camera'),
+                                  onPressed: _redeeming ? null : () => _openScanner(context),
                                   icon: const Icon(Icons.qr_code_scanner_rounded),
                                 ),
                               ],
@@ -645,9 +801,9 @@ class _QurbanPageState extends ConsumerState<QurbanPage> {
                             FilledButton.icon(
                               key: const Key('redeem-coupon-btn'),
                               style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(46)),
-                              onPressed: _redeeming ? null : () => _redeem(),
+                              onPressed: _redeeming ? null : () => _redeem(context),
                               icon: const Icon(MoeslimIcons.check),
-                              label: const Text('Verifikasi & Tukar Kupon'),
+                              label: Text(context.tr('Verifikasi & Tukar Kupon', 'Verify & Redeem Coupon')),
                             ),
                             if (_redeemResult != null) ...[
                               const SizedBox(height: 10),
@@ -686,25 +842,28 @@ class _QurbanPageState extends ConsumerState<QurbanPage> {
                               Expanded(
                                 child: StatTile(
                                   icon: Icons.confirmation_num_outlined,
-                                  label: 'Kupon Aktif',
+                                  label: context.tr('Kupon Aktif', 'Active Coupons'),
                                   value: '${sum['issued'] ?? 0}',
-                                  caption: 'dari ${sum['total'] ?? 0} total',
+                                  caption: context.tr('dari ${sum['total'] ?? 0} total', 'of ${sum['total'] ?? 0} total'),
                                 ),
                               ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: StatTile(
                                   icon: MoeslimIcons.check,
-                                  label: 'Sudah Ditukar',
+                                  label: context.tr('Sudah Ditukar', 'Redeemed'),
                                   value: '${sum['redeemed'] ?? 0}',
-                                  caption: 'terverifikasi',
+                                  caption: context.tr('terverifikasi', 'verified'),
                                 ),
                               ),
                             ],
                           ),
                           const SizedBox(height: 10),
                           if (list.isEmpty)
-                            const EmptyState(Icons.qr_code_2_rounded, 'Belum ada kupon distribusi')
+                            EmptyState(
+                              Icons.qr_code_2_rounded,
+                              context.tr('Belum ada kupon distribusi', 'No distribution coupons yet'),
+                            )
                           else
                             for (final c in list)
                               Card(
@@ -719,8 +878,10 @@ class _QurbanPageState extends ConsumerState<QurbanPage> {
                                   subtitle: Text('${c['code']}${c['recipient_address'] != null ? ' • ${c['recipient_address']}' : ''}'),
                                   trailing: StatusBadge(
                                     c['status'] == 'redeemed'
-                                        ? 'Ditukar'
-                                        : (c['status'] == 'void' ? 'Batal' : 'Aktif'),
+                                        ? context.tr('Ditukar', 'Redeemed')
+                                        : (c['status'] == 'void'
+                                              ? context.tr('Batal', 'Void')
+                                              : context.tr('Aktif', 'Active')),
                                     color: c['status'] == 'redeemed'
                                         ? MosqueColors.income
                                         : (c['status'] == 'void' ? MosqueColors.expense : MosqueColors.info),
@@ -743,7 +904,7 @@ class _QurbanPageState extends ConsumerState<QurbanPage> {
         ),
       ),
     );
-  }
+  });
 }
 
 class _AnimalCard extends ConsumerWidget {
@@ -755,6 +916,7 @@ class _AnimalCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final lang = context.lang;
     final a = animal;
     final used = (a['used_shares'] as num?)?.toInt() ?? 0;
     final cap = (a['capacity'] as num?)?.toInt() ?? 1;
@@ -776,17 +938,20 @@ class _AnimalCard extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${a['code']} • ${_speciesLabels[a['species']] ?? a['species']}',
+                        '${a['code']} • ${_speciesLabel(a['species'], lang)}',
                         style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
                       ),
                       Text(
-                        'Kuota: $used/$cap bagian${a['weight_kg'] != null ? ' • ${a['weight_kg']} kg' : ''}',
+                        context.tr(
+                          'Kuota: $used/$cap bagian${a['weight_kg'] != null ? ' • ${a['weight_kg']} kg' : ''}',
+                          'Quota: $used/$cap shares${a['weight_kg'] != null ? ' • ${a['weight_kg']} kg' : ''}',
+                        ),
                         style: const TextStyle(fontSize: 12.5),
                       ),
                     ],
                   ),
                 ),
-                StatusBadge(_slaughterLabels[status] ?? status),
+                StatusBadge(_slaughterLabel(status, lang)),
               ],
             ),
             const SizedBox(height: 8),
@@ -803,8 +968,14 @@ class _AnimalCard extends ConsumerWidget {
               DropdownButtonFormField<String>(
                 key: Key('animal-status-${a['id']}'),
                 initialValue: status,
-                decoration: const InputDecoration(labelText: 'Status Penyembelihan', isDense: true),
-                items: [for (final s in _slaughterLabels.entries) DropdownMenuItem(value: s.key, child: Text(s.value))],
+                decoration: InputDecoration(
+                  labelText: context.tr('Status Penyembelihan', 'Slaughter Status'),
+                  isDense: true,
+                ),
+                items: [
+                  for (final s in _slaughterLabels.entries)
+                    DropdownMenuItem(value: s.key, child: Text(_slaughterLabel(s.key, lang))),
+                ],
                 onChanged: (v) async {
                   if (v == null || v == status) return;
                   try {
@@ -818,17 +989,26 @@ class _AnimalCard extends ConsumerWidget {
             ],
             const SizedBox(height: 8),
             if (participants.isEmpty)
-              const Text('Belum ada shohibul qurban.', style: TextStyle(fontSize: 12.5, fontStyle: FontStyle.italic))
+              Text(
+                context.tr('Belum ada shohibul qurban.', 'No participants yet.'),
+                style: const TextStyle(fontSize: 12.5, fontStyle: FontStyle.italic),
+              )
             else
               for (final p in participants)
                 ListTile(
                   dense: true,
                   contentPadding: EdgeInsets.zero,
-                  title: Text('${p['name']} (${p['shares']} bagian)', style: const TextStyle(fontWeight: FontWeight.w600)),
+                  title: Text(
+                    context.tr(
+                      '${p['name']} (${p['shares']} bagian)',
+                      '${p['name']} (${p['shares']} ${p['shares'] == 1 ? 'share' : 'shares'})',
+                    ),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
                   subtitle: Text(rupiah((p['amount_idr'] as num?) ?? 0)),
                   trailing: StatusBadge(
-                    (_paymentLabels[p['payment_status']] ?? ('Belum', MosqueColors.expense)).$1,
-                    color: (_paymentLabels[p['payment_status']] ?? ('Belum', MosqueColors.expense)).$2,
+                    _paymentBadge(p['payment_status'], lang).$1,
+                    color: _paymentBadge(p['payment_status'], lang).$2,
                   ),
                 ),
             if (canWrite && rem > 0) ...[
@@ -848,7 +1028,7 @@ class _AnimalCard extends ConsumerWidget {
                   ),
                 ),
                 icon: const Icon(MoeslimIcons.tambah),
-                label: Text('Tambah Shohibul Qurban (sisa $rem)'),
+                label: Text(context.tr('Tambah Shohibul Qurban (sisa $rem)', 'Add Participant ($rem left)')),
               ),
             ],
           ],
@@ -869,86 +1049,99 @@ class _AnimalSheet extends ConsumerStatefulWidget {
 
 class _AnimalSheetState extends ConsumerState<_AnimalSheet> {
   String _species = 'sapi';
-  final _code = TextEditingController(text: 'SAPI-01');
+  final _code = TextEditingController();
   final _weight = TextEditingController();
   final _price = TextEditingController();
   bool _busy = false;
   String? _error;
 
   @override
-  Widget build(BuildContext context) => SingleChildScrollView(
-    padding: EdgeInsets.fromLTRB(20, 0, 20, 20 + MediaQuery.viewInsetsOf(context).bottom),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text('Tambah Hewan Kurban (${widget.hijriYear} H)', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 12),
-        DropdownButtonFormField<String>(
-          initialValue: _species,
-          decoration: const InputDecoration(labelText: 'Jenis Hewan'),
-          items: [for (final s in _speciesLabels.entries) DropdownMenuItem(value: s.key, child: Text(s.value))],
-          onChanged: (v) => setState(() => _species = v ?? _species),
-        ),
-        const SizedBox(height: 10),
-        TextField(
-          key: const Key('animal-code'),
-          controller: _code,
-          decoration: const InputDecoration(labelText: 'Kode Hewan *', hintText: 'Contoh: SAPI-01 atau KMB-01'),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _weight,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Bobot (kg)'),
-              ),
+  Widget build(BuildContext context) => mosqueScoped(context, (context) {
+    final lang = context.lang;
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(20, 0, 20, 20 + MediaQuery.viewInsetsOf(context).bottom),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            context.tr('Tambah Hewan Kurban (${widget.hijriYear} H)', 'Add Qurban Animal (${widget.hijriYear} AH)'),
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            initialValue: _species,
+            decoration: InputDecoration(labelText: context.tr('Jenis Hewan', 'Animal Type')),
+            items: [
+              for (final s in _speciesLabels.entries)
+                DropdownMenuItem(value: s.key, child: Text(_speciesLabel(s.key, lang))),
+            ],
+            onChanged: (v) => setState(() => _species = v ?? _species),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            key: const Key('animal-code'),
+            controller: _code,
+            decoration: InputDecoration(
+              labelText: context.tr('Kode Hewan *', 'Animal Code *'),
+              hintText: context.tr('Contoh: SAPI-01 atau KMB-01', 'Example: COW-01 or GOAT-01'),
+              floatingLabelBehavior: FloatingLabelBehavior.always,
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: TextField(
-                controller: _price,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: const InputDecoration(labelText: 'Harga (Rp)'),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _weight,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(labelText: context.tr('Bobot (kg)', 'Weight (kg)')),
+                ),
               ),
-            ),
-          ],
-        ),
-        if (_error != null) Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-        const SizedBox(height: 12),
-        FilledButton(
-          key: const Key('save-animal'),
-          onPressed: _busy
-              ? null
-              : () async {
-                  setState(() {
-                    _busy = true;
-                    _error = null;
-                  });
-                  try {
-                    await ref.read(masjidApiProvider).createQurbanAnimal(widget.ctx.id, {
-                      'hijri_year': widget.hijriYear,
-                      'code': _code.text.trim(),
-                      'species': _species,
-                      if (_weight.text.trim().isNotEmpty) 'weight_kg': double.tryParse(_weight.text.trim()),
-                      'price_idr': int.tryParse(_price.text.trim()) ?? 0,
+              const SizedBox(width: 10),
+              Expanded(
+                child: TextField(
+                  controller: _price,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: InputDecoration(labelText: context.tr('Harga (Rp)', 'Price (Rp)')),
+                ),
+              ),
+            ],
+          ),
+          if (_error != null) Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+          const SizedBox(height: 12),
+          FilledButton(
+            key: const Key('save-animal'),
+            onPressed: _busy
+                ? null
+                : () async {
+                    setState(() {
+                      _busy = true;
+                      _error = null;
                     });
-                    ref.invalidate(qurbanProvider((widget.ctx.id, widget.hijriYear)));
-                    if (context.mounted) Navigator.pop(context);
-                  } on ApiException catch (e) {
-                    setState(() => _error = e.message);
-                  } finally {
-                    if (mounted) setState(() => _busy = false);
-                  }
-                },
-          child: const Text('Simpan Hewan'),
-        ),
-      ],
-    ),
-  );
+                    try {
+                      await ref.read(masjidApiProvider).createQurbanAnimal(widget.ctx.id, {
+                        'hijri_year': widget.hijriYear,
+                        'code': _code.text.trim(),
+                        'species': _species,
+                        if (_weight.text.trim().isNotEmpty) 'weight_kg': double.tryParse(_weight.text.trim()),
+                        'price_idr': int.tryParse(_price.text.trim()) ?? 0,
+                      });
+                      ref.invalidate(qurbanProvider((widget.ctx.id, widget.hijriYear)));
+                      if (context.mounted) Navigator.pop(context);
+                    } on ApiException catch (e) {
+                      setState(() => _error = e.message);
+                    } finally {
+                      if (mounted) setState(() => _busy = false);
+                    }
+                  },
+            child: Text(context.tr('Simpan Hewan', 'Save Animal')),
+          ),
+        ],
+      ),
+    );
+  });
 }
 
 class _ParticipantSheet extends ConsumerStatefulWidget {
@@ -971,88 +1164,101 @@ class _ParticipantSheet extends ConsumerStatefulWidget {
 
 class _ParticipantSheetState extends ConsumerState<_ParticipantSheet> {
   final _name = TextEditingController();
-  final _shares = TextEditingController(text: '1');
+  final _shares = TextEditingController();
   final _amount = TextEditingController();
   String _payment = 'paid';
   bool _busy = false;
   String? _error;
 
   @override
-  Widget build(BuildContext context) => SingleChildScrollView(
-    padding: EdgeInsets.fromLTRB(20, 0, 20, 20 + MediaQuery.viewInsetsOf(context).bottom),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text('Shohibul Qurban (${widget.animalCode})', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 12),
-        TextField(
-          key: const Key('participant-name'),
-          controller: _name,
-          decoration: const InputDecoration(labelText: 'Nama Pekurban *'),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                key: const Key('participant-shares'),
-                controller: _shares,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: InputDecoration(labelText: 'Bagian (maks ${widget.remaining})'),
+  Widget build(BuildContext context) => mosqueScoped(context, (context) {
+    final lang = context.lang;
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(20, 0, 20, 20 + MediaQuery.viewInsetsOf(context).bottom),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            context.tr('Shohibul Qurban (${widget.animalCode})', 'Qurban Participant (${widget.animalCode})'),
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            key: const Key('participant-name'),
+            controller: _name,
+            decoration: InputDecoration(labelText: context.tr('Nama Pekurban *', 'Participant Name *')),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  key: const Key('participant-shares'),
+                  controller: _shares,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: InputDecoration(
+                    labelText: context.tr('Bagian (maks ${widget.remaining})', 'Shares (max ${widget.remaining})'),
+                    hintText: context.tr('Contoh: 1', 'Example: 1'),
+                    floatingLabelBehavior: FloatingLabelBehavior.always,
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: TextField(
-                key: const Key('participant-amount'),
-                controller: _amount,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: const InputDecoration(labelText: 'Nominal (Rp)'),
+              const SizedBox(width: 10),
+              Expanded(
+                child: TextField(
+                  key: const Key('participant-amount'),
+                  controller: _amount,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: InputDecoration(labelText: context.tr('Nominal (Rp)', 'Amount (Rp)')),
+                ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        DropdownButtonFormField<String>(
-          initialValue: _payment,
-          decoration: const InputDecoration(labelText: 'Status Pembayaran'),
-          items: [for (final e in _paymentLabels.entries) DropdownMenuItem(value: e.key, child: Text(e.value.$1))],
-          onChanged: (v) => setState(() => _payment = v ?? _payment),
-        ),
-        if (_error != null) Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-        const SizedBox(height: 12),
-        FilledButton(
-          key: const Key('save-participant'),
-          onPressed: _busy
-              ? null
-              : () async {
-                  setState(() {
-                    _busy = true;
-                    _error = null;
-                  });
-                  try {
-                    await ref.read(masjidApiProvider).createQurbanParticipant(widget.ctx.id, widget.animalId, {
-                      'name': _name.text.trim(),
-                      'shares': int.tryParse(_shares.text.trim()) ?? 1,
-                      'amount_idr': int.tryParse(_amount.text.trim()) ?? 0,
-                      'payment_status': _payment,
+            ],
+          ),
+          const SizedBox(height: 10),
+          DropdownButtonFormField<String>(
+            initialValue: _payment,
+            decoration: InputDecoration(labelText: context.tr('Status Pembayaran', 'Payment Status')),
+            items: [
+              for (final e in _paymentLabels.entries)
+                DropdownMenuItem(value: e.key, child: Text(_paymentBadge(e.key, lang).$1)),
+            ],
+            onChanged: (v) => setState(() => _payment = v ?? _payment),
+          ),
+          if (_error != null) Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+          const SizedBox(height: 12),
+          FilledButton(
+            key: const Key('save-participant'),
+            onPressed: _busy
+                ? null
+                : () async {
+                    setState(() {
+                      _busy = true;
+                      _error = null;
                     });
-                    ref.invalidate(qurbanProvider((widget.ctx.id, widget.hijriYear)));
-                    if (context.mounted) Navigator.pop(context);
-                  } on ApiException catch (e) {
-                    setState(() => _error = e.message);
-                  } finally {
-                    if (mounted) setState(() => _busy = false);
-                  }
-                },
-          child: const Text('Simpan Pekurban'),
-        ),
-      ],
-    ),
-  );
+                    try {
+                      await ref.read(masjidApiProvider).createQurbanParticipant(widget.ctx.id, widget.animalId, {
+                        'name': _name.text.trim(),
+                        'shares': int.tryParse(_shares.text.trim()) ?? 1,
+                        'amount_idr': int.tryParse(_amount.text.trim()) ?? 0,
+                        'payment_status': _payment,
+                      });
+                      ref.invalidate(qurbanProvider((widget.ctx.id, widget.hijriYear)));
+                      if (context.mounted) Navigator.pop(context);
+                    } on ApiException catch (e) {
+                      setState(() => _error = e.message);
+                    } finally {
+                      if (mounted) setState(() => _busy = false);
+                    }
+                  },
+            child: Text(context.tr('Simpan Pekurban', 'Save Participant')),
+          ),
+        ],
+      ),
+    );
+  });
 }
 
 class _CouponBatchSheet extends ConsumerStatefulWidget {
@@ -1065,65 +1271,79 @@ class _CouponBatchSheet extends ConsumerStatefulWidget {
 }
 
 class _CouponBatchSheetState extends ConsumerState<_CouponBatchSheet> {
-  final _prefix = TextEditingController(text: 'Warga Sekitar Masjid');
-  final _count = TextEditingController(text: '10');
+  final _prefix = TextEditingController();
+  final _count = TextEditingController();
   bool _busy = false;
   String? _error;
 
   @override
-  Widget build(BuildContext context) => SingleChildScrollView(
-    padding: EdgeInsets.fromLTRB(20, 0, 20, 20 + MediaQuery.viewInsetsOf(context).bottom),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text('Terbitkan Kupon QR Kurban', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 12),
-        TextField(
-          key: const Key('coupon-prefix'),
-          controller: _prefix,
-          decoration: const InputDecoration(labelText: 'Nama Penerima / Label Kelompok *'),
-        ),
-        const SizedBox(height: 10),
-        TextField(
-          key: const Key('coupon-count'),
-          controller: _count,
-          keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          decoration: const InputDecoration(labelText: 'Jumlah Kupon (1 hingga 200)'),
-        ),
-        if (_error != null) Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-        const SizedBox(height: 12),
-        FilledButton(
-          key: const Key('save-coupons'),
-          onPressed: _busy
-              ? null
-              : () async {
-                  setState(() {
-                    _busy = true;
-                    _error = null;
-                  });
-                  try {
-                    final n = (int.tryParse(_count.text.trim()) ?? 1).clamp(1, 200);
-                    await ref.read(masjidApiProvider).createCoupons(widget.ctx.id, {
-                      'program': 'qurban',
-                      'hijri_year': widget.hijriYear,
-                      if (n == 1) 'recipient_name': _prefix.text.trim() else ...{
-                        'batch_count': n,
-                        'recipient_prefix': _prefix.text.trim(),
-                      },
+  Widget build(BuildContext context) => mosqueScoped(
+    context,
+    (context) => SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(20, 0, 20, 20 + MediaQuery.viewInsetsOf(context).bottom),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            context.tr('Terbitkan Kupon QR Kurban', 'Issue Qurban QR Coupons'),
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            key: const Key('coupon-prefix'),
+            controller: _prefix,
+            decoration: InputDecoration(
+              labelText: context.tr('Nama Penerima / Label Kelompok *', 'Recipient Name / Group Label *'),
+              hintText: context.tr('Contoh: Warga Sekitar Masjid', 'Example: Local Residents'),
+              floatingLabelBehavior: FloatingLabelBehavior.always,
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            key: const Key('coupon-count'),
+            controller: _count,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            decoration: InputDecoration(
+              labelText: context.tr('Jumlah Kupon (1 hingga 200)', 'Number of Coupons (1 to 200)'),
+              hintText: context.tr('Contoh: 10', 'Example: 10'),
+              floatingLabelBehavior: FloatingLabelBehavior.always,
+            ),
+          ),
+          if (_error != null) Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+          const SizedBox(height: 12),
+          FilledButton(
+            key: const Key('save-coupons'),
+            onPressed: _busy
+                ? null
+                : () async {
+                    setState(() {
+                      _busy = true;
+                      _error = null;
                     });
-                    ref.invalidate(couponsProvider((widget.ctx.id, 'qurban', widget.hijriYear)));
-                    if (context.mounted) Navigator.pop(context);
-                  } on ApiException catch (e) {
-                    setState(() => _error = e.message);
-                  } finally {
-                    if (mounted) setState(() => _busy = false);
-                  }
-                },
-          child: const Text('Terbitkan Kupon QR'),
-        ),
-      ],
+                    try {
+                      final n = (int.tryParse(_count.text.trim()) ?? 1).clamp(1, 200);
+                      await ref.read(masjidApiProvider).createCoupons(widget.ctx.id, {
+                        'program': 'qurban',
+                        'hijri_year': widget.hijriYear,
+                        if (n == 1) 'recipient_name': _prefix.text.trim() else ...{
+                          'batch_count': n,
+                          'recipient_prefix': _prefix.text.trim(),
+                        },
+                      });
+                      ref.invalidate(couponsProvider((widget.ctx.id, 'qurban', widget.hijriYear)));
+                      if (context.mounted) Navigator.pop(context);
+                    } on ApiException catch (e) {
+                      setState(() => _error = e.message);
+                    } finally {
+                      if (mounted) setState(() => _busy = false);
+                    }
+                  },
+            child: Text(context.tr('Terbitkan Kupon QR', 'Issue QR Coupons')),
+          ),
+        ],
+      ),
     ),
   );
 }
@@ -1142,8 +1362,9 @@ class _CouponQrSheetState extends State<_CouponQrSheet> {
   bool _saving = false;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => mosqueScoped(context, (context) {
     final c = widget.coupon;
+    final lang = context.lang;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
@@ -1166,9 +1387,9 @@ class _CouponQrSheetState extends State<_CouponQrSheet> {
                       widget.mosqueName,
                       style: const TextStyle(color: BrandColors.dark, fontWeight: FontWeight.w800, fontSize: 16),
                     ),
-                    const Text(
-                      'KUPON DISTRIBUSI KURBAN',
-                      style: TextStyle(color: BrandColors.goldText, fontWeight: FontWeight.w700, fontSize: 11.5),
+                    Text(
+                      context.tr('KUPON DISTRIBUSI KURBAN', 'QURBAN DISTRIBUTION COUPON'),
+                      style: const TextStyle(color: BrandColors.goldText, fontWeight: FontWeight.w700, fontSize: 11.5),
                     ),
                     const SizedBox(height: 12),
                     QrImageView(data: '${c['code']}', size: 160),
@@ -1189,20 +1410,25 @@ class _CouponQrSheetState extends State<_CouponQrSheet> {
                   : () async {
                       setState(() => _saving = true);
                       try {
-                        final path = await saveBoundaryPng(_key, 'kupon-${c['code']}.png');
-                        if (context.mounted) showSnack(context, 'Kupon PNG tersimpan: $path');
+                        final path = await saveBoundaryPng(_key, 'kupon-${c['code']}.png', lang: lang);
+                        if (context.mounted) {
+                          showSnack(
+                            context,
+                            lang == AppLanguage.en ? 'Coupon PNG saved: $path' : 'Kupon PNG tersimpan: $path',
+                          );
+                        }
                       } finally {
                         if (mounted) setState(() => _saving = false);
                       }
                     },
               icon: const Icon(Icons.image_outlined),
-              label: const Text('Simpan Kartu Kupon PNG'),
+              label: Text(context.tr('Simpan Kartu Kupon PNG', 'Save Coupon Card PNG')),
             ),
           ],
         ),
       ),
     );
-  }
+  });
 }
 
 class _QrScannerPage extends StatefulWidget {
@@ -1216,17 +1442,20 @@ class _QrScannerPageState extends State<_QrScannerPage> {
   bool _popped = false;
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Pindai QR Kupon'), centerTitle: true),
-    body: MobileScanner(
-      onDetect: (capture) {
-        if (_popped) return;
-        final raw = capture.barcodes.firstOrNull?.rawValue;
-        if (raw != null && raw.trim().isNotEmpty) {
-          _popped = true;
-          Navigator.of(context).pop(raw.trim());
-        }
-      },
+  Widget build(BuildContext context) => mosqueScoped(
+    context,
+    (context) => Scaffold(
+      appBar: AppBar(title: Text(context.tr('Pindai QR Kupon', 'Scan Coupon QR')), centerTitle: true),
+      body: MobileScanner(
+        onDetect: (capture) {
+          if (_popped) return;
+          final raw = capture.barcodes.firstOrNull?.rawValue;
+          if (raw != null && raw.trim().isNotEmpty) {
+            _popped = true;
+            Navigator.of(context).pop(raw.trim());
+          }
+        },
+      ),
     ),
   );
 }
@@ -1242,19 +1471,19 @@ class _HijriYearBar extends StatelessWidget {
     child: Row(
       children: [
         IconButton(
-          tooltip: 'Tahun sebelumnya',
+          tooltip: context.tr('Tahun sebelumnya', 'Previous year'),
           icon: const Icon(Icons.chevron_left),
           onPressed: () => onChanged(year - 1),
         ),
         Expanded(
           child: Text(
-            'Tahun $year H',
+            context.tr('Tahun $year H', 'Year $year AH'),
             textAlign: TextAlign.center,
             style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
           ),
         ),
         IconButton(
-          tooltip: 'Tahun berikutnya',
+          tooltip: context.tr('Tahun berikutnya', 'Next year'),
           icon: const Icon(Icons.chevron_right),
           onPressed: () => onChanged(year + 1),
         ),

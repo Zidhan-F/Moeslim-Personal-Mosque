@@ -1,5 +1,6 @@
 import 'package:shared_prayer/shared_prayer.dart';
 
+import '../content/l10n_core.dart';
 import '../storage/key_value_store.dart';
 
 class AutoDndConfig {
@@ -68,20 +69,29 @@ class AutoDndConfig {
 class AutoDndWindow {
   final Prayer prayer;
   final String label;
+  final String? labelEn;
   final DateTime start;
   final DateTime end;
 
   const AutoDndWindow({
     required this.prayer,
     required this.label,
+    this.labelEn,
     required this.start,
     required this.end,
   });
 
+  String labelFor(AppLanguage lang) =>
+      lang == AppLanguage.en && (labelEn?.isNotEmpty ?? false) ? labelEn! : label;
+
   bool contains(DateTime t) => !t.isBefore(start) && t.isBefore(end);
 }
 
-List<AutoDndWindow> buildDailyDndWindows(AutoDndConfig config, PrayerTimes times) {
+List<AutoDndWindow> buildDailyDndWindows(
+  AutoDndConfig config,
+  PrayerTimes times, {
+  AppLanguage lang = AppLanguage.id,
+}) {
   final isFriday = times.fajr.weekday == DateTime.friday;
   final out = <AutoDndWindow>[];
   for (final p in Prayer.values) {
@@ -91,11 +101,13 @@ List<AutoDndWindow> buildDailyDndWindows(AutoDndConfig config, PrayerTimes times
     final after = Duration(
       minutes: (isFriday && p == Prayer.dhuhr) ? config.fridayDurationMinutes : config.minutesAfterAdzan,
     );
-    final label = (isFriday && p == Prayer.dhuhr) ? 'Salat Jumat' : 'Salat ${p.label}';
+    final labelId = (isFriday && p == Prayer.dhuhr) ? 'Salat Jumat' : 'Salat ${p.label}';
+    final labelEn = (isFriday && p == Prayer.dhuhr) ? 'Friday Prayer (Jumu\'ah)' : '${p.labelEn} Prayer';
     out.add(
       AutoDndWindow(
         prayer: p,
-        label: label,
+        label: tr(lang, labelId, labelEn),
+        labelEn: labelEn,
         start: adzanTime.subtract(before),
         end: adzanTime.add(after),
       ),

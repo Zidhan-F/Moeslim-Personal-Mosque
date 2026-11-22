@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:moeslim_mobile/app.dart';
 import 'package:moeslim_mobile/core/adzan_service.dart';
 import 'package:moeslim_mobile/core/location_service.dart';
@@ -213,5 +214,86 @@ void main() {
 
     expect(find.byKey(const Key('active-adzan-banner')), findsNothing);
     expect(backend.stopCalls, 1);
+  });
+
+  testWidgets('pop-up alarm adzan tampil di atas sub-halaman (Pengaturan) dan dapat dimatikan', (tester) async {
+    final store = InMemoryStore();
+    final backend = FakeAdzanAlarmBackend();
+    await pumpApp(tester, store: store, adzanBackend: backend);
+
+    // Buka halaman Pengaturan Jadwal (bukan HomeShell) dan tekan Uji Pop-up Alarm.
+    final nav = tester.state<NavigatorState>(find.byType(Navigator).first);
+    nav.push(MaterialPageRoute(builder: (_) => const PrayerSettingsPage()));
+    await tester.pumpAndSettle();
+
+    final testBtn = find.byKey(const Key('test-adzan-alarm'));
+    await tester.ensureVisible(testBtn);
+    await tester.tap(testBtn);
+    await tester.pumpAndSettle();
+
+    // Pop-up alarm tampil mengambang di atas halaman Pengaturan Jadwal!
+    expect(find.byKey(const Key('active-adzan-banner')), findsOneWidget);
+    expect(find.textContaining('Waktu Adzan Dzuhur'), findsOneWidget);
+    expect(find.byKey(const Key('stop-adzan-alarm')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('stop-adzan-alarm')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('active-adzan-banner')), findsNothing);
+    expect(backend.stopCalls, 1);
+
+    // Simulasi alarm berbunyi dari background native receiver -> pop-up langsung muncul!
+    backend.emitNativeAlarm(Prayer.maghrib);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('active-adzan-banner')), findsOneWidget);
+    expect(find.textContaining('Waktu Adzan Maghrib'), findsOneWidget);
+
+    // Simulasi pengguna menekan Matikan Adzan dari notifikasi Android -> pop-up langsung hilang!
+    backend.emitNativeAlarm(null);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('active-adzan-banner')), findsNothing);
+  });
+
+  testWidgets('tema pop-up notifikasi adzan mengikuti tema Auto/Sistem HP (Terang & Gelap) serta pilihan manual', (
+    tester,
+  ) async {
+    final store = InMemoryStore();
+    await SettingsRepository(store).save(
+      PersonalSettings.defaults.copyWith(onboardingDone: true, themeMode: AppThemeMode.system),
+    );
+    final backend = FakeAdzanAlarmBackend();
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.light;
+    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+
+    final container = await pumpApp(tester, store: store, adzanBackend: backend);
+
+    // 1. Mode Auto (system) + HP Terang -> pop-up menggunakan permukaan terang (putih).
+    backend.emitNativeAlarm(Prayer.dhuhr);
+    await tester.pumpAndSettle();
+    expect(backend.lastThemeMode, AppThemeMode.system);
+    var surface = tester.widget<Material>(find.byKey(const Key('active-adzan-popup-surface')));
+    expect(surface.color, BrandColors.white);
+
+    // 2. Mode Auto (system) + HP Gelap -> pop-up otomatis beralih ke permukaan gelap (nightCard).
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+    await tester.pumpAndSettle();
+    surface = tester.widget<Material>(find.byKey(const Key('active-adzan-popup-surface')));
+    expect(surface.color, BrandColors.nightCard);
+
+    // 3. Pilihan manual Terang (light) pada HP Gelap -> pop-up tetap terang & tersinkron ke backend native.
+    final current = await SettingsRepository(store).load();
+    await container.read(settingsProvider.notifier).save(current.copyWith(themeMode: AppThemeMode.light));
+    await tester.pumpAndSettle();
+    surface = tester.widget<Material>(find.byKey(const Key('active-adzan-popup-surface')));
+    expect(surface.color, BrandColors.white);
+    expect(backend.lastThemeMode, AppThemeMode.light);
+
+    // 4. Pilihan manual Gelap (dark) pada HP Terang -> pop-up gelap & tersinkron ke backend native.
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.light;
+    await container.read(settingsProvider.notifier).save(current.copyWith(themeMode: AppThemeMode.dark));
+    await tester.pumpAndSettle();
+    surface = tester.widget<Material>(find.byKey(const Key('active-adzan-popup-surface')));
+    expect(surface.color, BrandColors.nightCard);
+    expect(backend.lastThemeMode, AppThemeMode.dark);
   });
 }

@@ -5,8 +5,13 @@ import 'package:personal_core/personal_core.dart';
 import 'package:shared_prayer/shared_prayer.dart';
 
 import '../../core/format.dart';
+import '../../core/l10n.dart';
+import '../../core/location_service.dart';
 import '../../core/providers.dart';
 import '../../ui/components.dart';
+
+const _defaultQuoteId = "Ingatlah, hanya dengan mengingat Allah hati menjadi tenteram. (QS. Ar-Ra'd: 28)";
+const _defaultQuoteEn = "Unquestionably, by the remembrance of Allah hearts are assured. (Qur'an Ar-Ra'd: 28)";
 
 class HomeWidgetPage extends ConsumerStatefulWidget {
   const HomeWidgetPage({super.key});
@@ -40,21 +45,52 @@ class _HomeWidgetPageState extends ConsumerState<HomeWidgetPage> {
     if (mounted) setState(() => _config = next);
   }
 
+  String _styleLabel(BuildContext context, HomeWidgetStyle style) => switch (style) {
+    HomeWidgetStyle.compactPrayer => context.tr(style.label, 'Compact (Next Prayer)'),
+    HomeWidgetStyle.prayerAndQuote => context.tr(style.label, 'Prayer & Daily Verse'),
+    HomeWidgetStyle.fullFiveTimes => context.tr(style.label, 'All 5 Daily Prayers'),
+  };
+
+  String _styleDescription(BuildContext context, HomeWidgetStyle style) => switch (style) {
+    HomeWidgetStyle.compactPrayer => context.tr(
+      style.description,
+      'Shows the next prayer time, countdown, and location.',
+    ),
+    HomeWidgetStyle.prayerAndQuote => context.tr(
+      style.description,
+      'Shows the next prayer time along with a daily verse or supplication.',
+    ),
+    HomeWidgetStyle.fullFiveTimes => context.tr(
+      style.description,
+      'Displays Fajr, Dhuhr, Asr, Maghrib, and Isha times for today.',
+    ),
+  };
+
   Future<void> _syncFromLivePrayer() async {
     final status = ref.read(prayerStatusProvider).value;
     final settings = ref.read(settingsProvider).value;
     if (status == null || settings == null) return;
-    final hijri = HijriDate.fromGregorian(status.now, offsetDays: settings.hijriOffset).toString();
+    final lang = ref.read(appLanguageProvider);
+    final hijri = HijriDate.fromGregorian(status.now, offsetDays: settings.hijriOffset).format(lang);
+    final quote = lang == AppLanguage.en ? _defaultQuoteEn : _defaultQuoteId;
     final updated = _config.copyWith(
-      lastSyncedNextPrayer: status.nextPrayer.label,
+      lastSyncedNextPrayer: status.nextPrayer.labelFor(lang),
       lastSyncedNextTime: hhmm(status.nextTime),
-      lastSyncedLocation: settings.effectiveLocationName,
+      lastSyncedLocation: localizeLocationLabel(settings.effectiveLocationName, lang),
       lastSyncedHijri: hijri,
+      lastSyncedQuote: quote,
     );
     await _save(updated);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Data widget layar utama diperbarui dengan jadwal salat aktif.')),
+      SnackBar(
+        content: Text(
+          context.tr(
+            'Data widget layar utama diperbarui dengan jadwal salat aktif.',
+            'Home screen widget updated with active prayer times.',
+          ),
+        ),
+      ),
     );
   }
 
@@ -64,22 +100,27 @@ class _HomeWidgetPageState extends ConsumerState<HomeWidgetPage> {
     final t = Theme.of(context).textTheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Widget Layar Utama Android'), centerTitle: true),
+      appBar: AppBar(
+        title: Text(context.tr('Widget Layar Utama Android', 'Android Home Screen Widget')),
+        centerTitle: true,
+      ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                const SectionHeader('Pratinjau Widget Layar Utama'),
+                SectionHeader(context.tr('Pratinjau Widget Layar Utama', 'Home Widget Preview')),
                 _WidgetPreviewCard(config: _config, status: status),
                 const SizedBox(height: 12),
                 FilledButton.icon(
                   key: const Key('sync-home-widget'),
                   onPressed: _syncFromLivePrayer,
                   icon: const Icon(MoeslimIcons.refresh),
-                  label: const Text('Sinkronkan Jadwal ke Widget Sekarang'),
+                  label: Text(
+                    context.tr('Sinkronkan Jadwal ke Widget Sekarang', 'Sync Schedule to Widget Now'),
+                  ),
                 ),
-                const SectionHeader('Gaya Tampilan Widget'),
+                SectionHeader(context.tr('Gaya Tampilan Widget', 'Widget Layout Style')),
                 for (final style in HomeWidgetStyle.values)
                   Card(
                     child: ListTile(
@@ -88,41 +129,50 @@ class _HomeWidgetPageState extends ConsumerState<HomeWidgetPage> {
                         _config.style == style ? MoeslimIcons.berhasil : Icons.circle_outlined,
                         color: _config.style == style ? BrandColors.emerald : null,
                       ),
-                      title: Text(style.label, style: const TextStyle(fontWeight: FontWeight.w600)),
-                      subtitle: Text(style.description),
+                      title: Text(_styleLabel(context, style), style: const TextStyle(fontWeight: FontWeight.w600)),
+                      subtitle: Text(_styleDescription(context, style)),
                       onTap: () => _save(_config.copyWith(style: style)),
                     ),
                   ),
-                const SectionHeader('Opsi Informasi Widget'),
+                SectionHeader(context.tr('Opsi Informasi Widget', 'Widget Display Options')),
                 Card(
                   child: Column(
                     children: [
                       SwitchListTile(
-                        title: const Text('Tampilkan Tanggal Hijriah'),
+                        title: Text(context.tr('Tampilkan Tanggal Hijriah', 'Show Hijri Date')),
                         value: _config.showHijriDate,
                         onChanged: (v) => _save(_config.copyWith(showHijriDate: v)),
                       ),
                       SwitchListTile(
-                        title: const Text('Tampilkan Lokasi Salat'),
+                        title: Text(context.tr('Tampilkan Lokasi Salat', 'Show Prayer Location')),
                         value: _config.showLocation,
                         onChanged: (v) => _save(_config.copyWith(showLocation: v)),
                       ),
                       SwitchListTile(
-                        title: const Text('Latar Zamrud Gelap (Kontras Tinggi)'),
+                        title: Text(
+                          context.tr('Latar Zamrud Gelap (Kontras Tinggi)', 'Dark Emerald Surface (High Contrast)'),
+                        ),
                         value: _config.darkSurface,
                         onChanged: (v) => _save(_config.copyWith(darkSurface: v)),
                       ),
                     ],
                   ),
                 ),
-                const SectionHeader('Cara Memasang di Layar Utama Android'),
+                SectionHeader(
+                  context.tr('Cara Memasang di Layar Utama Android', 'How to Add on Android Home Screen'),
+                ),
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Text(
-                      '1. Tekan tahan area kosong di Layar Utama (Home Screen) ponsel Android Anda.\n'
-                      '2. Pilih menu "Widget" lalu cari "Moeslim PM".\n'
-                      '3. Tarik widget Jadwal Salat Moeslim PM ke layar utama Anda.',
+                      context.tr(
+                        '1. Tekan tahan area kosong di Layar Utama (Home Screen) ponsel Android Anda.\n'
+                            '2. Pilih menu "Widget" lalu cari "Moeslim PM".\n'
+                            '3. Tarik widget Jadwal Salat Moeslim PM ke layar utama Anda.',
+                        '1. Press and hold an empty area on your Android Home Screen.\n'
+                            '2. Select "Widgets" and search for "Moeslim PM".\n'
+                            '3. Drag the Moeslim PM Prayer Times widget onto your home screen.',
+                      ),
                       style: t.bodyMedium,
                     ),
                   ),
@@ -138,6 +188,31 @@ class _WidgetPreviewCard extends StatelessWidget {
   final PrayerStatus? status;
 
   const _WidgetPreviewCard({required this.config, required this.status});
+
+  String _previewPrayer(BuildContext context) {
+    if (!context.isEn) return config.lastSyncedNextPrayer;
+    return switch (config.lastSyncedNextPrayer) {
+      'Subuh' => 'Fajr',
+      'Dzuhur' => 'Dhuhr',
+      'Ashar' => 'Asr',
+      'Isya' => 'Isha',
+      _ => config.lastSyncedNextPrayer,
+    };
+  }
+
+  String _previewHijri(BuildContext context) {
+    if (!context.isEn) return config.lastSyncedHijri;
+    if (config.lastSyncedHijri.endsWith(' H')) {
+      return '${config.lastSyncedHijri.substring(0, config.lastSyncedHijri.length - 2)} AH';
+    }
+    return config.lastSyncedHijri;
+  }
+
+  String _previewQuote(BuildContext context) {
+    if (context.isEn && config.lastSyncedQuote == _defaultQuoteId) return _defaultQuoteEn;
+    if (!context.isEn && config.lastSyncedQuote == _defaultQuoteEn) return _defaultQuoteId;
+    return config.lastSyncedQuote;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -167,8 +242,8 @@ class _WidgetPreviewCard extends StatelessWidget {
                 Flexible(
                   child: Text(
                     [
-                      if (config.showLocation) config.lastSyncedLocation,
-                      if (config.showHijriDate) config.lastSyncedHijri,
+                      if (config.showLocation) localizeLocationLabel(config.lastSyncedLocation, context.lang),
+                      if (config.showHijriDate) _previewHijri(context),
                     ].join(' · '),
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(color: fg.withValues(alpha: .8), fontSize: 12),
@@ -183,9 +258,12 @@ class _WidgetPreviewCard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Salat Berikutnya', style: TextStyle(color: fg.withValues(alpha: .75), fontSize: 12)),
                   Text(
-                    '${config.lastSyncedNextPrayer} · ${config.lastSyncedNextTime}',
+                    context.tr('Salat Berikutnya', 'Next Prayer'),
+                    style: TextStyle(color: fg.withValues(alpha: .75), fontSize: 12),
+                  ),
+                  Text(
+                    '${_previewPrayer(context)} · ${config.lastSyncedNextTime}',
                     style: TextStyle(color: fg, fontSize: 22, fontWeight: FontWeight.w800),
                   ),
                 ],
@@ -207,7 +285,7 @@ class _WidgetPreviewCard extends StatelessWidget {
           if (config.style == HomeWidgetStyle.prayerAndQuote) ...[
             const SizedBox(height: 10),
             Text(
-              config.lastSyncedQuote,
+              _previewQuote(context),
               style: TextStyle(color: fg.withValues(alpha: .9), fontSize: 12, fontStyle: FontStyle.italic),
             ),
           ],
@@ -216,17 +294,14 @@ class _WidgetPreviewCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                for (final (lbl, tm) in [
-                  ('Subuh', status!.today.fajr),
-                  ('Dzuhur', status!.today.dhuhr),
-                  ('Ashar', status!.today.asr),
-                  ('Maghrib', status!.today.maghrib),
-                  ('Isya', status!.today.isha),
-                ])
+                for (final p in Prayer.values)
                   Column(
                     children: [
-                      Text(lbl, style: TextStyle(color: fg.withValues(alpha: .75), fontSize: 11)),
-                      Text(hhmm(tm), style: TextStyle(color: fg, fontWeight: FontWeight.w700, fontSize: 12)),
+                      Text(context.prayerLabel(p), style: TextStyle(color: fg.withValues(alpha: .75), fontSize: 11)),
+                      Text(
+                        hhmm(status!.today.timeOf(p)),
+                        style: TextStyle(color: fg, fontWeight: FontWeight.w700, fontSize: 12),
+                      ),
                     ],
                   ),
               ],

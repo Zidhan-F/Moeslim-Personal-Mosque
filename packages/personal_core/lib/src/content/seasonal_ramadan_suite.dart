@@ -279,8 +279,21 @@ class EidSunnahItem {
   final String id;
   final String title;
   final String description;
+  final String? titleEn;
+  final String? descriptionEn;
 
-  const EidSunnahItem(this.id, this.title, this.description);
+  const EidSunnahItem(
+    this.id,
+    this.title,
+    this.description, {
+    this.titleEn,
+    this.descriptionEn,
+  });
+
+  String titleFor(AppLanguage lang) =>
+      lang == AppLanguage.en && (titleEn?.isNotEmpty ?? false) ? titleEn! : title;
+  String descriptionFor(AppLanguage lang) =>
+      lang == AppLanguage.en && (descriptionEn?.isNotEmpty ?? false) ? descriptionEn! : description;
 }
 
 const List<EidSunnahItem> eidSunnahChecklistCatalog = [
@@ -288,31 +301,43 @@ const List<EidSunnahItem> eidSunnahChecklistCatalog = [
     'zakat_fitrah',
     'Menunaikan Zakat Fitrah Sebelum Salat Idul Fitri',
     'Wajib ditunaikan sebelum pelaksanaan Salat Idul Fitri agar sah sebagai zakat pembersih jiwa (HR. Abu Dawud no. 1609).',
+    titleEn: 'Pay Zakat al-Fitr Before the Eid al-Fitr Prayer',
+    descriptionEn: 'Must be paid before the Eid al-Fitr prayer so it counts as obligatory purification of the fast (Sunan Abi Dawud 1609).',
   ),
   EidSunnahItem(
     'mandi_id',
     'Mandi Sunnah Pagi Hari Raya & Memakai Pakaian Terbaik',
     'Diriwayatkan dari Ibnu Umar RA bahwa beliau mandi dan memakai pakaian terbaiknya pada pagi Hari Raya.',
+    titleEn: 'Take the Eid Morning Bath (Ghusl) & Wear Your Best Clothes',
+    descriptionEn: 'It is narrated from Ibn Umar (may Allah be pleased with him) that he bathed and wore his finest clothes on Eid morning.',
   ),
   EidSunnahItem(
     'makan_sebelum_id',
     'Makan Kurma Ganjil (Idul Fitri) atau Menunda Makan (Idul Adha)',
     'Pada Idul Fitri disunnahkan makan kurma ganjil sebelum berangkat; pada Idul Adha disunnahkan tidak makan hingga selesai salat Id (HR. Bukhari no. 953).',
+    titleEn: 'Eat Odd Dates (Eid al-Fitr) or Delay Eating (Eid al-Adha)',
+    descriptionEn: 'On Eid al-Fitr, it is Sunnah to eat an odd number of dates before leaving; on Eid al-Adha, delay eating until after the Eid prayer (Sahih al-Bukhari 953).',
   ),
   EidSunnahItem(
     'takbiran',
     'Mengumandangkan Takbir Hari Raya',
     'Bertakbir sejak malam Id hingga imam naik mimbar Salat Id (dan hingga akhir Hari Tasyrik 13 Dzulhijjah pada Idul Adha).',
+    titleEn: 'Recite the Eid Takbir',
+    descriptionEn: 'Chant the Takbir from Eid eve until the imam begins the Eid sermon (and through the Days of Tashriq until 13 Dhul-Hijjah on Eid al-Adha).',
   ),
   EidSunnahItem(
     'jalan_berbeda',
     'Menempuh Jalan Berangkat dan Pulang yang Berbeda',
     'Rasulullah SAW apabila keluar pada Hari Raya mengambil jalan yang berbeda saat berangkat dan pulang (HR. Bukhari no. 986).',
+    titleEn: 'Take Different Routes Going to and Returning from Prayer',
+    descriptionEn: 'When the Prophet (peace be upon him) went out for Eid prayer, he returned by a different route (Sahih al-Bukhari 986).',
   ),
   EidSunnahItem(
     'tahniah_id',
     'Mengucapkan Tahniah: Taqabbalallahu Minna wa Minkum',
     'Doa para sahabat saat bertemu di Hari Raya: "Semoga Allah menerima amal ibadah kami dan kalian."',
+    titleEn: 'Exchange Eid Greetings: Taqabbalallahu Minna wa Minkum',
+    descriptionEn: 'The greeting of the Companions on Eid: "May Allah accept good deeds from us and from you."',
   ),
 ];
 

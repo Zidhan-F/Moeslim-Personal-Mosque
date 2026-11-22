@@ -3,7 +3,7 @@ import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:personal_core/personal_core.dart';
 
-import '../../core/format.dart';
+import '../../core/l10n.dart';
 import '../../core/providers.dart';
 import '../../ui/components.dart';
 
@@ -47,18 +47,31 @@ class _TrackerPageState extends ConsumerState<TrackerPage> {
     if (mounted) setState(() => _data = _TrackerData(week, streak, best));
   }
 
+  static String _itemLabel(BuildContext context, TrackerItem item) => switch (item) {
+        TrackerItem.subuh => context.tr(item.label, 'Fajr'),
+        TrackerItem.dzuhur => context.tr(item.label, 'Dhuhr'),
+        TrackerItem.ashar => context.tr(item.label, 'Asr'),
+        TrackerItem.maghrib => context.tr(item.label, 'Maghrib'),
+        TrackerItem.isya => context.tr(item.label, 'Isha'),
+        TrackerItem.tilawah => context.tr(item.label, 'Recitation'),
+        TrackerItem.dzikir => context.tr(item.label, 'Morning/evening dhikr'),
+      };
+
   @override
   Widget build(BuildContext context) {
     final target = ref.watch(settingsProvider).value?.tilawahTargetPages ?? 20;
     final d = _data;
     return Scaffold(
-      appBar: AppBar(title: const Text('Catatan Ibadah'), centerTitle: true),
+      appBar: AppBar(title: Text(context.tr('Catatan Ibadah', 'Worship Tracker')), centerTitle: true),
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
             child: PillTabs(
-              labels: const ['Ringkasan', 'Riwayat'],
+              labels: [
+                context.tr('Ringkasan', 'Summary'),
+                context.tr('Riwayat', 'History'),
+              ],
               index: _tab,
               onChanged: (i) => setState(() => _tab = i),
             ),
@@ -78,6 +91,7 @@ class _TrackerPageState extends ConsumerState<TrackerPage> {
     final scheme = Theme.of(context).colorScheme;
     final repo = ref.read(trackerRepoProvider);
     final pages = d.today.tilawahPages;
+    final lang = context.lang;
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
       children: [
@@ -91,7 +105,7 @@ class _TrackerPageState extends ConsumerState<TrackerPage> {
                   children: [
                     const Icon(MoeslimIcons.grafikGaris, color: BrandColors.goldText),
                     const SizedBox(width: 8),
-                    Expanded(child: Text('Progres Mingguan', style: t.titleMedium)),
+                    Expanded(child: Text(context.tr('Progres Mingguan', 'Weekly Progress'), style: t.titleMedium)),
                     Text(
                       '${(d.weekProgress * 100).round()}%',
                       key: const Key('week-progress'),
@@ -99,7 +113,10 @@ class _TrackerPageState extends ConsumerState<TrackerPage> {
                     ),
                   ],
                 ),
-                Text('${shortDate(d.week.first.day)} – ${shortDate(d.week.last.day)}', style: t.bodySmall),
+                Text(
+                  '${context.shortDateText(d.week.first.day)} – ${context.shortDateText(d.week.last.day)}',
+                  style: t.bodySmall,
+                ),
                 const SizedBox(height: 8),
                 LinearProgressIndicator(value: d.weekProgress, minHeight: 8, borderRadius: BorderRadius.circular(4)),
               ],
@@ -115,8 +132,14 @@ class _TrackerPageState extends ConsumerState<TrackerPage> {
                   children: [
                     Icon(MoeslimIcons.centangKotak, color: scheme.primary),
                     const SizedBox(width: 8),
-                    Expanded(child: Text('Checklist Salat', style: t.titleMedium)),
-                    Text('Hari ini, ${shortDate(d.today.day)}', style: t.bodySmall),
+                    Expanded(child: Text(context.tr('Checklist Salat', 'Prayer Checklist'), style: t.titleMedium)),
+                    Text(
+                      context.tr(
+                        'Hari ini, ${context.shortDateText(d.today.day)}',
+                        'Today, ${context.shortDateText(d.today.day)}',
+                      ),
+                      style: t.bodySmall,
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -135,13 +158,15 @@ class _TrackerPageState extends ConsumerState<TrackerPage> {
                             padding: const EdgeInsets.symmetric(vertical: 6),
                             child: Column(
                               children: [
-                                Text(p.label, style: const TextStyle(fontSize: 12)),
+                                Text(_itemLabel(context, p), style: const TextStyle(fontSize: 12)),
                                 const SizedBox(height: 6),
                                 Icon(
                                   d.today.items.contains(p) ? MoeslimIcons.berhasil : Icons.circle_outlined,
                                   color: d.today.items.contains(p) ? scheme.primary : scheme.outline,
                                   size: 30,
-                                  semanticLabel: d.today.items.contains(p) ? '${p.label} sudah' : '${p.label} belum',
+                                  semanticLabel: d.today.items.contains(p)
+                                      ? context.tr('${p.label} sudah', '${_itemLabel(context, p)} completed')
+                                      : context.tr('${p.label} belum', '${_itemLabel(context, p)} not completed'),
                                 ),
                               ],
                             ),
@@ -164,9 +189,9 @@ class _TrackerPageState extends ConsumerState<TrackerPage> {
                   children: [
                     Icon(MoeslimIcons.quranTerbuka, color: scheme.primary),
                     const SizedBox(width: 8),
-                    Expanded(child: Text('Tilawah Al-Qur\'an', style: t.titleMedium)),
+                    Expanded(child: Text(context.tr('Tilawah Al-Qur\'an', 'Quran Recitation'), style: t.titleMedium)),
                     IconButton(
-                      tooltip: 'Kurangi halaman',
+                      tooltip: context.tr('Kurangi halaman', 'Decrease pages'),
                       onPressed: pages == 0
                           ? null
                           : () async {
@@ -177,7 +202,7 @@ class _TrackerPageState extends ConsumerState<TrackerPage> {
                     ),
                     IconButton(
                       key: const Key('add-page'),
-                      tooltip: 'Tambah halaman',
+                      tooltip: context.tr('Tambah halaman', 'Add page'),
                       onPressed: () async {
                         await repo.addTilawahPages(d.today.day, 1);
                         _load();
@@ -186,7 +211,11 @@ class _TrackerPageState extends ConsumerState<TrackerPage> {
                     ),
                   ],
                 ),
-                Text('$pages / $target halaman', key: const Key('tilawah-pages'), style: t.titleLarge),
+                Text(
+                  context.tr('$pages / $target halaman', '$pages / $target pages'),
+                  key: const Key('tilawah-pages'),
+                  style: t.titleLarge,
+                ),
                 const SizedBox(height: 6),
                 LinearProgressIndicator(
                   value: (pages / target).clamp(0, 1).toDouble(),
@@ -203,8 +232,8 @@ class _TrackerPageState extends ConsumerState<TrackerPage> {
               child: _StatCard(
                 icon: Icons.local_fire_department,
                 color: Colors.deepOrange,
-                label: 'Streak Salat',
-                value: '${d.streak} hari',
+                label: context.tr('Streak Salat', 'Prayer Streak'),
+                value: context.tr('${d.streak} hari', '${d.streak} ${d.streak == 1 ? 'day' : 'days'}'),
                 valueKey: 'streak',
               ),
             ),
@@ -212,8 +241,8 @@ class _TrackerPageState extends ConsumerState<TrackerPage> {
               child: _StatCard(
                 icon: MoeslimIcons.pencapaian,
                 color: BrandColors.goldText,
-                label: 'Terbaik',
-                value: '${d.best} hari',
+                label: context.tr('Terbaik', 'Best'),
+                value: context.tr('${d.best} hari', '${d.best} ${d.best == 1 ? 'day' : 'days'}'),
               ),
             ),
           ],
@@ -224,7 +253,7 @@ class _TrackerPageState extends ConsumerState<TrackerPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Grafik Ibadah Mingguan', style: t.titleMedium),
+                Text(context.tr('Grafik Ibadah Mingguan', 'Weekly Worship Chart'), style: t.titleMedium),
                 const SizedBox(height: 12),
                 SizedBox(
                   height: 160,
@@ -234,7 +263,10 @@ class _TrackerPageState extends ConsumerState<TrackerPage> {
                       for (final day in d.week)
                         Expanded(
                           child: Semantics(
-                            label: '${_dayShort(day.day)} ${(day.progress * 100).round()} persen',
+                            label: context.tr(
+                              '${_dayShort(day.day, lang)} ${(day.progress * 100).round()} persen',
+                              '${_dayShort(day.day, lang)} ${(day.progress * 100).round()} percent',
+                            ),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
@@ -252,7 +284,7 @@ class _TrackerPageState extends ConsumerState<TrackerPage> {
                                   ),
                                 ),
                                 const SizedBox(height: 6),
-                                Text(_dayShort(day.day), style: const TextStyle(fontSize: 11)),
+                                Text(_dayShort(day.day, lang), style: const TextStyle(fontSize: 11)),
                               ],
                             ),
                           ),
@@ -274,9 +306,11 @@ class _TrackerPageState extends ConsumerState<TrackerPage> {
       for (final day in d.week.reversed)
         Card(
           child: ListTile(
-            title: Text(longDate(day.day)),
+            title: Text(context.longDateText(day.day)),
             subtitle: Text(
-              day.items.isEmpty ? 'Belum ada catatan' : day.items.map((e) => e.label).join(', '),
+              day.items.isEmpty
+                  ? context.tr('Belum ada catatan', 'No entries yet')
+                  : day.items.map((e) => _itemLabel(context, e)).join(', '),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -286,7 +320,9 @@ class _TrackerPageState extends ConsumerState<TrackerPage> {
     ],
   );
 
-  static String _dayShort(DateTime d) => const ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'][d.weekday - 1];
+  static String _dayShort(DateTime d, AppLanguage lang) => lang == AppLanguage.en
+      ? const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][d.weekday - 1]
+      : const ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'][d.weekday - 1];
 }
 
 class _StatCard extends StatelessWidget {

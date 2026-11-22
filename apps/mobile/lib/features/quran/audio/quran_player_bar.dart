@@ -3,6 +3,7 @@ import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:personal_core/personal_core.dart';
 
+import '../../../core/l10n.dart';
 import '../../../core/providers.dart';
 import 'audio_providers.dart';
 
@@ -25,7 +26,13 @@ class QuranPlayerBar extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Ukuran huruf ${(s.fontScale * 100).round()}%', style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  context.tr(
+                    'Ukuran huruf ${(s.fontScale * 100).round()}%',
+                    'Font size ${(s.fontScale * 100).round()}%',
+                  ),
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 Slider(
                   key: const Key('font-slider'),
                   min: 0.85,
@@ -52,8 +59,13 @@ class QuranPlayerBar extends ConsumerWidget {
 
     final activeAyah = player.surah == surah.number ? player.current?.ayah : null;
     final statusLabel = rec == null
-        ? 'Murottal'
-        : (activeAyah != null ? '${rec.qari} • Ayat $activeAyah/${surah.ayahCount}' : rec.qari);
+        ? context.tr('Murottal', 'Recitation')
+        : (activeAyah != null
+              ? context.tr(
+                  '${rec.qari} • Ayat $activeAyah/${surah.ayahCount}',
+                  '${rec.qari} • Verse $activeAyah/${surah.ayahCount}',
+                )
+              : rec.qari);
 
     return Material(
       key: const Key('player-bar'),
@@ -93,7 +105,7 @@ class QuranPlayerBar extends ConsumerWidget {
                           Padding(
                             padding: const EdgeInsets.only(right: 6),
                             child: Text(
-                              'Ulang 1 ayat',
+                              context.tr('Ulang 1 ayat', 'Repeat 1 verse'),
                               style: Theme.of(context).textTheme.labelSmall?.copyWith(color: scheme.primary),
                             ),
                           ),
@@ -120,7 +132,7 @@ class QuranPlayerBar extends ConsumerWidget {
                         alignment: Alignment.centerLeft,
                         child: IconButton(
                           key: const Key('font-size'),
-                          tooltip: 'Ukuran huruf',
+                          tooltip: context.tr('Ukuran huruf', 'Font size'),
                           icon: const Icon(Icons.text_fields),
                           onPressed: () => _fontSheet(context, ref),
                         ),
@@ -128,7 +140,7 @@ class QuranPlayerBar extends ConsumerWidget {
                     ),
                     IconButton(
                       key: const Key('prev-ayah'),
-                      tooltip: 'Ayat sebelumnya',
+                      tooltip: context.tr('Ayat sebelumnya', 'Previous verse'),
                       icon: const Icon(MoeslimIcons.sebelumnya),
                       onPressed: hasAudio ? () => ctl.skip(-1) : null,
                     ),
@@ -142,7 +154,7 @@ class QuranPlayerBar extends ConsumerWidget {
                         padding: EdgeInsets.zero,
                         alignment: Alignment.center,
                       ),
-                      tooltip: player.playing ? 'Jeda' : 'Putar surah',
+                      tooltip: player.playing ? context.tr('Jeda', 'Pause') : context.tr('Putar surah', 'Play surah'),
                       icon: Transform.translate(
                         offset: Offset(player.playing ? 0 : 1.5, 0),
                         child: Icon(player.playing ? MoeslimIcons.pause : MoeslimIcons.play),
@@ -154,7 +166,7 @@ class QuranPlayerBar extends ConsumerWidget {
                     const SizedBox(width: 8),
                     IconButton(
                       key: const Key('next-ayah'),
-                      tooltip: 'Ayat berikutnya',
+                      tooltip: context.tr('Ayat berikutnya', 'Next verse'),
                       icon: const Icon(MoeslimIcons.selanjutnya),
                       onPressed: hasAudio ? () => ctl.skip(1) : null,
                     ),
@@ -163,7 +175,9 @@ class QuranPlayerBar extends ConsumerWidget {
                         alignment: Alignment.centerRight,
                         child: IconButton(
                           key: const Key('toggle-repeat-bar'),
-                          tooltip: player.repeatAyah ? 'Matikan ulang ayat' : 'Ulang satu ayat',
+                          tooltip: player.repeatAyah
+                              ? context.tr('Matikan ulang ayat', 'Turn off verse repeat')
+                              : context.tr('Ulang satu ayat', 'Repeat one verse'),
                           isSelected: player.repeatAyah,
                           icon: Icon(Icons.repeat_one, color: player.repeatAyah ? scheme.primary : null),
                           onPressed: hasAudio ? ctl.toggleRepeat : null,
@@ -229,12 +243,18 @@ class _AudioSheetState extends ConsumerState<AudioSheet> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Murottal: pilih qari', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              context.tr('Murottal: pilih qari', 'Recitation: choose reciter'),
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 8),
             if (options.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 10),
-                child: Text('Belum ada rekaman untuk surah ini.', key: Key('no-audio')),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Text(
+                  context.tr('Belum ada rekaman untuk surah ini.', 'No recording available for this surah.'),
+                  key: const Key('no-audio'),
+                ),
               )
             else ...[
               Wrap(
@@ -257,14 +277,18 @@ class _AudioSheetState extends ConsumerState<AudioSheet> {
                 key: const Key('repeat-ayah'),
                 contentPadding: EdgeInsets.zero,
                 secondary: const Icon(Icons.repeat_one),
-                title: const Text('Ulang ayat'),
+                title: Text(context.tr('Ulang ayat', 'Repeat verse')),
                 value: player.repeatAyah,
                 onChanged: (_) => ctl.toggleRepeat(),
               ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: Icon(_downloaded ? MoeslimIcons.berhasil : MoeslimIcons.unduh, color: scheme.primary),
-                title: Text(_downloaded ? 'Tersimpan offline' : 'Unduh surah untuk offline'),
+                title: Text(
+                  _downloaded
+                      ? context.tr('Tersimpan offline', 'Saved offline')
+                      : context.tr('Unduh surah untuk offline', 'Download surah for offline'),
+                ),
                 trailing: _download != null
                     ? SizedBox.square(dimension: 24, child: CircularProgressIndicator(value: _download, strokeWidth: 3))
                     : null,
@@ -283,8 +307,16 @@ class _AudioSheetState extends ConsumerState<AudioSheet> {
                           if (mounted) setState(() => _downloaded = true);
                         } catch (_) {
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context)
-                                .showSnackBar(const SnackBar(content: Text('Unduhan gagal. Coba lagi saat online.')));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  context.tr(
+                                    'Unduhan gagal. Coba lagi saat online.',
+                                    'Download failed. Try again when online.',
+                                  ),
+                                ),
+                              ),
+                            );
                           }
                         } finally {
                           if (mounted) setState(() => _download = null);

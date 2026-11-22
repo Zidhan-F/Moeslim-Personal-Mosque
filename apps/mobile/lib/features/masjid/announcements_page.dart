@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 
-import '../../core/format.dart';
+import '../../core/l10n.dart';
 import '../../ui/components.dart';
 import 'agenda_page.dart' show categoryLabel;
 import 'masjid_api.dart';
@@ -34,18 +34,19 @@ class _AnnouncementsPageState extends ConsumerState<AnnouncementsPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => mosqueScoped(context, (context) {
     final ctx = widget.ctx;
+    final lang = context.lang;
     final anns = ref.watch(announcementsProvider(ctx.id));
     final events = ref.watch(eventsProvider(ctx.id));
     return Scaffold(
-      appBar: AppBar(title: const Text('Konten & Pengumuman'), centerTitle: true),
+      appBar: AppBar(title: Text(context.tr('Konten & Pengumuman', 'Content & Announcements')), centerTitle: true),
       floatingActionButton: _canWrite && _tab == 0
           ? FloatingActionButton.extended(
               heroTag: null,
               key: const Key('add-announcement'),
               icon: const Icon(MoeslimIcons.tambah),
-              label: const Text('Tambah Pengumuman'),
+              label: Text(context.tr('Tambah Pengumuman', 'Add Announcement')),
               onPressed: () => showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
@@ -63,7 +64,7 @@ class _AnnouncementsPageState extends ConsumerState<AnnouncementsPage> {
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
           children: [
             PillTabs(
-              labels: const ['Pengumuman', 'Jadwal Tayang'],
+              labels: [context.tr('Pengumuman', 'Announcements'), context.tr('Jadwal Tayang', 'TV Schedule')],
               index: _tab,
               onChanged: (i) => setState(() => _tab = i),
             ),
@@ -73,7 +74,10 @@ class _AnnouncementsPageState extends ConsumerState<AnnouncementsPage> {
                 value: anns,
                 onRetry: () => ref.invalidate(announcementsProvider(ctx.id)),
                 data: (list) => list.isEmpty
-                    ? const EmptyState(MoeslimIcons.pengumuman, 'Belum ada pengumuman aktif')
+                    ? EmptyState(
+                        MoeslimIcons.pengumuman,
+                        context.tr('Belum ada pengumuman aktif', 'No active announcements yet'),
+                      )
                     : Column(
                         children: [
                           for (final a in list)
@@ -96,18 +100,20 @@ class _AnnouncementsPageState extends ConsumerState<AnnouncementsPage> {
                                         ),
                                         IconButton(
                                           key: Key('share-ann-${a['id']}'),
-                                          tooltip: 'Bagikan Poster & WA',
+                                          tooltip: context.tr('Bagikan Poster & WA', 'Share Poster & WhatsApp'),
                                           icon: const Icon(Icons.share_outlined, size: 20),
                                           onPressed: () => showModalBottomSheet(
                                             context: context,
                                             isScrollControlled: true,
                                             showDragHandle: true,
-                                            builder: (_) => PosterShareSheet(data: WaTextBuilder.forAnnouncement(ctx.name, a)),
+                                            builder: (_) => PosterShareSheet(
+                                              data: WaTextBuilder.forAnnouncement(ctx.name, a, lang: lang),
+                                            ),
                                           ),
                                         ),
                                         if (_canWrite)
                                           IconButton(
-                                            tooltip: 'Arsipkan',
+                                            tooltip: context.tr('Arsipkan', 'Archive'),
                                             icon: const Icon(MoeslimIcons.arsip),
                                             onPressed: () => _run(() async {
                                               await ref
@@ -123,11 +129,16 @@ class _AnnouncementsPageState extends ConsumerState<AnnouncementsPage> {
                                     Row(
                                       children: [
                                         StatusBadge(
-                                          a['visibility'] == 'public' ? 'Publik' : 'Internal',
+                                          a['visibility'] == 'public'
+                                              ? context.tr('Publik', 'Public')
+                                              : context.tr('Internal', 'Internal'),
                                           icon: a['visibility'] == 'public' ? MoeslimIcons.web : MoeslimIcons.kunci,
                                         ),
                                         const Spacer(),
-                                        const Text('Tayang di TV', style: TextStyle(fontSize: 12.5)),
+                                        Text(
+                                          context.tr('Tayang di TV', 'Show on TV'),
+                                          style: const TextStyle(fontSize: 12.5),
+                                        ),
                                         Switch(
                                           key: Key('ann-display-${a['id']}'),
                                           value: a['show_on_display'] == true,
@@ -154,7 +165,11 @@ class _AnnouncementsPageState extends ConsumerState<AnnouncementsPage> {
                 value: events,
                 onRetry: () => ref.invalidate(eventsProvider(ctx.id)),
                 data: (list) => list.isEmpty
-                    ? const EmptyState(MoeslimIcons.kegiatan, 'Belum ada agenda aktif', art: BrandEmptyArt.agenda)
+                    ? EmptyState(
+                        MoeslimIcons.kegiatan,
+                        context.tr('Belum ada agenda aktif', 'No active events yet'),
+                        art: BrandEmptyArt.agenda,
+                      )
                     : Card(
                         margin: EdgeInsets.zero,
                         child: Column(
@@ -165,7 +180,7 @@ class _AnnouncementsPageState extends ConsumerState<AnnouncementsPage> {
                                 secondary: const Icon(MoeslimIcons.kegiatan, color: BrandColors.emerald),
                                 title: Text('${e['title']}'),
                                 subtitle: Text(
-                                  '${shortDate(DateTime.parse(e['starts_at'] as String).toLocal())} • ${categoryLabel(e['category'] as String?)}',
+                                  '${context.shortDateText(DateTime.parse(e['starts_at'] as String).toLocal())} • ${categoryLabel(e['category'] as String?, lang: lang)}',
                                 ),
                                 value: e['show_on_display'] == true,
                                 onChanged: _canToggle && e['visibility'] == 'public'
@@ -180,12 +195,18 @@ class _AnnouncementsPageState extends ConsumerState<AnnouncementsPage> {
                       ),
               ),
             const SizedBox(height: 8),
-            const Text('Hanya konten publik yang dapat ditayangkan di TV Display.', style: TextStyle(fontSize: 12)),
+            Text(
+              context.tr(
+                'Hanya konten publik yang dapat ditayangkan di TV Display.',
+                'Only public content can be displayed on TV Display.',
+              ),
+              style: const TextStyle(fontSize: 12),
+            ),
           ],
         ),
       ),
     );
-  }
+  });
 }
 
 class _AnnouncementForm extends ConsumerStatefulWidget {
@@ -204,61 +225,68 @@ class _AnnouncementFormState extends ConsumerState<_AnnouncementForm> {
   String? _error;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: EdgeInsets.fromLTRB(20, 0, 20, 20 + MediaQuery.viewInsetsOf(context).bottom),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text('Pengumuman Baru', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 12),
-        TextField(
-          key: const Key('ann-title'),
-          controller: _title,
-          decoration: const InputDecoration(labelText: 'Judul'),
-        ),
-        const SizedBox(height: 10),
-        TextField(
-          key: const Key('ann-body'),
-          controller: _body,
-          maxLines: 4,
-          decoration: const InputDecoration(labelText: 'Isi pengumuman', alignLabelWithHint: true),
-        ),
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: const Text('Publik'),
-          value: _public,
-          onChanged: (v) => setState(() => _public = v),
-        ),
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: const Text('Tayangkan di TV Display'),
-          value: _public && _display,
-          onChanged: _public ? (v) => setState(() => _display = v) : null,
-        ),
-        if (_error != null) Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-        const SizedBox(height: 12),
-        FilledButton(
-          key: const Key('save-announcement'),
-          onPressed: () async {
-            try {
-              await ref.read(masjidApiProvider).createAnnouncement(widget.ctx.id, {
-                'title': _title.text.trim(),
-                'body': _body.text.trim(),
-                'visibility': _public ? 'public' : 'internal',
-                'show_on_display': _public && _display,
-              });
-              ref.invalidate(announcementsProvider(widget.ctx.id));
-              if (context.mounted) Navigator.pop(context);
-            } on ApiException catch (e) {
-              setState(
-                () => _error = e.errors.values.expand((v) => v is List ? v : [v]).firstOrNull?.toString() ?? e.message,
-              );
-            }
-          },
-          child: const Text('Terbitkan'),
-        ),
-      ],
+  Widget build(BuildContext context) => mosqueScoped(
+    context,
+    (context) => Padding(
+      padding: EdgeInsets.fromLTRB(20, 0, 20, 20 + MediaQuery.viewInsetsOf(context).bottom),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(context.tr('Pengumuman Baru', 'New Announcement'), style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 12),
+          TextField(
+            key: const Key('ann-title'),
+            controller: _title,
+            decoration: InputDecoration(labelText: context.tr('Judul', 'Title')),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            key: const Key('ann-body'),
+            controller: _body,
+            maxLines: 4,
+            decoration: InputDecoration(
+              labelText: context.tr('Isi pengumuman', 'Announcement content'),
+              alignLabelWithHint: true,
+            ),
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(context.tr('Publik', 'Public')),
+            value: _public,
+            onChanged: (v) => setState(() => _public = v),
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(context.tr('Tayangkan di TV Display', 'Show on TV Display')),
+            value: _public && _display,
+            onChanged: _public ? (v) => setState(() => _display = v) : null,
+          ),
+          if (_error != null) Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+          const SizedBox(height: 12),
+          FilledButton(
+            key: const Key('save-announcement'),
+            onPressed: () async {
+              try {
+                await ref.read(masjidApiProvider).createAnnouncement(widget.ctx.id, {
+                  'title': _title.text.trim(),
+                  'body': _body.text.trim(),
+                  'visibility': _public ? 'public' : 'internal',
+                  'show_on_display': _public && _display,
+                });
+                ref.invalidate(announcementsProvider(widget.ctx.id));
+                if (context.mounted) Navigator.pop(context);
+              } on ApiException catch (e) {
+                setState(
+                  () =>
+                      _error = e.errors.values.expand((v) => v is List ? v : [v]).firstOrNull?.toString() ?? e.message,
+                );
+              }
+            },
+            child: Text(context.tr('Terbitkan', 'Publish')),
+          ),
+        ],
+      ),
     ),
   );
 }

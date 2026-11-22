@@ -1,3 +1,5 @@
+import 'package:shared_prayer/shared_prayer.dart';
+
 import '../storage/key_value_store.dart';
 import '../storage/quran_progress_repository.dart';
 import 'quran.dart';
@@ -5,22 +7,33 @@ import 'quran.dart';
 class QuranThemeTopic {
   final String id;
   final String title;
+  final String? titleEn;
   final String description;
+  final String? descriptionEn;
   final List<AyahRef> verses;
 
   const QuranThemeTopic({
     required this.id,
     required this.title,
+    this.titleEn,
     required this.description,
+    this.descriptionEn,
     required this.verses,
   });
+
+  String titleFor(AppLanguage lang) =>
+      lang == AppLanguage.en && (titleEn?.isNotEmpty ?? false) ? titleEn! : title;
+  String descriptionFor(AppLanguage lang) =>
+      lang == AppLanguage.en && (descriptionEn?.isNotEmpty ?? false) ? descriptionEn! : description;
 }
 
 const List<QuranThemeTopic> quranThematicIndex = [
   QuranThemeTopic(
     id: 'sabar',
     title: 'Sabar, Ketenangan & Menghadapi Ujian',
+    titleEn: 'Patience, Serenity & Facing Trials',
     description: 'Ayat-ayat penguat hati saat menghadapi kesulitan, kehilangan, dan ujian hidup.',
+    descriptionEn: 'Verses that steady the heart during hardship, loss, and life\'s trials.',
     verses: [
       AyahRef(2, 153),
       AyahRef(2, 155),
@@ -34,7 +47,9 @@ const List<QuranThemeTopic> quranThematicIndex = [
   QuranThemeTopic(
     id: 'rezeki',
     title: 'Rezeki, Tawakal & Keberkahan Usaha',
+    titleEn: 'Provision, Trust in Allah & Blessed Effort',
     description: 'Jaminan rezeki dari Allah bagi hamba yang bertakwa, bersyukur, dan bertawakal.',
+    descriptionEn: 'Allah\'s promise of provision for those who practice God-consciousness, gratitude, and reliance on Him.',
     verses: [
       AyahRef(11, 6),
       AyahRef(14, 7),
@@ -47,7 +62,9 @@ const List<QuranThemeTopic> quranThematicIndex = [
   QuranThemeTopic(
     id: 'keluarga',
     title: 'Keluarga, Bakti Orang Tua & Keturunan',
+    titleEn: 'Family, Honoring Parents & Offspring',
     description: 'Tuntunan rumah tangga sakinah, berbakti kepada ibu-bapak, dan doa keturunan shalih.',
+    descriptionEn: 'Guidance for a tranquil home, kindness to parents, and supplications for righteous offspring.',
     verses: [
       AyahRef(17, 23),
       AyahRef(17, 24),
@@ -61,7 +78,9 @@ const List<QuranThemeTopic> quranThematicIndex = [
   QuranThemeTopic(
     id: 'taubat',
     title: 'Taubat, Ampunan & Rahmat Allah',
+    titleEn: 'Repentance, Forgiveness & Allah\'s Mercy',
     description: 'Luasnya ampunan Allah bagi hamba yang kembali dan tidak berputus asa dari rahmat-Nya.',
+    descriptionEn: 'The vastness of Allah\'s forgiveness for those who return to Him and never despair of His mercy.',
     verses: [
       AyahRef(3, 135),
       AyahRef(4, 110),
@@ -73,7 +92,9 @@ const List<QuranThemeTopic> quranThematicIndex = [
   QuranThemeTopic(
     id: 'ilmu',
     title: 'Ilmu, Hikmah & Tadabbur',
+    titleEn: 'Knowledge, Wisdom & Reflection',
     description: 'Keutamaan menuntut ilmu, membaca tanda-tanda kebesaran Allah, dan memohon tambahan ilmu.',
+    descriptionEn: 'The virtue of seeking knowledge, reflecting on Allah\'s signs, and praying for deeper understanding.',
     verses: [
       AyahRef(2, 269),
       AyahRef(20, 114),
@@ -85,7 +106,9 @@ const List<QuranThemeTopic> quranThematicIndex = [
   QuranThemeTopic(
     id: 'akhlak',
     title: 'Akhlak Mulia, Kejujuran & Persaudaraan',
+    titleEn: 'Noble Character, Integrity & Brotherhood',
     description: 'Adab berbicara, menjauhi prasangka buruk, memaafkan, dan menjaga ukhuwah sesama mukmin.',
+    descriptionEn: 'Etiquette of speech, avoiding suspicion, practicing forgiveness, and nurturing bonds among believers.',
     verses: [
       AyahRef(3, 134),
       AyahRef(16, 90),
@@ -133,10 +156,78 @@ const Map<(int, int), String> curatedConciseTafsir = {
   (114, 1): 'Surah An-Nas mengajarkan perlindungan kepada Allah dari bisikan halus setan (al-waswas al-khannas) yang menyerang hati manusia.',
 };
 
+const Map<(int, int), String> curatedConciseTafsirEn = {
+  (1, 1): 'The Basmalah opens the Quran to remind believers that every righteous action begins by invoking and seeking help from Allah, the Entirely Merciful (Ar-Rahman, embracing all creation) and the Especially Merciful (Ar-Rahim, honoring the believers).',
+  (1, 2): 'All perfect praise and gratitude belong exclusively to Allah, the Lord who nurtures, sustains, and governs every realm of creation.',
+  (1, 5): 'A declaration of pure devotion and dependence: the servant worships Allah alone and turns only to His help in obedience.',
+  (1, 6): 'The central supplication of every unit of prayer: asking Allah for guidance and steadfastness upon the Straight Path (Sirat al-Mustaqim).',
+  (2, 152): 'A command to remember Allah with tongue, heart, and obedience; in return, Allah remembers His servant with mercy and care.',
+  (2, 153): 'The two steadfast anchors of a believer facing life\'s hardships are patient perseverance and focused prayer.',
+  (2, 155): 'Inevitable tests of fear, hunger, or loss of wealth and life serve as means to elevate the rank of those who remain patient.',
+  (2, 201): 'A comprehensive supplication uniting the best of this world (sound knowledge, lawful provision, righteous family) and the Hereafter (Paradise and safety from the Fire).',
+  (2, 255): 'Ayat al-Kursi affirms Allah\'s absolute oneness, eternal life, and flawless sovereignty over the heavens and earth without ever feeling fatigue or sleep.',
+  (2, 286): 'A foundational principle of divine mercy: Allah never burdens a soul beyond its capacity, paired with a prayer for pardon and ease.',
+  (3, 134): 'The hallmarks of the God-conscious are generosity in both ease and hardship, restraining anger, and pardoning others.',
+  (3, 139): 'Believers are urged not to lose heart or grieve, for sincere faith lifts their dignity and resilience.',
+  (13, 28): 'True inner serenity is never secured by material wealth alone, but through steady remembrance of Allah (dhikrullah).',
+  (14, 7): 'Allah\'s firm promise that gratitude increases and blesses His favors, while ingratitude invites severe consequence.',
+  (17, 23): 'Immediately after commanding pure monotheism, Allah enjoins excellence toward parents and forbids even the slightest expression of annoyance.',
+  (18, 10): 'The prayer of the Youths of the Cave seeking direct mercy from Allah and sound guidance while guarding their faith.',
+  (20, 114): 'The Prophetic model of continually praying for beneficial knowledge ("Rabbi zidni \'ilma"), as sound knowledge anchors righteous action.',
+  (25, 74): 'The prayer of the servants of the Most Merciful for spouses and children who bring comfort to the eyes through their devotion to Allah.',
+  (29, 45): 'Reciting the Quran and establishing prayer with presence of heart shield a believer from indecency and wrongdoing.',
+  (30, 21): 'Marriage is a sign of Allah\'s wisdom meant to cultivate tranquility (sakinah), love (mawaddah), and mercy (rahmah).',
+  (31, 14): 'Luqman\'s counsel recalls a mother\'s hardship through pregnancy and nursing, tying gratitude to Allah directly with gratitude to parents.',
+  (39, 53): 'One of the most hopeful verses in the Quran: never despair of Allah\'s mercy, for He forgives all sins for those who sincerely repent.',
+  (49, 12): 'A clear command to avoid unfounded suspicion, spying on others\' faults, and backbiting.',
+  (65, 2): 'Whoever remains mindful of Allah by observing His commands and limits will be granted a way out from every hardship.',
+  (65, 3): 'Allah provides from unexpected avenues and suffices completely for whoever places genuine trust in Him.',
+  (67, 1): 'Surah Al-Mulk calls to mind the majesty of Allah, who holds total dominion and created life and death to test who excels in deeds.',
+  (94, 5): 'A repeated reassurance that alongside every hardship, Allah pairs abundant ease for the believer.',
+  (96, 1): 'The very first revelation commands reading (iqra\') in the name of the Creator, founding Islam\'s civilization of learning.',
+  (112, 1): 'Surah Al-Ikhlas distills pure monotheism: Allah is uniquely One in essence, attributes, and actions, the Eternal Refuge with no equal.',
+  (113, 1): 'Surah Al-Falaq teaches seeking refuge in Allah from the harm of creation, the darkness of night, sorcery, and envy.',
+  (114, 1): 'Surah An-Nas teaches seeking refuge in Allah from the subtle whispers of the retreating tempter who targets the human heart.',
+};
+
 String buildConciseTafsir({
   required Surah surah,
   required Ayah ayah,
+  AppLanguage lang = AppLanguage.id,
 }) {
+  if (lang == AppLanguage.en) {
+    final exactEn = curatedConciseTafsirEn[(surah.number, ayah.number)];
+    if (exactEn != null) return exactEn;
+
+    final translation = (ayah.translationFor(AppLanguage.en) ?? '').trim();
+    final matchingThemes = quranThematicIndex
+        .where((t) => t.verses.any((v) => v.surah == surah.number && v.ayah == ayah.number))
+        .map((t) => t.titleFor(AppLanguage.en))
+        .toList();
+
+    final buf = StringBuffer();
+    buf.write(
+      'Concise Tafsir of Quran ${surah.name} (${surah.number}:${ayah.number}, '
+      '${surah.revelationFor(AppLanguage.en)} Surah, Juz ${juzOf(surah.number, ayah.number)}): ',
+    );
+    if (translation.isNotEmpty) {
+      buf.write('This verse conveys the divine message: "$translation" ');
+    }
+    if (surah.makkiyah) {
+      buf.write(
+        'Within the context of a Meccan surah, this passage strengthens faith, pure monotheism, awareness of the Hereafter, and moral resilience before Allah.',
+      );
+    } else {
+      buf.write(
+        'Within the context of a Medinan surah, this passage guides practical obedience, social ethics, steadfast worship, and faithful responsibility in daily life.',
+      );
+    }
+    if (matchingThemes.isNotEmpty) {
+      buf.write(' Closely connected with the theme: ${matchingThemes.join(', ')}.');
+    }
+    return buf.toString();
+  }
+
   final exact = curatedConciseTafsir[(surah.number, ayah.number)];
   if (exact != null) return exact;
 

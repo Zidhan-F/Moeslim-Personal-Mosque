@@ -7,6 +7,7 @@ import 'package:personal_core/personal_core.dart';
 import 'package:shared_prayer/shared_prayer.dart';
 
 import '../../core/format.dart';
+import '../../core/l10n.dart';
 import '../../core/providers.dart';
 import '../../ui/components.dart';
 
@@ -40,19 +41,120 @@ class _AstronomyQiblaFiqihPageState extends ConsumerState<AstronomyQiblaFiqihPag
     if (mounted) setState(() => _fridayChecks = checks);
   }
 
+  String _solarInstruction(BuildContext context, SolarQiblaSnapshot solar) {
+    if (!context.isEn) return solar.alignmentInstruction;
+    if (!solar.isSunAboveHorizon) {
+      return 'The sun is currently below or too close to the horizon. Use the sun shadow method when the sun is shining clearly, or use the building angle guide in the Qibla Map tab.';
+    }
+    final delta = solar.angleFromShadowToQiblaDeg;
+    if (delta.abs() <= 3.0) {
+      return 'The shadow of a vertical object is currently ALIGNED directly with the Qibla! Align your prayer mat along the shadow line.';
+    }
+    if (delta > 0) {
+      return 'Place a straight vertical stick under sunlight. From the direction of its shadow (${solar.shadowAzimuthDeg.toStringAsFixed(1)}°), rotate ${delta.abs().toStringAsFixed(1)}° clockwise (to the right) to face the Qibla (${solar.qiblaBearingDeg.toStringAsFixed(1)}°).';
+    }
+    return 'Place a straight vertical stick under sunlight. From the direction of its shadow (${solar.shadowAzimuthDeg.toStringAsFixed(1)}°), rotate ${delta.abs().toStringAsFixed(1)}° counter-clockwise (to the left) to face the Qibla (${solar.qiblaBearingDeg.toStringAsFixed(1)}°).';
+  }
+
+  String _safarSummary(BuildContext context, SafarRukhshahEvaluation eval) {
+    if (!context.isEn) return eval.summary;
+    final roadStr = eval.estimatedRoadDistanceKm.toStringAsFixed(1);
+    return eval.eligibleForQasharAndJama
+        ? 'Estimated travel distance (~$roadStr km) exceeds the Masafat al-Qasr threshold (81 km). You are eligible for the travel concession (rukhsah) to shorten (Qasr) and combine (Jama\') prayers after leaving your home city boundary.'
+        : 'Estimated travel distance (~$roadStr km) has not reached the Masafat al-Qasr threshold (81 km). Obligatory prayers remain full (4 rakaat) at their regular times.';
+  }
+
+  List<String> _safarRules(BuildContext context, SafarRukhshahEvaluation eval) {
+    if (!context.isEn) return eval.prayerRules;
+    if (eval.eligibleForQasharAndJama) {
+      return const [
+        'Dhuhr (4 -> 2 rakaat) & Asr (4 -> 2 rakaat): may be shortened (Qasr) and combined (Jama\' Taqdim during Dhuhr or Takhir during Asr).',
+        'Maghrib (stays 3 rakaat) & Isha (4 -> 2 rakaat): may be combined (Jama\' Taqdim during Maghrib or Takhir during Isha).',
+        'Fajr (stays 2 rakaat): performed at its own time (neither combined nor shortened).',
+        'Stay Limit: The concession applies while traveling and up to 4 full days (excluding arrival and departure days) at the destination in the Shafi\'i school.',
+      ];
+    }
+    return const [
+      'All obligatory prayers (Fajr 2, Dhuhr 4, Asr 4, Maghrib 3, Isha 4) are performed in full at their appointed times.',
+    ];
+  }
+
+  ({String title, String desc}) _forbiddenWindowText(BuildContext context, int index, String titleId, String descId) {
+    if (!context.isEn) return (title: titleId, desc: descId);
+    return switch (index) {
+      0 => (
+          title: '1. After Fajr Until Sunrise Rises',
+          desc: 'Unspecified voluntary prayers are prohibited after Fajr prayer until the sun rises a spear\'s height above the horizon (~15 minutes after sunrise).',
+        ),
+      1 => (
+          title: '2. Solar Zenith (Istiwa)',
+          desc: 'Just before the sun passes its zenith (~10 minutes before Dhuhr), except on Fridays.',
+        ),
+      _ => (
+          title: '3. After Asr Until Sunset',
+          desc: 'After performing Asr prayer until the sun has completely set at Maghrib.',
+        ),
+    };
+  }
+
+  ({String title, String dalil}) _fridaySunnahText(BuildContext context, FridaySunnahItem item) {
+    if (!context.isEn) return (title: item.title, dalil: item.dalilAndVirtue);
+    return switch (item.id) {
+      'mandi_jumat' => (
+          title: 'Friday Ritual Bath (Ghusl)',
+          dalil: 'Sahih al-Bukhari no. 877: "Taking a bath on Friday is strongly emphasized for every adult Muslim."',
+        ),
+      'siwak_wewangian' => (
+          title: 'Use Siwak, Trim Nails & Wear Fragrance',
+          dalil: 'Sahih al-Bukhari no. 880: Recommended to use siwak and apply your best fragrance before heading to the mosque.',
+        ),
+      'pakaian_terbaik' => (
+          title: 'Wear Your Best Attire (Preferably White)',
+          dalil: 'Sunan Abi Dawud no. 343: Wearing clean and fine garments to honor the weekly celebration.',
+        ),
+      'baca_alkahfi' => (
+          title: 'Recite Surah Al-Kahfi',
+          dalil: 'Al-Hakim II/399 (Sahih): Illuminated with a light of blessings between two Fridays.',
+        ),
+      'perbanyak_shalawat' => (
+          title: 'Send Abundant Salawat Upon Prophet Muhammad (PBUH)',
+          dalil: 'Sunan Abi Dawud no. 1047: "Send abundant blessings upon me on Friday and the night before Friday."',
+        ),
+      'berangkat_awal' => (
+          title: 'Arrive Early at the Mosque & Pray Tahiyatul Masjid',
+          dalil: 'Sahih al-Bukhari no. 881: Arriving in the first hour carries the reward of offering a camel in charity.',
+        ),
+      'simak_khutbah' => (
+          title: 'Listen Attentively to the Friday Khutbah',
+          dalil: 'Sahih al-Bukhari no. 934: Listening quietly to the sermon is a means of forgiveness between two Fridays.',
+        ),
+      'doa_ashar_jumat' => (
+          title: 'Make Dua During the Last Hour of Friday (After Asr)',
+          dalil: 'Sunan Abi Dawud no. 1048: A blessed hour of answered prayers after Asr until Maghrib.',
+        ),
+      _ => (title: item.title, dalil: item.dalilAndVirtue),
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider).value ?? PersonalSettings.defaults;
     final status = ref.watch(prayerStatusProvider).value;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Salat, Kiblat & Astronomi'), centerTitle: true),
+      appBar: AppBar(title: Text(context.tr('Salat, Kiblat & Astronomi', 'Prayer, Qibla & Astronomy')), centerTitle: true),
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: PillTabs(
-              labels: const ['Bayangan', 'Peta Kiblat', 'Safar', 'Dhuha & Tahajud', 'Sunnah Jumat'],
+              labels: [
+                context.tr('Bayangan', 'Sun Shadow'),
+                context.tr('Peta Kiblat', 'Qibla Map'),
+                context.tr('Safar', 'Travel'),
+                context.tr('Dhuha & Tahajud', 'Dhuha & Tahajjud'),
+                context.tr('Sunnah Jumat', 'Friday Sunnah'),
+              ],
               index: _tab,
               onChanged: (i) => setState(() => _tab = i),
             ),
@@ -88,15 +190,29 @@ class _AstronomyQiblaFiqihPageState extends ConsumerState<AstronomyQiblaFiqihPag
         ArchHeader(
           child: Column(
             children: [
-              Text('Kiblat Bayangan Matahari (Bebas Gangguan Logam)', style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+              Text(
+                context.tr(
+                  'Kiblat Bayangan Matahari (Bebas Gangguan Logam)',
+                  'Sun Shadow Qibla (Free from Magnetic Interference)',
+                ),
+                style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+              ),
               const SizedBox(height: 6),
               Text(
-                'Arah Kiblat: ${solar.qiblaBearingDeg.toStringAsFixed(1)}° · Bayangan Saat Ini: ${solar.shadowAzimuthDeg.toStringAsFixed(1)}°',
+                context.tr(
+                  'Arah Kiblat: ${solar.qiblaBearingDeg.toStringAsFixed(1)}° · Bayangan Saat Ini: ${solar.shadowAzimuthDeg.toStringAsFixed(1)}°',
+                  'Qibla Bearing: ${solar.qiblaBearingDeg.toStringAsFixed(1)}° · Current Shadow: ${solar.shadowAzimuthDeg.toStringAsFixed(1)}°',
+                ),
                 key: const Key('solar-qibla-summary'),
                 style: t.titleMedium?.copyWith(color: scheme.primary, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 4),
-              Text('Tinggi Matahari (Altitude): ${solar.sunAltitudeDeg.toStringAsFixed(1)}° di ${settings.effectiveLocationName}'),
+              Text(
+                context.tr(
+                  'Tinggi Matahari (Altitude): ${solar.sunAltitudeDeg.toStringAsFixed(1)}° di ${settings.effectiveLocationName}',
+                  'Sun Altitude: ${solar.sunAltitudeDeg.toStringAsFixed(1)}° in ${settings.effectiveLocationName}',
+                ),
+              ),
             ],
           ),
         ),
@@ -107,14 +223,20 @@ class _AstronomyQiblaFiqihPageState extends ConsumerState<AstronomyQiblaFiqihPag
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Panduan Praktis Menentukan Kiblat dengan Tongkat Tegak', style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                Text(
+                  context.tr(
+                    'Panduan Praktis Menentukan Kiblat dengan Tongkat Tegak',
+                    'Practical Guide to Finding Qibla with a Vertical Stick',
+                  ),
+                  style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                ),
                 const SizedBox(height: 8),
-                Text(solar.alignmentInstruction, style: t.bodyLarge),
+                Text(_solarInstruction(context, solar), style: t.bodyLarge),
               ],
             ),
           ),
         ),
-        const SectionHeader('Hari Istiwa A\'zham (Rashdul Qiblah Global)'),
+        SectionHeader(context.tr('Hari Istiwa A\'zham (Rashdul Qiblah Global)', 'Istiwa A\'zam Days (Global Rashdul Qiblah)')),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -122,14 +244,22 @@ class _AstronomyQiblaFiqihPageState extends ConsumerState<AstronomyQiblaFiqihPag
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Dua Momen Matahari Tepat di Atas Ka\'bah Setiap Tahun:',
+                  context.tr(
+                    'Dua Momen Matahari Tepat di Atas Ka\'bah Setiap Tahun:',
+                    'Two Annual Moments When the Sun Is Directly Above the Kaaba:',
+                  ),
                   style: t.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '• 27–28 Mei pukul 16:18 WIB (17:18 WITA / 18:18 WIT)\n'
-                  '• 15–16 Juli pukul 16:27 WIB (17:27 WITA / 18:27 WIT)\n\n'
-                  'Pada menit tersebut, bayangan setiap benda tegak lurus di seluruh Indonesia yang terkena sinar matahari pasti menghadap lurus ke arah Ka\'bah.',
+                  context.tr(
+                    '• 27–28 Mei pukul 16:18 WIB (17:18 WITA / 18:18 WIT)\n'
+                    '• 15–16 Juli pukul 16:27 WIB (17:27 WITA / 18:27 WIT)\n\n'
+                    'Pada menit tersebut, bayangan setiap benda tegak lurus di seluruh Indonesia yang terkena sinar matahari pasti menghadap lurus ke arah Ka\'bah.',
+                    '• May 27-28 at 16:18 WIB (17:18 WITA / 18:18 WIT)\n'
+                    '• July 15-16 at 16:27 WIB (17:27 WITA / 18:27 WIT)\n\n'
+                    'At these exact times, the shadow of any upright object exposed to sunlight across Indonesia points directly along the Qibla line toward the Kaaba.',
+                  ),
                   style: t.bodyMedium,
                 ),
               ],
@@ -158,7 +288,10 @@ class _AstronomyQiblaFiqihPageState extends ConsumerState<AstronomyQiblaFiqihPag
             child: Column(
               children: [
                 Text(
-                  'Garis Vektor Geodetik ke Ka\'bah di Atas Dinding Bangunan',
+                  context.tr(
+                    'Garis Vektor Geodetik ke Ka\'bah di Atas Dinding Bangunan',
+                    'Geodetic Vector Line to the Kaaba on Building Walls',
+                  ),
                   textAlign: TextAlign.center,
                   style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                 ),
@@ -177,18 +310,27 @@ class _AstronomyQiblaFiqihPageState extends ConsumerState<AstronomyQiblaFiqihPag
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Sudut Kiblat: ${bearing.toStringAsFixed(1)}° dari Utara Sejati',
+                  context.tr(
+                    'Sudut Kiblat: ${bearing.toStringAsFixed(1)}° dari Utara Sejati',
+                    'Qibla Angle: ${bearing.toStringAsFixed(1)}° from True North',
+                  ),
                   style: t.titleMedium?.copyWith(color: scheme.primary, fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Patokan Dinding Bangunan: Serong +${offsetFromWest.toStringAsFixed(1)}° ke arah Utara dari garis lurus menghadap Barat (270°).',
+                  context.tr(
+                    'Patokan Dinding Bangunan: Serong +${offsetFromWest.toStringAsFixed(1)}° ke arah Utara dari garis lurus menghadap Barat (270°).',
+                    'Building Wall Reference: Angle +${offsetFromWest.toStringAsFixed(1)}° toward North from a straight line facing West (270°).',
+                  ),
                   textAlign: TextAlign.center,
                   style: t.bodyMedium,
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Jarak Lurus ke Ka\'bah (Makkah): ${distKm.round()} km',
+                  context.tr(
+                    'Jarak Lurus ke Ka\'bah (Makkah): ${distKm.round()} km',
+                    'Direct Distance to the Kaaba (Makkah): ${distKm.round()} km',
+                  ),
                   style: t.bodySmall,
                 ),
               ],
@@ -209,6 +351,7 @@ class _AstronomyQiblaFiqihPageState extends ConsumerState<AstronomyQiblaFiqihPag
     );
     final t = Theme.of(context).textTheme;
     final scheme = Theme.of(context).colorScheme;
+    final rules = _safarRules(context, eval);
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -219,12 +362,20 @@ class _AstronomyQiblaFiqihPageState extends ConsumerState<AstronomyQiblaFiqihPag
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Kota / Titik Asal: ${settings.effectiveLocationName}', style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                Text(
+                  context.tr(
+                    'Kota / Titik Asal: ${settings.effectiveLocationName}',
+                    'Origin City / Point: ${settings.effectiveLocationName}',
+                  ),
+                  style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<City>(
                   key: const Key('safar-dest-dropdown'),
                   initialValue: _destCity,
-                  decoration: const InputDecoration(labelText: 'Pilih Kota Tujuan Safar'),
+                  decoration: InputDecoration(
+                    labelText: context.tr('Pilih Kota Tujuan Safar', 'Select Travel Destination City'),
+                  ),
                   items: [
                     for (final c in indonesianCities)
                       DropdownMenuItem(value: c, child: Text('${c.name}, ${c.province}')),
@@ -254,8 +405,14 @@ class _AstronomyQiblaFiqihPageState extends ConsumerState<AstronomyQiblaFiqihPag
                     Expanded(
                       child: Text(
                         eval.eligibleForQasharAndJama
-                            ? 'Memenuhi Syarat Rukhshah Jama\' & Qashar'
-                            : 'Belum Mencapai Jarak Masafatul Qashr (81 km)',
+                            ? context.tr(
+                                'Memenuhi Syarat Rukhshah Jama\' & Qashar',
+                                'Eligible for Jama\' & Qasr Concession',
+                              )
+                            : context.tr(
+                                'Belum Mencapai Jarak Masafatul Qashr (81 km)',
+                                'Below Masafat al-Qasr Distance (81 km)',
+                              ),
                         key: const Key('safar-eligibility-status'),
                         style: t.titleMedium?.copyWith(
                           color: eval.eligibleForQasharAndJama ? scheme.primary : null,
@@ -267,13 +424,16 @@ class _AstronomyQiblaFiqihPageState extends ConsumerState<AstronomyQiblaFiqihPag
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Jarak Udara: ${eval.straightDistanceKm.toStringAsFixed(1)} km · Estimasi Jalur Darat: ±${eval.estimatedRoadDistanceKm.toStringAsFixed(1)} km',
+                  context.tr(
+                    'Jarak Udara: ${eval.straightDistanceKm.toStringAsFixed(1)} km · Estimasi Jalur Darat: ±${eval.estimatedRoadDistanceKm.toStringAsFixed(1)} km',
+                    'Straight-Line Distance: ${eval.straightDistanceKm.toStringAsFixed(1)} km · Est. Road Distance: ~${eval.estimatedRoadDistanceKm.toStringAsFixed(1)} km',
+                  ),
                   style: t.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 6),
-                Text(eval.summary, style: t.bodyMedium),
+                Text(_safarSummary(context, eval), style: t.bodyMedium),
                 const Divider(height: 20),
-                for (final r in eval.prayerRules)
+                for (final r in rules)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4),
                     child: Text('• $r', style: t.bodySmall),
@@ -297,14 +457,22 @@ class _AstronomyQiblaFiqihPageState extends ConsumerState<AstronomyQiblaFiqihPag
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const SectionHeader('Waktu Salat Sunnah Utama Hari Ini'),
+        SectionHeader(context.tr('Waktu Salat Sunnah Utama Hari Ini', 'Key Voluntary Prayer Windows Today')),
         Card(
           child: Column(
             children: [
               ListTile(
                 leading: Icon(MoeslimIcons.matahari, color: scheme.primary),
-                title: const Text('Waktu Salat Sunnah Dhuha', style: TextStyle(fontWeight: FontWeight.w700)),
-                subtitle: Text('Waktu utama (Awwabin): sekitar ${hhmm(ext.dhuhaOptimal)}'),
+                title: Text(
+                  context.tr('Waktu Salat Sunnah Dhuha', 'Dhuha Voluntary Prayer Window'),
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                subtitle: Text(
+                  context.tr(
+                    'Waktu utama (Awwabin): sekitar ${hhmm(ext.dhuhaOptimal)}',
+                    'Optimal time (Awwabin): around ${hhmm(ext.dhuhaOptimal)}',
+                  ),
+                ),
                 trailing: Text(
                   '${hhmm(ext.dhuhaStart)} – ${hhmm(ext.dhuhaEnd)}',
                   key: const Key('extended-dhuha-window'),
@@ -314,8 +482,16 @@ class _AstronomyQiblaFiqihPageState extends ConsumerState<AstronomyQiblaFiqihPag
               const Divider(height: 1),
               ListTile(
                 leading: Icon(MoeslimIcons.bulan, color: scheme.primary),
-                title: const Text('Sepertiga Malam Terakhir (Tahajud Utama)', style: TextStyle(fontWeight: FontWeight.w700)),
-                subtitle: Text('Pertengahan malam (Nishful Lail): ${hhmm(ext.midnightNishfulLail)}'),
+                title: Text(
+                  context.tr('Sepertiga Malam Terakhir (Tahajud Utama)', 'Last Third of the Night (Best for Tahajjud)'),
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                subtitle: Text(
+                  context.tr(
+                    'Pertengahan malam (Nishful Lail): ${hhmm(ext.midnightNishfulLail)}',
+                    'Islamic Midnight (Nisf al-Layl): ${hhmm(ext.midnightNishfulLail)}',
+                  ),
+                ),
                 trailing: Text(
                   '${hhmm(ext.lastThirdNightStart)} – ${hhmm(ext.lastThirdNightEnd)}',
                   key: const Key('extended-tahajud-window'),
@@ -325,15 +501,24 @@ class _AstronomyQiblaFiqihPageState extends ConsumerState<AstronomyQiblaFiqihPag
             ],
           ),
         ),
-        const SectionHeader('3 Waktu Terlarang Salat Sunnah Mutlak'),
-        for (final (title, start, end, desc) in ext.forbiddenWindows)
-          Card(
-            child: ListTile(
-              leading: Icon(MoeslimIcons.peringatan, color: scheme.error),
-              title: Text('$title (${hhmm(start)} – ${hhmm(end)})', style: const TextStyle(fontWeight: FontWeight.w700)),
-              subtitle: Text(desc),
-            ),
+        SectionHeader(
+          context.tr('3 Waktu Terlarang Salat Sunnah Mutlak', '3 Prohibited Times for Unspecified Voluntary Prayers'),
+        ),
+        for (var i = 0; i < ext.forbiddenWindows.length; i++) ...[
+          Builder(
+            builder: (context) {
+              final (title, start, end, desc) = ext.forbiddenWindows[i];
+              final loc = _forbiddenWindowText(context, i, title, desc);
+              return Card(
+                child: ListTile(
+                  leading: Icon(MoeslimIcons.peringatan, color: scheme.error),
+                  title: Text('${loc.title} (${hhmm(start)} – ${hhmm(end)})', style: const TextStyle(fontWeight: FontWeight.w700)),
+                  subtitle: Text(loc.desc),
+                ),
+              );
+            },
           ),
+        ],
       ],
     );
   }
@@ -356,9 +541,15 @@ class _AstronomyQiblaFiqihPageState extends ConsumerState<AstronomyQiblaFiqihPag
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Amalan Sunnah Hari Jumat', style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
                     Text(
-                      '${_fridayChecks.length} / ${fridaySunnahCatalog.length} selesai',
+                      context.tr('Amalan Sunnah Hari Jumat', 'Friday Sunnah Practices'),
+                      style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    Text(
+                      context.tr(
+                        '${_fridayChecks.length} / ${fridaySunnahCatalog.length} selesai',
+                        '${_fridayChecks.length} / ${fridaySunnahCatalog.length} done',
+                      ),
                       key: const Key('friday-sunnah-progress'),
                       style: t.labelLarge?.copyWith(color: scheme.primary, fontWeight: FontWeight.w800),
                     ),
@@ -371,19 +562,25 @@ class _AstronomyQiblaFiqihPageState extends ConsumerState<AstronomyQiblaFiqihPag
           ),
         ),
         const SizedBox(height: 8),
-        for (final item in fridaySunnahCatalog)
-          Card(
-            child: CheckboxListTile(
-              key: Key('friday-check-${item.id}'),
-              title: Text(item.title, style: const TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: Text(item.dalilAndVirtue),
-              value: _fridayChecks.contains(item.id),
-              onChanged: (_) async {
-                final next = await ref.read(fridaySunnahRepoProvider).toggleItem(_today, item.id);
-                setState(() => _fridayChecks = next);
-              },
-            ),
+        for (final item in fridaySunnahCatalog) ...[
+          Builder(
+            builder: (context) {
+              final loc = _fridaySunnahText(context, item);
+              return Card(
+                child: CheckboxListTile(
+                  key: Key('friday-check-${item.id}'),
+                  title: Text(loc.title, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: Text(loc.dalil),
+                  value: _fridayChecks.contains(item.id),
+                  onChanged: (_) async {
+                    final next = await ref.read(fridaySunnahRepoProvider).toggleItem(_today, item.id);
+                    setState(() => _fridayChecks = next);
+                  },
+                ),
+              );
+            },
           ),
+        ],
       ],
     );
   }

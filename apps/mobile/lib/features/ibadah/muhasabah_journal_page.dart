@@ -3,6 +3,7 @@ import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:personal_core/personal_core.dart';
 
+import '../../core/l10n.dart';
 import '../../core/providers.dart';
 import '../../ui/components.dart';
 
@@ -23,7 +24,7 @@ class _MuhasabahJournalPageState extends ConsumerState<MuhasabahJournalPage> {
   List<MuhasabahEntry> _entries = const [];
   String? _savedPin;
   bool _unlocked = false;
-  String? _pinError;
+  bool _pinInvalid = false;
   bool _loading = true;
 
   static const _moods = [
@@ -32,6 +33,14 @@ class _MuhasabahJournalPageState extends ConsumerState<MuhasabahJournalPage> {
     'Perlu Muhasabah',
     'Memohon Kekuatan',
   ];
+
+  String _moodLabel(BuildContext context, String mood) => switch (mood) {
+        'Tenang & Bersyukur' => context.tr('Tenang & Bersyukur', 'Calm & Grateful'),
+        'Bersemangat Taat' => context.tr('Bersemangat Taat', 'Motivated in Worship'),
+        'Perlu Muhasabah' => context.tr('Perlu Muhasabah', 'Need Reflection'),
+        'Memohon Kekuatan' => context.tr('Memohon Kekuatan', 'Seeking Strength'),
+        _ => mood,
+      };
 
   @override
   void initState() {
@@ -84,22 +93,22 @@ class _MuhasabahJournalPageState extends ConsumerState<MuhasabahJournalPage> {
     final result = await showDialog<String>(
       context: context,
       builder: (dialogCtx) => AlertDialog(
-        title: const Text('Kunci PIN Jurnal Muhasabah'),
+        title: Text(dialogCtx.tr('Kunci PIN Jurnal Muhasabah', 'Muhasabah Journal PIN Lock')),
         content: TextField(
           key: const Key('muhasabah-set-pin-field'),
           controller: ctrl,
           keyboardType: TextInputType.number,
           obscureText: true,
-          decoration: const InputDecoration(
-            labelText: 'PIN Baru (kosongkan untuk matikan kunci)',
+          decoration: InputDecoration(
+            labelText: dialogCtx.tr('PIN Baru (kosongkan untuk matikan kunci)', 'New PIN (leave blank to disable lock)'),
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogCtx), child: const Text('Batal')),
+          TextButton(onPressed: () => Navigator.pop(dialogCtx), child: Text(dialogCtx.tr('Batal', 'Cancel'))),
           FilledButton(
             key: const Key('muhasabah-save-pin-btn'),
             onPressed: () => Navigator.pop(dialogCtx, ctrl.text.trim()),
-            child: const Text('Simpan'),
+            child: Text(dialogCtx.tr('Simpan', 'Save')),
           ),
         ],
       ),
@@ -118,13 +127,15 @@ class _MuhasabahJournalPageState extends ConsumerState<MuhasabahJournalPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Jurnal Muhasabah & Syukur'),
+        title: Text(context.tr('Jurnal Muhasabah & Syukur', 'Muhasabah & Gratitude Journal')),
         centerTitle: true,
         actions: [
           if (_unlocked)
             IconButton(
               key: const Key('muhasabah-pin-config-btn'),
-              tooltip: _savedPin == null ? 'Pasang kunci PIN lokal' : 'Ubah / hapus kunci PIN',
+              tooltip: _savedPin == null
+                  ? context.tr('Pasang kunci PIN lokal', 'Set local PIN lock')
+                  : context.tr('Ubah / hapus kunci PIN', 'Change or remove PIN lock'),
               onPressed: _configurePinDialog,
               icon: Icon(_savedPin == null ? MoeslimIcons.bukaKunci : Icons.lock_outline),
             ),
@@ -144,7 +155,10 @@ class _MuhasabahJournalPageState extends ConsumerState<MuhasabahJournalPage> {
                           children: [
                             Icon(Icons.lock_outline, size: 36, color: scheme.primary),
                             const SizedBox(height: 10),
-                            Text('Jurnal Terkunci PIN Lokal', style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                            Text(
+                              context.tr('Jurnal Terkunci PIN Lokal', 'Journal Locked with Local PIN'),
+                              style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                            ),
                             const SizedBox(height: 12),
                             TextField(
                               key: const Key('muhasabah-unlock-pin-field'),
@@ -152,8 +166,8 @@ class _MuhasabahJournalPageState extends ConsumerState<MuhasabahJournalPage> {
                               keyboardType: TextInputType.number,
                               obscureText: true,
                               decoration: InputDecoration(
-                                labelText: 'Masukkan PIN Jurnal',
-                                errorText: _pinError,
+                                labelText: context.tr('Masukkan PIN Jurnal', 'Enter Journal PIN'),
+                                errorText: _pinInvalid ? context.tr('PIN tidak sesuai.', 'Incorrect PIN.') : null,
                               ),
                             ),
                             const SizedBox(height: 12),
@@ -164,14 +178,14 @@ class _MuhasabahJournalPageState extends ConsumerState<MuhasabahJournalPage> {
                                 setState(() {
                                   if (ok) {
                                     _unlocked = true;
-                                    _pinError = null;
+                                    _pinInvalid = false;
                                   } else {
-                                    _pinError = 'PIN tidak sesuai.';
+                                    _pinInvalid = true;
                                   }
                                 });
                               },
                               icon: const Icon(MoeslimIcons.bukaKunci),
-                              label: const Text('Buka Jurnal'),
+                              label: Text(context.tr('Buka Jurnal', 'Unlock Journal')),
                             ),
                           ],
                         ),
@@ -182,10 +196,13 @@ class _MuhasabahJournalPageState extends ConsumerState<MuhasabahJournalPage> {
               : ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
-                    const PatternBanner(
+                    PatternBanner(
                       child: Text(
-                        '"Hisablah (evaluasilah) diri kalian sebelum kalian dihisab." Ruang refleksi malam ini tersimpan 100% lokal di perangkat Anda.',
-                        style: TextStyle(color: Colors.white, fontSize: 14),
+                        context.tr(
+                          '"Hisablah (evaluasilah) diri kalian sebelum kalian dihisab." Ruang refleksi malam ini tersimpan 100% lokal di perangkat Anda.',
+                          '"Hold yourselves to account before you are held to account." This nightly reflection space is stored 100% locally on your device.',
+                        ),
+                        style: const TextStyle(color: Colors.white, fontSize: 14),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -195,7 +212,10 @@ class _MuhasabahJournalPageState extends ConsumerState<MuhasabahJournalPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Text('Tulis Refleksi Hari Ini', style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                            Text(
+                              context.tr('Tulis Refleksi Hari Ini', 'Write Today\'s Reflection'),
+                              style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                            ),
                             const SizedBox(height: 10),
                             Wrap(
                               spacing: 8,
@@ -204,7 +224,7 @@ class _MuhasabahJournalPageState extends ConsumerState<MuhasabahJournalPage> {
                                 for (final m in _moods)
                                   ChoiceChip(
                                     materialTapTargetSize: MaterialTapTargetSize.padded,
-                                    label: Text(m),
+                                    label: Text(_moodLabel(context, m)),
                                     selected: _selectedMood == m,
                                     onSelected: (_) => setState(() => _selectedMood = m),
                                   ),
@@ -215,8 +235,11 @@ class _MuhasabahJournalPageState extends ConsumerState<MuhasabahJournalPage> {
                               key: const Key('muhasabah-gratitude-field'),
                               controller: _gratitudeCtrl,
                               maxLines: 2,
-                              decoration: const InputDecoration(
-                                labelText: '1. Nikmat Allah yang Disyukuri Hari Ini',
+                              decoration: InputDecoration(
+                                labelText: context.tr(
+                                  '1. Nikmat Allah yang Disyukuri Hari Ini',
+                                  '1. Blessings from Allah I Am Grateful for Today',
+                                ),
                               ),
                             ),
                             const SizedBox(height: 10),
@@ -224,8 +247,11 @@ class _MuhasabahJournalPageState extends ConsumerState<MuhasabahJournalPage> {
                               key: const Key('muhasabah-eval-field'),
                               controller: _evalCtrl,
                               maxLines: 2,
-                              decoration: const InputDecoration(
-                                labelText: '2. Evaluasi Diri & Hal yang Perlu Diperbaiki',
+                              decoration: InputDecoration(
+                                labelText: context.tr(
+                                  '2. Evaluasi Diri & Hal yang Perlu Diperbaiki',
+                                  '2. Self-Reflection & Areas to Improve',
+                                ),
                               ),
                             ),
                             const SizedBox(height: 10),
@@ -233,8 +259,11 @@ class _MuhasabahJournalPageState extends ConsumerState<MuhasabahJournalPage> {
                               key: const Key('muhasabah-hope-field'),
                               controller: _hopeCtrl,
                               maxLines: 2,
-                              decoration: const InputDecoration(
-                                labelText: '3. Doa & Tekad Kebaikan Esok Hari',
+                              decoration: InputDecoration(
+                                labelText: context.tr(
+                                  '3. Doa & Tekad Kebaikan Esok Hari',
+                                  '3. Prayers & Good Intentions for Tomorrow',
+                                ),
                               ),
                             ),
                             const SizedBox(height: 12),
@@ -242,18 +271,28 @@ class _MuhasabahJournalPageState extends ConsumerState<MuhasabahJournalPage> {
                               key: const Key('muhasabah-save-btn'),
                               onPressed: _saveJournal,
                               icon: const Icon(MoeslimIcons.berhasil),
-                              label: const Text('Simpan Jurnal Muhasabah'),
+                              label: Text(context.tr('Simpan Jurnal Muhasabah', 'Save Muhasabah Entry')),
                             ),
                           ],
                         ),
                       ),
                     ),
-                    SectionHeader('Arsip Muhasabah (${_entries.length})'),
+                    SectionHeader(
+                      context.tr(
+                        'Arsip Muhasabah (${_entries.length})',
+                        'Muhasabah Archive (${_entries.length})',
+                      ),
+                    ),
                     if (_entries.isEmpty)
-                      const Card(
+                      Card(
                         child: Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Text('Belum ada catatan muhasabah. Luangkan 2 menit sebelum tidur untuk mencatat syukur dan evaluasi diri.'),
+                          padding: const EdgeInsets.all(16),
+                          child: Text(
+                            context.tr(
+                              'Belum ada catatan muhasabah. Luangkan 2 menit sebelum tidur untuk mencatat syukur dan evaluasi diri.',
+                              'No reflection entries yet. Take 2 minutes before sleep to record your gratitude and self-evaluation.',
+                            ),
+                          ),
                         ),
                       )
                     else
@@ -268,9 +307,12 @@ class _MuhasabahJournalPageState extends ConsumerState<MuhasabahJournalPage> {
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text('${e.dateKey} · ${e.mood}', style: t.titleSmall?.copyWith(color: scheme.primary, fontWeight: FontWeight.w700)),
+                                    Text(
+                                      '${e.dateKey} · ${_moodLabel(context, e.mood)}',
+                                      style: t.titleSmall?.copyWith(color: scheme.primary, fontWeight: FontWeight.w700),
+                                    ),
                                     IconButton(
-                                      tooltip: 'Hapus entri',
+                                      tooltip: context.tr('Hapus entri', 'Delete entry'),
                                       onPressed: () async {
                                         await ref.read(muhasabahRepoProvider).deleteEntry(e.dateKey);
                                         await _load();
@@ -279,9 +321,12 @@ class _MuhasabahJournalPageState extends ConsumerState<MuhasabahJournalPage> {
                                     ),
                                   ],
                                 ),
-                                if (e.gratitude.isNotEmpty) Text('Syukur: ${e.gratitude}', style: t.bodyMedium),
-                                if (e.evaluation.isNotEmpty) Text('Muhasabah: ${e.evaluation}', style: t.bodyMedium),
-                                if (e.hopeAndPrayer.isNotEmpty) Text('Doa & Tekad: ${e.hopeAndPrayer}', style: t.bodySmall),
+                                if (e.gratitude.isNotEmpty)
+                                  Text(context.tr('Syukur: ${e.gratitude}', 'Gratitude: ${e.gratitude}'), style: t.bodyMedium),
+                                if (e.evaluation.isNotEmpty)
+                                  Text(context.tr('Muhasabah: ${e.evaluation}', 'Reflection: ${e.evaluation}'), style: t.bodyMedium),
+                                if (e.hopeAndPrayer.isNotEmpty)
+                                  Text(context.tr('Doa & Tekad: ${e.hopeAndPrayer}', 'Prayer & Resolve: ${e.hopeAndPrayer}'), style: t.bodySmall),
                               ],
                             ),
                           ),

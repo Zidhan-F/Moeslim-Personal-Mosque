@@ -3,6 +3,7 @@ import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:personal_core/personal_core.dart';
 
+import '../../core/l10n.dart';
 import '../../core/location_service.dart';
 import '../../core/providers.dart';
 
@@ -19,10 +20,10 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   int _page = 0;
   City _city = indonesianCities.firstWhere((c) => c.name == 'Jakarta');
   DeviceLocation? _gpsLocation;
-  String? _gpsNotice;
+  GpsState? _lastGpsState;
   bool _locating = false;
 
-  static const _slides = [
+  static const _slidesId = [
     (
       'Selamat Datang di',
       'Moeslim PM',
@@ -31,38 +32,69 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     (
       'Ibadah harian',
       'tetap jalan offline',
-      'Jadwal salat, Al-Qur\'an, dzikir, kiblat, dan catatan ibadah tersimpan di perangkat Anda, tanpa akun dan tanpa iklan.',
+      "Jadwal salat, Al-Qur'an, dzikir, kiblat, dan catatan ibadah tersimpan di perangkat Anda, tanpa akun dan tanpa iklan.",
     ),
     (
       'Dengarkan',
-      'Murottal Al-Qur\'an',
+      "Murottal Al-Qur'an",
       'Putar per ayat atau per surah dari qari pilihan, lalu simpan untuk didengar offline.',
+    ),
+  ];
+
+  static const _slidesEn = [
+    (
+      'Welcome to',
+      'Moeslim PM',
+      'One app for daily worship and mosque management, built to be simple, modern, and integrated.',
+    ),
+    (
+      'Daily worship',
+      'works offline',
+      "Prayer times, Qur'an, dhikr, Qibla, and worship logs stay on your device, with no account and no ads.",
+    ),
+    (
+      'Listen to',
+      "Qur'an Recitations",
+      'Play verse by verse or by surah from selected reciters, and save audio for offline listening.',
     ),
   ];
 
   Future<void> _detectGps() async {
     setState(() {
       _locating = true;
-      _gpsNotice = null;
+      _lastGpsState = null;
     });
     final state = await ref.read(gpsControllerProvider.notifier).ensureActive(requestPermissionIfNeeded: true);
     if (!mounted) return;
     setState(() {
       _locating = false;
-      switch (state) {
-        case GpsReady(:final position):
-          _gpsLocation = position.toDeviceLocation();
-          _gpsNotice = 'GPS aktif: ${_gpsLocation!.label}';
-        case GpsServiceDisabled():
-          _gpsNotice = 'GPS perangkat sedang nonaktif. Aktifkan GPS atau pilih kota manual.';
-        case GpsPermissionDenied() || GpsPermissionDeniedForever():
-          _gpsNotice = 'Izin lokasi belum diberikan. Anda bisa mengaktifkannya nanti di Jadwal Salat.';
-        case GpsError(:final message):
-          _gpsNotice = message;
-        case GpsChecking() || GpsAcquiring():
-          _gpsNotice = 'Menunggu sinyal GPS...';
+      _lastGpsState = state;
+      if (state is GpsReady) {
+        _gpsLocation = state.position.toDeviceLocation();
       }
     });
+  }
+
+  String? _gpsNoticeText(BuildContext context) {
+    final state = _lastGpsState;
+    if (state == null) return null;
+    return switch (state) {
+      GpsReady() when _gpsLocation != null => context.tr(
+        'GPS aktif: ${_gpsLocation!.label}',
+        'GPS active: ${localizeLocationLabel(_gpsLocation!.label, context.lang)}',
+      ),
+      GpsServiceDisabled() => context.tr(
+        'GPS perangkat sedang nonaktif. Aktifkan GPS atau pilih kota manual.',
+        'Device GPS is turned off. Enable GPS or choose a city manually.',
+      ),
+      GpsPermissionDenied() || GpsPermissionDeniedForever() => context.tr(
+        'Izin lokasi belum diberikan. Anda bisa mengaktifkannya nanti di Jadwal Salat.',
+        'Location permission not granted yet. You can enable it later in Prayer Times.',
+      ),
+      GpsError(:final message) => message,
+      GpsChecking() || GpsAcquiring() => context.tr('Menunggu sinyal GPS...', 'Waiting for GPS signal...'),
+      _ => null,
+    };
   }
 
   Future<void> _finish() async {
@@ -86,22 +118,53 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
-    final last = _page == _slides.length - 1;
+    final lang = context.lang;
+    final slides = lang == AppLanguage.en ? _slidesEn : _slidesId;
+    final last = _page == slides.length - 1;
+    final gpsNotice = _gpsNoticeText(context);
+
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(key: const Key('onboarding-skip'), onPressed: _finish, child: const Text('Lewati')),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  SegmentedButton<AppLanguage>(
+                    key: const Key('onboarding-language'),
+                    showSelectedIcon: false,
+                    style: SegmentedButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                    ),
+                    segments: const [
+                      ButtonSegment(value: AppLanguage.id, label: Text('ID')),
+                      ButtonSegment(value: AppLanguage.en, label: Text('EN')),
+                    ],
+                    selected: {lang},
+                    onSelectionChanged: (v) {
+                      final current = ref.read(settingsProvider).value ?? PersonalSettings.defaults;
+                      ref.read(settingsProvider.notifier).save(current.copyWith(language: v.first));
+                    },
+                  ),
+                  TextButton(
+                    key: const Key('onboarding-skip'),
+                    onPressed: _finish,
+                    child: Text(context.tr('Lewati', 'Skip')),
+                  ),
+                ],
+              ),
             ),
             Expanded(
               child: PageView.builder(
                 controller: _controller,
-                itemCount: _slides.length,
+                itemCount: slides.length,
                 onPageChanged: (i) => setState(() => _page = i),
                 itemBuilder: (_, i) {
-                  final (pre, title, body) = _slides[i];
+                  final (pre, title, body) = slides[i];
                   return SingleChildScrollView(
                     padding: const EdgeInsets.symmetric(horizontal: 28),
                     child: Column(
@@ -126,14 +189,14 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                         ),
                         const SizedBox(height: 12),
                         Text(body, style: t.bodyLarge),
-                        if (i == _slides.length - 1) ...[
+                        if (i == slides.length - 1) ...[
                           const SizedBox(height: 20),
                           DropdownButtonFormField<City>(
                             key: const Key('onboarding-city'),
                             initialValue: _city,
-                            decoration: const InputDecoration(
-                              labelText: 'Kota untuk jadwal salat',
-                              prefixIcon: Icon(MoeslimIcons.lokasi),
+                            decoration: InputDecoration(
+                              labelText: context.tr('Kota untuk jadwal salat', 'City for prayer times'),
+                              prefixIcon: const Icon(MoeslimIcons.lokasi),
                             ),
                             items: [
                               for (final c in indonesianCities)
@@ -142,7 +205,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                             onChanged: (c) => setState(() {
                               _city = c ?? _city;
                               _gpsLocation = null;
-                              _gpsNotice = null;
+                              _lastGpsState = null;
                             }),
                           ),
                           const SizedBox(height: 12),
@@ -152,14 +215,24 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                               key: const Key('onboarding-use-gps'),
                               onPressed: _locating ? null : _detectGps,
                               icon: _locating
-                                  ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                                  ? const SizedBox.square(
+                                      dimension: 18,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    )
                                   : const Icon(MoeslimIcons.lokasi),
-                              label: Text(_gpsLocation != null ? 'Lokasi GPS Aktif (${_gpsLocation!.label})' : 'Gunakan Lokasi GPS Presisi'),
+                              label: Text(
+                                _gpsLocation != null
+                                    ? context.tr(
+                                        'Lokasi GPS Aktif (${_gpsLocation!.label})',
+                                        'GPS Location Active (${localizeLocationLabel(_gpsLocation!.label, lang)})',
+                                      )
+                                    : context.tr('Gunakan Lokasi GPS Presisi', 'Use Precise GPS Location'),
+                              ),
                             ),
                           ),
-                          if (_gpsNotice != null) ...[
+                          if (gpsNotice != null) ...[
                             const SizedBox(height: 6),
-                            Text(_gpsNotice!, style: t.bodySmall),
+                            Text(gpsNotice, style: t.bodySmall),
                           ],
                         ],
                       ],
@@ -171,7 +244,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                for (var i = 0; i < _slides.length; i++)
+                for (var i = 0; i < slides.length; i++)
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     margin: const EdgeInsets.all(4),
@@ -196,7 +269,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                       : () => _controller.nextPage(duration: const Duration(milliseconds: 280), curve: Curves.easeOut),
                   icon: const Icon(MoeslimIcons.lanjut),
                   iconAlignment: IconAlignment.end,
-                  label: Text(last ? 'Mulai Sekarang' : 'Lanjut'),
+                  label: Text(last ? context.tr('Mulai Sekarang', 'Get Started') : context.tr('Lanjut', 'Next')),
                 ),
               ),
             ),

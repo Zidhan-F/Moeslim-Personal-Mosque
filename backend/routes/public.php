@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Route;
 
 // Perangkat TV Display
 Route::post('display/pair', [DisplayController::class, 'pair'])->middleware('throttle:5,1');
+Route::post('display/sessions', [DisplayController::class, 'createSession'])->middleware('throttle:20,1');
+Route::post('display/sessions/{sessionId}/poll', [DisplayController::class, 'pollSession'])->middleware('throttle:60,1');
 Route::get('display/content', [DisplayController::class, 'content'])->middleware(['display.auth', 'throttle:120,1']);
 Route::get('display/qris', [DisplayController::class, 'qrisImage'])->middleware(['display.auth', 'throttle:60,1']);
 

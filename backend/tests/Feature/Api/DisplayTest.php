@@ -150,4 +150,62 @@ class DisplayTest extends TestCase
         Sanctum::actingAs($other->members()->first()->user);
         $this->postJson("/api/mosques/{$other->id}/displays/{$id}/revoke")->assertNotFound();
     }
+
+    public function test_design_config_is_validated_saved_and_sent_to_tv(): void
+    {
+        $token = $this->pair();
+        $id = DisplayDevice::first()->id;
+        Sanctum::actingAs($this->owner);
+
+        $this->patchJson("/api/mosques/{$this->mosque->id}/displays/{$id}", ['config' => [
+            'theme' => 'custom', 'custom_background' => '#123456', 'custom_background_2' => '#000000',
+            'custom_accent' => '#D9AB36', 'show_illustration' => false, 'show_ticker' => true,
+            'info_seconds' => 30, 'large_clock' => true, 'ticker_text' => '  Kajian Ahad pagi  ',
+            'tidak_dikenal' => 'dibuang',
+        ]])->assertOk()
+            ->assertJsonPath('data.config.theme', 'custom')
+            ->assertJsonPath('data.config.ticker_text', 'Kajian Ahad pagi')
+            ->assertJsonMissingPath('data.config.tidak_dikenal');
+
+        // Perubahan sebagian mempertahankan kunci lain.
+        $this->patchJson("/api/mosques/{$this->mosque->id}/displays/{$id}", ['config' => ['show_hijri' => false]])
+            ->assertOk()->assertJsonPath('data.config.custom_background', '#123456')
+            ->assertJsonPath('data.config.show_hijri', false);
+
+        foreach ([['theme' => 'pink'], ['custom_accent' => 'merah'], ['info_seconds' => 15], ['ticker_text' => str_repeat('a', 161)]] as $bad) {
+            $this->patchJson("/api/mosques/{$this->mosque->id}/displays/{$id}", ['config' => $bad])->assertUnprocessable();
+        }
+
+        $this->app['auth']->forgetGuards();
+        $this->withToken($token)->getJson('/api/display/content')->assertOk()
+            ->assertJsonPath('device.config.theme', 'custom')
+            ->assertJsonPath('device.config.info_seconds', 30)
+            ->assertJsonPath('device.config.large_clock', true);
+    }
+
+    public function test_preview_returns_display_content_for_members_only(): void
+    {
+        $this->pair();
+        $id = DisplayDevice::first()->id;
+        Sanctum::actingAs($this->owner);
+        $this->postJson("/api/mosques/{$this->mosque->id}/announcements", [
+            'title' => 'Tayang di TV', 'body' => 'y', 'visibility' => 'public',
+        ])->assertCreated();
+
+        $this->getJson("/api/mosques/{$this->mosque->id}/displays/preview")->assertOk()
+            ->assertJsonPath('data.mosque.name', $this->mosque->name)
+            ->assertJsonPath('data.announcements.0.title', 'Tayang di TV')
+            ->assertJsonStructure(['server_time', 'data' => ['mosque' => ['settings'], 'events', 'staff_today']]);
+
+        $p = $this->addMember($this->mosque, 'pengurus');
+        Sanctum::actingAs($p);
+        $this->getJson("/api/mosques/{$this->mosque->id}/displays/preview")->assertOk();
+        $this->patchJson("/api/mosques/{$this->mosque->id}/displays/{$id}", ['config' => ['theme' => 'dark']])->assertForbidden();
+
+        $outsider = $this->verifiedUser();
+        Sanctum::actingAs($outsider);
+        // Bukan anggota: tenant disembunyikan (404), sama seperti endpoint masjid lainnya.
+        $this->getJson("/api/mosques/{$this->mosque->id}/displays/preview")->assertNotFound();
+        $this->getJson("/api/mosques/{$this->mosque->id}/displays/qris-image")->assertNotFound();
+    }
 }

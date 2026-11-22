@@ -4,6 +4,7 @@ import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:personal_core/personal_core.dart';
 
 import '../../core/format.dart';
+import '../../core/l10n.dart';
 import '../../core/providers.dart';
 import '../../ui/components.dart';
 
@@ -15,7 +16,7 @@ class SedekahTrackerPage extends ConsumerStatefulWidget {
 }
 
 class _SedekahTrackerPageState extends ConsumerState<SedekahTrackerPage> {
-  final _amountCtrl = TextEditingController(text: '25000');
+  final _amountCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
   SedekahCategory _selectedCategory = SedekahCategory.sedekahSubuh;
   List<SedekahEntry> _entries = const [];
@@ -56,9 +57,18 @@ class _SedekahTrackerPageState extends ConsumerState<SedekahTrackerPage> {
           amountRupiah: amount,
           note: _noteCtrl.text,
         );
+    _amountCtrl.clear();
     _noteCtrl.clear();
     await _load();
   }
+
+  String _categoryLabel(BuildContext context, SedekahCategory cat) => switch (cat) {
+        SedekahCategory.sedekahSubuh => context.tr(cat.label, 'Fajr Charity'),
+        SedekahCategory.infaqJumatMasjid => context.tr(cat.label, 'Friday & Mosque Infaq'),
+        SedekahCategory.santunanYatimDhuafa => context.tr(cat.label, 'Orphans & Needy Aid'),
+        SedekahCategory.wakafAmalJariyah => context.tr(cat.label, 'Waqf & Ongoing Charity'),
+        SedekahCategory.kebaikanNonMateri => context.tr(cat.label, 'Non-Material Charity & Help'),
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -68,7 +78,7 @@ class _SedekahTrackerPageState extends ConsumerState<SedekahTrackerPage> {
     final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Pelacak Sedekah & Kebaikan'), centerTitle: true),
+      appBar: AppBar(title: Text(context.tr('Pelacak Sedekah & Kebaikan', 'Charity & Good Deeds Tracker')), centerTitle: true),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
@@ -77,14 +87,19 @@ class _SedekahTrackerPageState extends ConsumerState<SedekahTrackerPage> {
                 ArchHeader(
                   child: Column(
                     children: [
-                      Text('Total Sedekah Tercatat', style: t.bodyMedium),
+                      Text(context.tr('Total Sedekah Tercatat', 'Total Recorded Charity'), style: t.bodyMedium),
                       Text(
                         rupiah(totalAmount),
                         key: const Key('sedekah-total-amount'),
                         style: t.headlineSmall?.copyWith(color: scheme.primary, fontWeight: FontWeight.w800),
                       ),
                       const SizedBox(height: 6),
-                      Text('Target Bulanan: ${rupiah(_monthlyTarget)} (${_entries.length} kali amal)'),
+                      Text(
+                        context.tr(
+                          'Target Bulanan: ${rupiah(_monthlyTarget)} (${_entries.length} kali amal)',
+                          'Monthly Target: ${rupiah(_monthlyTarget)} (${_entries.length} deeds)',
+                        ),
+                      ),
                       const SizedBox(height: 8),
                       LinearProgressIndicator(value: ratio, minHeight: 8, borderRadius: BorderRadius.circular(4)),
                     ],
@@ -97,7 +112,10 @@ class _SedekahTrackerPageState extends ConsumerState<SedekahTrackerPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text('Catat Sedekah / Amal Kebaikan Hari Ini', style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                        Text(
+                          context.tr('Catat Sedekah / Amal Kebaikan Hari Ini', 'Log Today\'s Charity / Good Deed'),
+                          style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                        ),
                         const SizedBox(height: 10),
                         Wrap(
                           spacing: 8,
@@ -107,7 +125,7 @@ class _SedekahTrackerPageState extends ConsumerState<SedekahTrackerPage> {
                               ChoiceChip(
                                 key: Key('sedekah-cat-${cat.name}'),
                                 materialTapTargetSize: MaterialTapTargetSize.padded,
-                                label: Text(cat.label),
+                                label: Text(_categoryLabel(context, cat)),
                                 selected: _selectedCategory == cat,
                                 onSelected: (_) => setState(() => _selectedCategory = cat),
                               ),
@@ -118,8 +136,13 @@ class _SedekahTrackerPageState extends ConsumerState<SedekahTrackerPage> {
                           key: const Key('sedekah-amount-field'),
                           controller: _amountCtrl,
                           keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: 'Nominal Sedekah (Rp, isi 0 bila non-materi)',
+                          decoration: InputDecoration(
+                            labelText: context.tr(
+                              'Nominal Sedekah (Rp, kosongkan bila non-materi)',
+                              'Charity Amount (Rp, leave blank if non-material)',
+                            ),
+                            hintText: context.tr('Contoh: 25000', 'Example: 25000'),
+                            floatingLabelBehavior: FloatingLabelBehavior.always,
                             prefixText: 'Rp ',
                           ),
                         ),
@@ -127,8 +150,11 @@ class _SedekahTrackerPageState extends ConsumerState<SedekahTrackerPage> {
                         TextField(
                           key: const Key('sedekah-note-field'),
                           controller: _noteCtrl,
-                          decoration: const InputDecoration(
-                            labelText: 'Catatan Kebaikan / Niat (Opsional, privat di perangkat)',
+                          decoration: InputDecoration(
+                            labelText: context.tr(
+                              'Catatan Kebaikan / Niat (Opsional, privat di perangkat)',
+                              'Good Deed Note / Intention (Optional, stored privately)',
+                            ),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -136,18 +162,28 @@ class _SedekahTrackerPageState extends ConsumerState<SedekahTrackerPage> {
                           key: const Key('sedekah-add-btn'),
                           onPressed: _addSedekah,
                           icon: const Icon(MoeslimIcons.donasi),
-                          label: const Text('Simpan Catatan Sedekah'),
+                          label: Text(context.tr('Simpan Catatan Sedekah', 'Save Charity Log')),
                         ),
                       ],
                     ),
                   ),
                 ),
-                SectionHeader('Riwayat Sedekah Privat (${_entries.length})'),
+                SectionHeader(
+                  context.tr(
+                    'Riwayat Sedekah Privat (${_entries.length})',
+                    'Private Charity History (${_entries.length})',
+                  ),
+                ),
                 if (_entries.isEmpty)
-                  const Card(
+                  Card(
                     child: Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Text('Belum ada catatan sedekah. Semua catatan disimpan lokal di perangkat tanpa akun.'),
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        context.tr(
+                          'Belum ada catatan sedekah. Semua catatan disimpan lokal di perangkat tanpa akun.',
+                          'No charity records yet. All entries are saved locally on your device without an account.',
+                        ),
+                      ),
                     ),
                   )
                 else
@@ -156,14 +192,14 @@ class _SedekahTrackerPageState extends ConsumerState<SedekahTrackerPage> {
                       child: ListTile(
                         leading: Icon(MoeslimIcons.donasi, color: scheme.primary),
                         title: Text(
-                          '${e.category.label} · ${rupiah(e.amountRupiah)}',
+                          '${_categoryLabel(context, e.category)} · ${rupiah(e.amountRupiah)}',
                           style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
                         subtitle: Text(
                           e.note.isEmpty ? e.dateKey : '${e.dateKey} · ${e.note}',
                         ),
                         trailing: IconButton(
-                          tooltip: 'Hapus catatan',
+                          tooltip: context.tr('Hapus catatan', 'Delete entry'),
                           onPressed: () async {
                             await ref.read(sedekahRepoProvider).deleteEntry(e.id);
                             await _load();

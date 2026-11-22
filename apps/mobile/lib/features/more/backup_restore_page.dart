@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 
+import '../../core/l10n.dart';
 import '../../core/providers.dart';
 import '../../ui/components.dart';
 
@@ -15,7 +16,7 @@ class BackupRestorePage extends ConsumerStatefulWidget {
 
 class _BackupRestorePageState extends ConsumerState<BackupRestorePage> {
   final _jsonCtrl = TextEditingController();
-  String? _statusMessage;
+  ({String id, String en})? _status;
   bool _isError = false;
 
   @override
@@ -28,7 +29,10 @@ class _BackupRestorePageState extends ConsumerState<BackupRestorePage> {
     final summary = await ref.read(backupRestoreServiceProvider).createBackup();
     setState(() {
       _jsonCtrl.text = summary.jsonPayload;
-      _statusMessage = 'Berhasil membuat cadangan (${summary.exportedKeysCount} kategori data lokal).';
+      _status = (
+        id: 'Berhasil membuat cadangan (${summary.exportedKeysCount} kategori data lokal).',
+        en: 'Backup created (${summary.exportedKeysCount} local data categories).',
+      );
       _isError = false;
     });
   }
@@ -37,7 +41,10 @@ class _BackupRestorePageState extends ConsumerState<BackupRestorePage> {
     final raw = _jsonCtrl.text.trim();
     if (raw.isEmpty) {
       setState(() {
-        _statusMessage = 'Tempelkan isi JSON cadangan terlebih dahulu sebelum memulihkan.';
+        _status = (
+          id: 'Tempelkan isi JSON cadangan terlebih dahulu sebelum memulihkan.',
+          en: 'Paste your backup JSON first before restoring.',
+        );
         _isError = true;
       });
       return;
@@ -46,12 +53,18 @@ class _BackupRestorePageState extends ConsumerState<BackupRestorePage> {
       final count = await ref.read(backupRestoreServiceProvider).restoreFromJson(raw);
       ref.invalidate(settingsProvider);
       setState(() {
-        _statusMessage = 'Berhasil memulihkan $count kategori data ke perangkat ini.';
+        _status = (
+          id: 'Berhasil memulihkan $count kategori data ke perangkat ini.',
+          en: 'Restored $count data categories to this device.',
+        );
         _isError = false;
       });
     } on FormatException catch (e) {
       setState(() {
-        _statusMessage = 'Gagal memulihkan data: ${e.message}';
+        _status = (
+          id: 'Gagal memulihkan data: ${e.message}',
+          en: 'Failed to restore data: ${e.message}',
+        );
         _isError = true;
       });
     }
@@ -61,16 +74,23 @@ class _BackupRestorePageState extends ConsumerState<BackupRestorePage> {
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
     final scheme = Theme.of(context).colorScheme;
+    final statusMessage = _status == null ? null : context.tr(_status!.id, _status!.en);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Cadangkan & Pulihkan Data Lokal'), centerTitle: true),
+      appBar: AppBar(
+        title: Text(context.tr('Cadangkan & Pulihkan Data Lokal', 'Backup & Restore Local Data')),
+        centerTitle: true,
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const PatternBanner(
+          PatternBanner(
             child: Text(
-              'Moeslim Personal tidak menyimpan data Anda di server cloud. Gunakan fitur ini untuk mengekspor dan memulihkan penanda Al-Qur\'an, riwayat ibadah, tasbih, hafalan, dan pengaturan saat berganti ponsel.',
-              style: TextStyle(color: Colors.white, fontSize: 14),
+              context.tr(
+                "Moeslim Personal tidak menyimpan data Anda di server cloud. Gunakan fitur ini untuk mengekspor dan memulihkan penanda Al-Qur'an, riwayat ibadah, tasbih, hafalan, dan pengaturan saat berganti ponsel.",
+                "Moeslim Personal does not store your data on cloud servers. Use this tool to export and restore your Qur'an bookmarks, worship logs, tasbih, memorization, and settings when switching devices.",
+              ),
+              style: const TextStyle(color: Colors.white, fontSize: 14),
             ),
           ),
           const SizedBox(height: 12),
@@ -82,7 +102,7 @@ class _BackupRestorePageState extends ConsumerState<BackupRestorePage> {
                 key: const Key('backup-generate-btn'),
                 onPressed: _exportBackup,
                 icon: const Icon(MoeslimIcons.ekspor),
-                label: const Text('Buat Cadangan Data Sekarang'),
+                label: Text(context.tr('Buat Cadangan Data Sekarang', 'Create Backup Now')),
               ),
               OutlinedButton.icon(
                 key: const Key('backup-copy-btn'),
@@ -91,21 +111,28 @@ class _BackupRestorePageState extends ConsumerState<BackupRestorePage> {
                     : () {
                         Clipboard.setData(ClipboardData(text: _jsonCtrl.text));
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('JSON cadangan disalin ke papan klip.')),
+                          SnackBar(
+                            content: Text(
+                              context.tr(
+                                'JSON cadangan disalin ke papan klip.',
+                                'Backup JSON copied to clipboard.',
+                              ),
+                            ),
+                          ),
                         );
                       },
                 icon: const Icon(MoeslimIcons.bagikan),
-                label: const Text('Salin JSON'),
+                label: Text(context.tr('Salin JSON', 'Copy JSON')),
               ),
               OutlinedButton.icon(
                 key: const Key('backup-restore-btn'),
                 onPressed: _restoreBackup,
                 icon: const Icon(MoeslimIcons.impor),
-                label: const Text('Pulihkan dari JSON di Bawah'),
+                label: Text(context.tr('Pulihkan dari JSON di Bawah', 'Restore from JSON Below')),
               ),
             ],
           ),
-          if (_statusMessage != null) ...[
+          if (statusMessage != null) ...[
             const SizedBox(height: 12),
             Card(
               child: Padding(
@@ -119,7 +146,7 @@ class _BackupRestorePageState extends ConsumerState<BackupRestorePage> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        _statusMessage!,
+                        statusMessage,
                         key: const Key('backup-status-msg'),
                         style: t.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
                       ),
@@ -129,7 +156,7 @@ class _BackupRestorePageState extends ConsumerState<BackupRestorePage> {
               ),
             ),
           ],
-          const SectionHeader('Isi Berkas Cadangan (JSON)'),
+          SectionHeader(context.tr('Isi Berkas Cadangan (JSON)', 'Backup Payload (JSON)')),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(12),
@@ -137,8 +164,11 @@ class _BackupRestorePageState extends ConsumerState<BackupRestorePage> {
                 key: const Key('backup-json-field'),
                 controller: _jsonCtrl,
                 maxLines: 12,
-                decoration: const InputDecoration(
-                  hintText: 'Ketuk "Buat Cadangan Data Sekarang" atau tempelkan JSON cadangan Anda di sini...',
+                decoration: InputDecoration(
+                  hintText: context.tr(
+                    'Ketuk "Buat Cadangan Data Sekarang" atau tempelkan JSON cadangan Anda di sini...',
+                    'Tap "Create Backup Now" or paste your backup JSON here...',
+                  ),
                   border: InputBorder.none,
                 ),
               ),

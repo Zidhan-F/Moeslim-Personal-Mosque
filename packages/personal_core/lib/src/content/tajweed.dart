@@ -1,3 +1,5 @@
+import 'package:shared_prayer/shared_prayer.dart';
+
 /// Aturan tajwid untuk pewarnaan teks Al-Qur'an.
 ///
 /// Anotasi (posisi awal–akhir + aturan) dibuat saat build oleh `classifyTajweed` atas teks Tanzil
@@ -5,32 +7,150 @@
 /// Palet warna di sini satu sumber kebenaran dan dapat diselaraskan dengan konvensi mushaf
 /// tajwid yang dipilih penelaah.
 enum TajweedRule {
-  hamzatWasl('Hamzah Washal', 'Hamzah yang dibaca saat memulai, gugur saat disambung.', 0xFF9E9E9E, ['hamzat_wasl']),
-  lamSyamsiyah('Lam Syamsiyah', 'Lam ta\'rif tidak dibaca, melebur ke huruf syamsiyah sesudahnya.', 0xFFB0A48A,
-      ['lam_shamsiyyah']),
-  silent('Huruf tidak dibaca', 'Huruf yang tertulis tetapi tidak dilafalkan.', 0xFFBDBDBD, ['silent']),
-  ghunnah('Ghunnah', 'Dengung pada nun atau mim bertasydid, ±2 harakat.', 0xFFE65100, ['ghunnah']),
+  hamzatWasl(
+    'Hamzah Washal',
+    'Hamzah yang dibaca saat memulai, gugur saat disambung.',
+    0xFF9E9E9E,
+    ['hamzat_wasl'],
+    'Hamzat al-Wasl',
+    'Pronounced when starting a word, dropped when continuing from the previous word.',
+  ),
+  lamSyamsiyah(
+    'Lam Syamsiyah',
+    'Lam ta\'rif tidak dibaca, melebur ke huruf syamsiyah sesudahnya.',
+    0xFFB0A48A,
+    ['lam_shamsiyyah'],
+    'Lam Shamsiyyah',
+    'The definite article lam is silent and merges into the following sun letter.',
+  ),
+  silent(
+    'Huruf tidak dibaca',
+    'Huruf yang tertulis tetapi tidak dilafalkan.',
+    0xFFBDBDBD,
+    ['silent'],
+    'Silent Letter',
+    'A letter that is written in the script but not pronounced.',
+  ),
+  ghunnah(
+    'Ghunnah',
+    'Dengung pada nun atau mim bertasydid, ±2 harakat.',
+    0xFFE65100,
+    ['ghunnah'],
+    'Ghunnah',
+    'Nasal resonance on a doubled nun or mim held for 2 counts.',
+  ),
   idghamBighunnah(
-      'Idgham Bighunnah', 'Nun mati/tanwin melebur ke ي ن م و dengan dengung.', 0xFF2E7D32, ['idghaam_ghunnah']),
+    'Idgham Bighunnah',
+    'Nun mati/tanwin melebur ke ي ن م و dengan dengung.',
+    0xFF2E7D32,
+    ['idghaam_ghunnah'],
+    'Idgham with Ghunnah',
+    'Sakin nun or tanwin merges into ي ن م و with nasalization.',
+  ),
   idghamBilaghunnah(
-      'Idgham Bilaghunnah', 'Nun mati/tanwin melebur ke ل ر tanpa dengung.', 0xFF66BB6A, ['idghaam_no_ghunnah']),
-  idghamMutajanisain('Idgham Mutajanisain', 'Dua huruf satu makhraj berbeda sifat, huruf pertama melebur.', 0xFF00897B,
-      ['idghaam_mutajanisayn', 'idghaam_mutajaanisain']),
-  idghamMutaqaribain('Idgham Mutaqaribain', 'Dua huruf berdekatan makhraj dan sifat, huruf pertama melebur.',
-      0xFF26A69A, ['idghaam_mutaqaribayn', 'idghaam_mutaqaaribain']),
-  idghamMimi('Idgham Mimi', 'Mim mati bertemu mim, dibaca dengung.', 0xFF558B2F, ['idghaam_shafawi']),
-  ikhfa('Ikhfa\' Haqiqi', 'Nun mati/tanwin dibaca samar dengan dengung.', 0xFFD81B60, ['ikhfa']),
-  ikhfaSyafawi('Ikhfa\' Syafawi', 'Mim mati bertemu ba\', dibaca samar dengan dengung.', 0xFFAD1457, ['ikhfa_shafawi']),
-  iqlab('Iqlab', 'Nun mati/tanwin bertemu ba\', diubah menjadi mim samar.', 0xFF1565C0, ['iqlab']),
-  qalqalah('Qalqalah', 'Pantulan pada ق ط ب ج د yang mati.', 0xFF0277BD, ['qalqalah']),
-  madThabii('Mad Thabi\'i', 'Panjang 2 harakat.', 0xFF8E24AA, ['madd_2']),
+    'Idgham Bilaghunnah',
+    'Nun mati/tanwin melebur ke ل ر tanpa dengung.',
+    0xFF66BB6A,
+    ['idghaam_no_ghunnah'],
+    'Idgham without Ghunnah',
+    'Sakin nun or tanwin merges completely into ل or ر without nasalization.',
+  ),
+  idghamMutajanisain(
+    'Idgham Mutajanisain',
+    'Dua huruf satu makhraj berbeda sifat, huruf pertama melebur.',
+    0xFF00897B,
+    ['idghaam_mutajanisayn', 'idghaam_mutajaanisain'],
+    'Idgham Mutajanisayn',
+    'Two letters share the same articulation point with different qualities; the first merges into the second.',
+  ),
+  idghamMutaqaribain(
+    'Idgham Mutaqaribain',
+    'Dua huruf berdekatan makhraj dan sifat, huruf pertama melebur.',
+    0xFF26A69A,
+    ['idghaam_mutaqaribayn', 'idghaam_mutaqaaribain'],
+    'Idgham Mutaqaribayn',
+    'Two letters have close articulation points and qualities; the first merges into the second.',
+  ),
+  idghamMimi(
+    'Idgham Mimi',
+    'Mim mati bertemu mim, dibaca dengung.',
+    0xFF558B2F,
+    ['idghaam_shafawi'],
+    'Idgham Shafawi (Mimi)',
+    'Sakin mim followed by another mim merges with nasalization.',
+  ),
+  ikhfa(
+    'Ikhfa\' Haqiqi',
+    'Nun mati/tanwin dibaca samar dengan dengung.',
+    0xFFD81B60,
+    ['ikhfa'],
+    'Ikhfa Haqiqi',
+    'Sakin nun or tanwin is pronounced softly concealed with nasalization.',
+  ),
+  ikhfaSyafawi(
+    'Ikhfa\' Syafawi',
+    'Mim mati bertemu ba\', dibaca samar dengan dengung.',
+    0xFFAD1457,
+    ['ikhfa_shafawi'],
+    'Ikhfa Shafawi',
+    'Sakin mim before ba is concealed with light lip contact and nasalization.',
+  ),
+  iqlab(
+    'Iqlab',
+    'Nun mati/tanwin bertemu ba\', diubah menjadi mim samar.',
+    0xFF1565C0,
+    ['iqlab'],
+    'Iqlab',
+    'Sakin nun or tanwin before ba turns into a concealed mim with nasalization.',
+  ),
+  qalqalah(
+    'Qalqalah',
+    'Pantulan pada ق ط ب ج د yang mati.',
+    0xFF0277BD,
+    ['qalqalah'],
+    'Qalqalah',
+    'Echoing bounce on the letters ق ط ب ج د when vowelless (sakin).',
+  ),
+  madThabii(
+    'Mad Thabi\'i',
+    'Panjang 2 harakat.',
+    0xFF8E24AA,
+    ['madd_2'],
+    'Madd Tabi\'i (Natural)',
+    'Natural elongation held for 2 counts.',
+  ),
   madJaizMunfashil(
-      'Mad Jaiz Munfashil', 'Mad bertemu hamzah di kata berbeda, 2–5 harakat.', 0xFF6A1B9A, ['madd_munfasil']),
+    'Mad Jaiz Munfashil',
+    'Mad bertemu hamzah di kata berbeda, 2–5 harakat.',
+    0xFF6A1B9A,
+    ['madd_munfasil'],
+    'Madd Ja\'iz Munfasil',
+    'Madd letter followed by hamzah in the next word, elongated 2 to 5 counts.',
+  ),
   madWajibMuttashil(
-      'Mad Wajib Muttashil', 'Mad bertemu hamzah dalam satu kata, 4–5 harakat.', 0xFFC62828, ['madd_muttasil']),
-  madLazim('Mad Lazim', 'Panjang 6 harakat.', 0xFFB71C1C, ['madd_6']),
-  madAridLissukun('Mad \'Aridh Lissukun', 'Mad sebelum huruf yang dimatikan karena waqaf, 2/4/6 harakat.', 0xFFF9A825,
-      ['madd_246']);
+    'Mad Wajib Muttashil',
+    'Mad bertemu hamzah dalam satu kata, 4–5 harakat.',
+    0xFFC62828,
+    ['madd_muttasil'],
+    'Madd Wajib Muttasil',
+    'Madd letter followed by hamzah within the same word, elongated 4 to 5 counts.',
+  ),
+  madLazim(
+    'Mad Lazim',
+    'Panjang 6 harakat.',
+    0xFFB71C1C,
+    ['madd_6'],
+    'Madd Lazim (Necessary)',
+    'Necessary elongation held for 6 full counts.',
+  ),
+  madAridLissukun(
+    'Mad \'Aridh Lissukun',
+    'Mad sebelum huruf yang dimatikan karena waqaf, 2/4/6 harakat.',
+    0xFFF9A825,
+    ['madd_246'],
+    'Madd \'Arid lis-Sukun',
+    'Madd before a letter made vowelless by pausing, elongated 2, 4, or 6 counts.',
+  );
 
   final String label;
   final String description;
@@ -38,8 +158,20 @@ enum TajweedRule {
   /// Warna ARGB (0xAARRGGBB).
   final int color;
   final List<String> sourceNames;
+  final String labelEn;
+  final String descriptionEn;
 
-  const TajweedRule(this.label, this.description, this.color, this.sourceNames);
+  const TajweedRule(
+    this.label,
+    this.description,
+    this.color,
+    this.sourceNames,
+    this.labelEn,
+    this.descriptionEn,
+  );
+
+  String labelFor(AppLanguage lang) => lang == AppLanguage.en ? labelEn : label;
+  String descriptionFor(AppLanguage lang) => lang == AppLanguage.en ? descriptionEn : description;
 
   /// Warna untuk latar gelap: dicampur 45% putih agar kontras tetap terjaga di mode malam.
   int get darkColor {

@@ -6,7 +6,22 @@ import 'package:geolocator/geolocator.dart';
 import 'package:personal_core/personal_core.dart';
 import 'package:shared_prayer/shared_prayer.dart';
 
+import 'l10n.dart';
 import 'providers.dart';
+
+/// Melokalkan label lokasi offline bawaan (`Lokasi GPS`, `Sekitar <Kota>`) ke bahasa aktif.
+String localizeLocationLabel(String label, AppLanguage lang) {
+  if (lang != AppLanguage.en) return label;
+  if (label == 'Lokasi GPS') return 'GPS Location';
+  if (label.startsWith('Sekitar ')) return 'Near ${label.substring('Sekitar '.length)}';
+  return label;
+}
+
+/// Melokalkan subjudul lokasi (`<Label> (GPS)` atau `<Kota>, <Provinsi>`) ke bahasa aktif.
+String localizeLocationSubtitle(PersonalSettings settings, AppLanguage lang) {
+  if (!settings.isUsingGpsLocation) return settings.effectiveLocationSubtitle;
+  return '${localizeLocationLabel(settings.deviceLocation!.label, lang)} (GPS)';
+}
 
 enum LocationPermissionState { denied, deniedForever, granted }
 
@@ -274,7 +289,7 @@ class GpsController extends Notifier<GpsState> {
         if (!stillOn) {
           state = const GpsServiceDisabled();
         } else if (state is! GpsReady) {
-          state = GpsError(_friendlyError(err));
+          state = GpsError(_friendlyError(err, lang: ref.read(appLanguageProvider)));
         }
       },
     );
@@ -292,7 +307,7 @@ class GpsController extends Notifier<GpsState> {
         _positionSub = null;
         state = const GpsServiceDisabled();
       } else if (state is! GpsReady) {
-        state = GpsError(_friendlyError(err));
+        state = GpsError(_friendlyError(err, lang: ref.read(appLanguageProvider)));
       }
     }
     return state;
@@ -357,11 +372,15 @@ class GpsController extends Notifier<GpsState> {
         );
   }
 
-  static String _friendlyError(Object err) {
+  static String _friendlyError(Object err, {AppLanguage lang = AppLanguage.id}) {
     if (err is TimeoutException) {
-      return 'Sinyal GPS belum terkunci. Pindah ke area yang lebih terbuka lalu coba lagi.';
+      return lang == AppLanguage.en
+          ? 'GPS signal could not lock. Move to a more open area and try again.'
+          : 'Sinyal GPS belum terkunci. Pindah ke area yang lebih terbuka lalu coba lagi.';
     }
-    return 'Gagal membaca lokasi GPS. Pastikan GPS aktif dan sinyal memadai.';
+    return lang == AppLanguage.en
+        ? 'Could not read GPS location. Make sure GPS is on and signal is available.'
+        : 'Gagal membaca lokasi GPS. Pastikan GPS aktif dan sinyal memadai.';
   }
 }
 

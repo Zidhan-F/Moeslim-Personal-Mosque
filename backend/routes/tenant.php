@@ -75,6 +75,8 @@ Route::middleware('perm:inventory.write')->group(function () {
 });
 
 Route::get('displays', [DisplayController::class, 'index'])->middleware('perm:display.view');
+Route::get('displays/preview', [DisplayController::class, 'preview'])->middleware('perm:display.view');
+Route::get('displays/qris-image', [DisplayController::class, 'adminQrisImage'])->middleware('perm:display.view');
 Route::middleware('perm:display.manage')->group(function () {
     Route::patch('displays/settings', [DisplayController::class, 'updateSettings']);
     Route::post('displays/override', [DisplayController::class, 'setOverride']);
@@ -82,6 +84,7 @@ Route::middleware('perm:display.manage')->group(function () {
     Route::post('displays/qris', [DisplayController::class, 'uploadQris']);
     Route::delete('displays/qris', [DisplayController::class, 'deleteQris']);
     Route::post('displays/pairing-codes', [DisplayController::class, 'createPairingCode']);
+    Route::post('displays/approve-session', [DisplayController::class, 'approveSession']);
     Route::patch('displays/{displayDevice}', [DisplayController::class, 'update']);
     Route::post('displays/{displayDevice}/revoke', [DisplayController::class, 'revoke']);
 });

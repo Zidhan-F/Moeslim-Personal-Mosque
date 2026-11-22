@@ -8,6 +8,7 @@ import 'package:personal_core/personal_core.dart';
 import 'package:shared_prayer/shared_prayer.dart';
 
 import '../../core/format.dart';
+import '../../core/l10n.dart';
 import '../../core/location_service.dart';
 import '../../core/providers.dart';
 import '../../ui/components.dart';
@@ -65,12 +66,13 @@ final dailyAyahPoolProvider = FutureProvider<List<Ayah>>((ref) async {
   final source = ref.watch(quranSourceProvider);
   final uniqueSurahs = {for (final (s, _) in dailyAyahRefs) s};
   final loaded = <int, List<Ayah>?>{};
-  await Future.wait([
-    for (final s in uniqueSurahs) source.load(s).then((ayat) => loaded[s] = ayat),
-  ]);
+  await Future.wait([for (final s in uniqueSurahs) source.load(s).then((ayat) => loaded[s] = ayat)]);
   return [
     for (final (s, a) in dailyAyahRefs)
-      if (loaded[s] != null && a <= loaded[s]!.length && (loaded[s]![a - 1].translation?.isNotEmpty ?? false))
+      if (loaded[s] != null &&
+          a <= loaded[s]!.length &&
+          ((loaded[s]![a - 1].translation?.isNotEmpty ?? false) ||
+              (loaded[s]![a - 1].translationEn?.isNotEmpty ?? false)))
         loaded[s]![a - 1],
   ];
 });
@@ -104,7 +106,7 @@ class HomePage extends ConsumerWidget {
         children: [
           _Greeting(name: settings?.displayName),
           Transform.translate(offset: const Offset(0, -18), child: const _LivePrayerCard()),
-          const SectionHeader('Menu Cepat'),
+          SectionHeader(context.tr('Menu Cepat', 'Quick Menu')),
           LayoutBuilder(
             builder: (context, constraints) {
               final scale = MediaQuery.textScalerOf(context).scale(1);
@@ -120,25 +122,25 @@ class HomePage extends ConsumerWidget {
                   MenuTile(
                     key: const Key('quick-alquran'),
                     tile: BrandTile.alquran,
-                    label: "Al-Qur'an",
+                    label: context.tr("Al-Qur'an", "Qur'an"),
                     onTap: () => onNavigate(1),
                   ),
                   MenuTile(
                     key: const Key('quick-doa-dzikir'),
                     tile: BrandTile.doaDzikir,
-                    label: 'Doa & Dzikir',
+                    label: context.tr('Doa & Dzikir', 'Duas & Dhikr'),
                     onTap: () => push(const DoaListPage()),
                   ),
                   MenuTile(
                     key: const Key('quick-arah-kiblat'),
                     tile: BrandTile.arahKiblat,
-                    label: 'Arah Kiblat',
+                    label: context.tr('Arah Kiblat', 'Qibla'),
                     onTap: () => push(const QiblaPage()),
                   ),
                   MenuTile(
                     key: const Key('quick-lihat-semua'),
                     tile: BrandTile.lihatSemua,
-                    label: 'Lihat Semua',
+                    label: context.tr('Lihat Semua', 'See All'),
                     onTap: () => push(AllFeaturesPage(onNavigate: onNavigate)),
                   ),
                 ],
@@ -158,10 +160,59 @@ class HomePage extends ConsumerWidget {
 class _ContextualSunnahHomeCard extends ConsumerWidget {
   const _ContextualSunnahHomeCard();
 
+  static ({String window, String title, String subtitle}) _localizeAdvice(
+    BuildContext context,
+    ContextualSunnahAdvice advice,
+  ) {
+    if (!context.isEn) {
+      return (window: advice.timeWindowLabel, title: advice.title, subtitle: advice.subtitle);
+    }
+    return switch (advice.id) {
+      'tahajud_sahur' => (
+        window: 'Last Third of the Night & Suhoor',
+        title: 'Blessed Time for Tahajjud, Witr & Istighfar',
+        subtitle: 'Ask Allah in quiet supplication and seek forgiveness during the pre-dawn hours.',
+      ),
+      'dzikir_pagi' => (
+        window: 'Morning After Fajr',
+        title: 'Morning Dhikr & Early Charity',
+        subtitle: 'Start your day with Ayat al-Kursi, Sayyid al-Istighfar, and guided morning remembrance.',
+      ),
+      'salat_dhuha' => (
+        window: 'Mid-Morning',
+        title: 'Time for Dhuha Prayer (2-8 Rakaat)',
+        subtitle: 'Two rakaat of Dhuha fulfill the charity due for every joint in your body today.',
+      ),
+      'dzikir_petang' => (
+        window: 'Evening After Asr',
+        title: 'Guided Evening Dhikr',
+        subtitle: 'Protect your evening and night with authentic prophetic evening remembrance.',
+      ),
+      'almulk_muhasabah' => (
+        window: 'Before Sleeping',
+        title: 'Recite Surah Al-Mulk, Make Wudu & Reflect',
+        subtitle: 'Recite Surah Al-Mulk (30 verses) and close the night with quiet self-reflection.',
+      ),
+      'dzikrullah_siang' => (
+        window: 'Midday',
+        title: 'Pray on Time & Keep Your Tongue in Dhikr',
+        subtitle: 'Prepare for the Dhuhr and Asr call to prayer and remember Allah between daily tasks.',
+      ),
+      'sunnah_jumat' => (
+        window: 'Blessings of Friday',
+        title: 'Recite Surah Al-Kahf & Send Salawat',
+        subtitle:
+            'Friday is the best day of the week. Read Al-Kahf, send blessings on the Prophet, and pray before Maghrib.',
+      ),
+      _ => (window: advice.timeWindowLabel, title: advice.title, subtitle: advice.subtitle),
+    };
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final now = ref.watch(nowProvider).value ?? DateTime.now();
     final advice = evaluateContextualSunnahForTime(now).first;
+    final localized = _localizeAdvice(context, advice);
     final scheme = Theme.of(context).colorScheme;
     final t = Theme.of(context).textTheme;
 
@@ -169,16 +220,16 @@ class _ContextualSunnahHomeCard extends ConsumerWidget {
       key: const Key('home-contextual-sunnah-card'),
       child: ListTile(
         leading: Icon(MoeslimIcons.bintang, color: scheme.primary),
-        title: Text(advice.title, style: t.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
-        subtitle: Text('${advice.timeWindowLabel} · ${advice.subtitle}', maxLines: 2, overflow: TextOverflow.ellipsis),
+        title: Text(localized.title, style: t.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+        subtitle: Text('${localized.window} · ${localized.subtitle}', maxLines: 2, overflow: TextOverflow.ellipsis),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => advice.actionType == 'dzikir_pagi'
                 ? const GuidedDzikirPage(initialTime: GuidedDzikirTime.pagi)
                 : (advice.actionType == 'dzikir_petang'
-                    ? const GuidedDzikirPage(initialTime: GuidedDzikirTime.petang)
-                    : const UtilityAccessibilityPage(initialTab: 4)),
+                      ? const GuidedDzikirPage(initialTime: GuidedDzikirTime.petang)
+                      : const UtilityAccessibilityPage(initialTab: 4)),
           ),
         ),
       ),
@@ -210,14 +261,15 @@ class _LivePrayerCardState extends ConsumerState<_LivePrayerCard> {
   Widget build(BuildContext context) {
     final status = ref.watch(prayerStatusProvider);
     final settings = ref.watch(settingsProvider).value;
+    final lang = context.lang;
     return status.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Text('Gagal memuat jadwal: $e'),
+      error: (e, _) => Text(context.tr('Gagal memuat jadwal: $e', 'Failed to load prayer times: $e')),
       data: (s) => _PrayerCard(
         status: s,
-        city: settings?.effectiveLocationName ?? '',
+        city: localizeLocationLabel(settings?.effectiveLocationName ?? '', lang),
         isGps: settings?.isUsingGpsLocation ?? false,
-        hijri: HijriDate.fromGregorian(s.now, offsetDays: settings?.hijriOffset ?? 0).toString(),
+        hijri: context.hijriText(HijriDate.fromGregorian(s.now, offsetDays: settings?.hijriOffset ?? 0)),
       ),
     );
   }
@@ -239,20 +291,21 @@ class _Greeting extends StatelessWidget {
             children: [
               const Text("Assalamu'alaikum", style: TextStyle(color: BrandColors.cream, fontSize: 15)),
               Text(
-                name?.isNotEmpty == true ? name! : 'Sahabat Moeslim',
+                name?.isNotEmpty == true ? name! : context.tr('Sahabat Moeslim', 'Fellow Muslim'),
                 style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 4),
-              const Text('Semoga hari ini penuh keberkahan.', style: TextStyle(color: BrandColors.cream, fontSize: 13)),
+              Text(
+                context.tr('Semoga hari ini penuh keberkahan.', 'May your day be filled with blessings.'),
+                style: const TextStyle(color: BrandColors.cream, fontSize: 13),
+              ),
             ],
           ),
         ),
-        const Flexible(
-          child: SizedBox(
-            width: 150,
-            height: 84,
-            child: BrandArt(BrandIllustration.skyline, fit: BoxFit.contain, alignment: Alignment.bottomRight),
-          ),
+        SizedBox(
+          width: MediaQuery.textScalerOf(context).scale(14) > 16 ? 72 : 120,
+          height: 84,
+          child: const BrandArt(BrandIllustration.skyline, fit: BoxFit.contain, alignment: Alignment.bottomRight),
         ),
       ],
     ),
@@ -271,12 +324,12 @@ class _PrayerCard extends StatelessWidget {
     final t = Theme.of(context).textTheme;
     final scheme = Theme.of(context).colorScheme;
     final rows = <(String, DateTime, Prayer?)>[
-      ('Subuh', status.today.fajr, Prayer.fajr),
-      ('Syuruq', status.today.sunrise, null),
-      ('Dzuhur', status.today.dhuhr, Prayer.dhuhr),
-      ('Ashar', status.today.asr, Prayer.asr),
-      ('Maghrib', status.today.maghrib, Prayer.maghrib),
-      ('Isya', status.today.isha, Prayer.isha),
+      (context.prayerLabel(Prayer.fajr), status.today.fajr, Prayer.fajr),
+      (context.tr('Syuruq', 'Sunrise'), status.today.sunrise, null),
+      (context.prayerLabel(Prayer.dhuhr), status.today.dhuhr, Prayer.dhuhr),
+      (context.prayerLabel(Prayer.asr), status.today.asr, Prayer.asr),
+      (context.prayerLabel(Prayer.maghrib), status.today.maghrib, Prayer.maghrib),
+      (context.prayerLabel(Prayer.isha), status.today.isha, Prayer.isha),
     ];
     return Card(
       key: const Key('prayer-card'),
@@ -304,7 +357,12 @@ class _PrayerCard extends StatelessWidget {
                         children: [
                           Icon(MoeslimIcons.lokasi, size: 18, color: scheme.primary),
                           const SizedBox(width: 4),
-                          Flexible(child: Text('Waktu Salat di $city', style: t.labelLarge)),
+                          Flexible(
+                            child: Text(
+                              context.tr('Waktu Salat di $city', 'Prayer Times in $city'),
+                              style: t.labelLarge,
+                            ),
+                          ),
                           if (isGps) ...[
                             const SizedBox(width: 6),
                             Container(
@@ -316,11 +374,7 @@ class _PrayerCard extends StatelessWidget {
                               ),
                               child: Text(
                                 'GPS',
-                                style: TextStyle(
-                                  color: scheme.primary,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                                style: TextStyle(color: scheme.primary, fontSize: 11, fontWeight: FontWeight.w700),
                               ),
                             ),
                           ],
@@ -331,7 +385,7 @@ class _PrayerCard extends StatelessWidget {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(longDate(status.now), style: t.bodySmall),
+                        Text(context.longDateText(status.now), style: t.bodySmall),
                         Text(hijri, style: t.bodySmall),
                       ],
                     ),
@@ -342,10 +396,7 @@ class _PrayerCard extends StatelessWidget {
                   children: [
                     Container(
                       padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: BrandColors.gold.withValues(alpha: .15),
-                        shape: BoxShape.circle,
-                      ),
+                      decoration: BoxDecoration(color: BrandColors.gold.withValues(alpha: .15), shape: BoxShape.circle),
                       child: const Icon(MoeslimIcons.masjid, color: BrandColors.goldText, size: 30),
                     ),
                     const SizedBox(width: 12),
@@ -353,7 +404,10 @@ class _PrayerCard extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Sekarang', style: t.labelMedium?.copyWith(color: scheme.onSurfaceVariant)),
+                          Text(
+                            context.tr('Sekarang', 'Now'),
+                            style: t.labelMedium?.copyWith(color: scheme.onSurfaceVariant),
+                          ),
                           FittedBox(
                             fit: BoxFit.scaleDown,
                             alignment: Alignment.centerLeft,
@@ -388,10 +442,21 @@ class _PrayerCard extends StatelessWidget {
                         spacing: 6,
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
-                          Text('Menuju ${status.nextPrayer.label}', style: t.titleSmall),
                           Text(
-                            'pukul ${hhmm(status.nextTime)}',
-                            style: t.titleSmall?.copyWith(fontWeight: FontWeight.w800, color: BrandColors.goldText),
+                            context.tr(
+                              'Menuju ${context.prayerLabel(status.nextPrayer)}',
+                              'Next ${context.prayerLabel(status.nextPrayer)}',
+                            ),
+                            style: t.titleSmall,
+                          ),
+                          Text(
+                            context.tr('pukul ${hhmm(status.nextTime)}', 'at ${hhmm(status.nextTime)}'),
+                            style: t.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: Theme.of(context).brightness == Brightness.dark
+                                  ? BrandColors.gold
+                                  : BrandColors.goldText,
+                            ),
                           ),
                         ],
                       ),
@@ -401,9 +466,14 @@ class _PrayerCard extends StatelessWidget {
                           const Icon(MoeslimIcons.jam, size: 16, color: BrandColors.goldText),
                           const SizedBox(width: 4),
                           Text(
-                            '${countdown(status.remaining)} lagi',
+                            context.tr('${countdown(status.remaining)} lagi', '${countdown(status.remaining)} left'),
                             key: const Key('countdown'),
-                            style: const TextStyle(color: BrandColors.goldText, fontWeight: FontWeight.w700),
+                            style: TextStyle(
+                              color: Theme.of(context).brightness == Brightness.dark
+                                  ? BrandColors.gold
+                                  : BrandColors.goldText,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ],
                       ),
@@ -541,16 +611,14 @@ class _DailyAyahState extends ConsumerState<_DailyAyah> {
             Expanded(
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 260),
-                layoutBuilder: (currentChild, previousChildren) => Stack(
-                  alignment: Alignment.topLeft,
-                  children: [...previousChildren, ?currentChild],
-                ),
+                layoutBuilder: (currentChild, previousChildren) =>
+                    Stack(alignment: Alignment.topLeft, children: [...previousChildren, ?currentChild]),
                 child: Column(
                   key: ValueKey('${ayah.surah}:${ayah.number}'),
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      '"${ayah.translation}"',
+                      '"${ayah.translationFor(context.lang) ?? ''}"',
                       key: const Key('daily-ayah-text'),
                       style: const TextStyle(fontStyle: FontStyle.italic, height: 1.45),
                     ),
@@ -559,7 +627,10 @@ class _DailyAyahState extends ConsumerState<_DailyAyah> {
                       children: [
                         Expanded(
                           child: Text(
-                            '(QS. ${surahs[ayah.surah - 1].name}: ${ayah.number})',
+                            context.tr(
+                              '(QS. ${surahs[ayah.surah - 1].name}: ${ayah.number})',
+                              "(Qur'an ${surahs[ayah.surah - 1].name}: ${ayah.number})",
+                            ),
                             key: const Key('daily-ayah-ref'),
                             style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
                           ),
@@ -567,7 +638,7 @@ class _DailyAyahState extends ConsumerState<_DailyAyah> {
                         if (canRotate)
                           IconButton(
                             key: const Key('shuffle-ayah'),
-                            tooltip: 'Ayat acak berikutnya',
+                            tooltip: context.tr('Ayat acak berikutnya', 'Next random verse'),
                             visualDensity: VisualDensity.compact,
                             icon: Icon(MoeslimIcons.acak, size: 18, color: scheme.primary),
                             onPressed: _triggerNext,

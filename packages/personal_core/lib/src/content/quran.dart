@@ -3,6 +3,8 @@
 /// (lihat `tool/import_quran.dart`).
 library;
 
+import 'package:shared_prayer/shared_prayer.dart';
+
 import 'quran_meta.dart';
 import 'tajweed.dart';
 
@@ -18,6 +20,9 @@ class Surah {
 
   String get revelation => makkiyah ? 'Makkiyah' : 'Madaniyah';
 
+  String revelationFor(AppLanguage lang) =>
+      lang == AppLanguage.en ? (makkiyah ? 'Meccan' : 'Medinan') : revelation;
+
   /// Nama Arab surah (dari dataset, lihat quran_meta.dart).
   String get arabicName => surahArabicNames[number - 1];
 }
@@ -27,17 +32,29 @@ class Ayah {
   final int number;
   final String text;
   final String? translation;
+  final String? translationEn;
 
   /// Anotasi tajwid untuk pewarnaan (kosong bila dataset tajwid tidak diimpor).
   final List<TajweedSpan> tajweed;
 
-  const Ayah(this.surah, this.number, this.text, {this.translation, this.tajweed = const []});
+  const Ayah(
+    this.surah,
+    this.number,
+    this.text, {
+    this.translation,
+    this.translationEn,
+    this.tajweed = const [],
+  });
+
+  String? translationFor(AppLanguage lang) =>
+      lang == AppLanguage.en ? (translationEn ?? translation) : (translation ?? translationEn);
 
   Map<String, Object?> toJson() => {
         's': surah,
         'a': number,
         't': text,
         if (translation != null) 'tr': translation,
+        if (translationEn != null) 'en': translationEn,
         if (tajweed.isNotEmpty) 'tj': [for (final s in tajweed) s.toJson()],
       };
 
@@ -46,6 +63,7 @@ class Ayah {
         j['a'] as int,
         j['t'] as String,
         translation: j['tr'] as String?,
+        translationEn: j['en'] as String?,
         tajweed: (j['tj'] as List? ?? const []).map(TajweedSpan.fromJson).whereType<TajweedSpan>().toList(),
       );
 }

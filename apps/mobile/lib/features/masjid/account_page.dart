@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
+import 'package:shared_prayer/shared_prayer.dart';
 
 import '../../core/format.dart';
+import '../../core/l10n.dart';
 import '../../ui/components.dart';
 import 'announcements_page.dart';
 import 'finance_pages.dart';
@@ -28,6 +30,16 @@ const subscriptionStates = {
   'expired': ('Berakhir', MosqueColors.expense),
 };
 
+const subscriptionStatesEn = {
+  'trialing': ('Trial', MosqueColors.info),
+  'active': ('Active', MosqueColors.income),
+  'grace': ('Grace period', MosqueColors.warning),
+  'expired': ('Expired', MosqueColors.expense),
+};
+
+(String, Color)? subscriptionStateFor(String? state, AppLanguage lang) =>
+    (lang == AppLanguage.en ? subscriptionStatesEn : subscriptionStates)[state];
+
 /// Tab Akun: profil pengguna & masjid, langganan + pemakaian kuota, menu pengelolaan, keluar.
 class MosqueAccountTab extends ConsumerWidget {
   final MosqueCtx ctx;
@@ -36,12 +48,13 @@ class MosqueAccountTab extends ConsumerWidget {
   void _push(BuildContext context, Widget page) => Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context, WidgetRef ref) => mosqueScoped(context, (context) {
+    final lang = context.lang;
     final user = ref.watch(sessionProvider).value?.user ?? const {};
     final dash = ref.watch(dashboardProvider(ctx.id)).value;
     final sub = dash?['subscription'] as Map?;
     final usage = dash?['usage'] as Map?;
-    final state = subscriptionStates[sub?['state']];
+    final state = subscriptionStateFor(sub?['state'] as String?, lang);
     final trialing = sub?['state'] == 'trialing';
     final endsRaw = trialing ? sub!['trial_ends_at'] : (sub?['grace_ends_at'] ?? sub?['current_period_ends_at']);
     final ends = endsRaw == null ? null : DateTime.tryParse('$endsRaw')?.toLocal();
@@ -51,39 +64,39 @@ class MosqueAccountTab extends ConsumerWidget {
         (
           const Key('menu-members'),
           MoeslimIcons.jamaah,
-          'Pengurus & Role',
-          'Maks. 5 akun pengurus',
+          context.tr('Pengurus & Role', 'Committee & Roles'),
+          context.tr('Maks. 5 akun pengurus', 'Up to 5 committee accounts'),
           MembersPage(ctx: ctx),
         ),
       if (ctx.can('inventory.view'))
         (
           const Key('menu-inventory'),
           MoeslimIcons.inventaris,
-          'Inventaris Masjid',
-          'Barang, kondisi, perawatan',
+          context.tr('Inventaris Masjid', 'Mosque Inventory'),
+          context.tr('Barang, kondisi, perawatan', 'Assets, condition, maintenance'),
           InventoryPage(ctx: ctx),
         ),
       if (ctx.can('display.view'))
         (
           const Key('menu-tv'),
           MoeslimIcons.layarTv,
-          'Konfigurasi TV Display',
-          'Hingga 5 layar',
+          context.tr('Konfigurasi TV Display', 'TV Display Settings'),
+          context.tr('Hingga 5 layar', 'Up to 5 screens'),
           TvConfigPage(ctx: ctx),
         ),
       if (ctx.can('events.view'))
         (
           const Key('menu-announcements'),
           MoeslimIcons.pengumuman,
-          'Konten & Pengumuman',
-          'Atur tayangan di TV',
+          context.tr('Konten & Pengumuman', 'Content & Announcements'),
+          context.tr('Atur tayangan di TV', 'Manage TV screen content'),
           AnnouncementsPage(ctx: ctx),
         ),
       (
         const Key('menu-microsite'),
         MoeslimIcons.web,
-        'Microsite Profil Masjid',
-        'Tautan web publik & kartu QR',
+        context.tr('Microsite Profil Masjid', 'Mosque Profile Microsite'),
+        context.tr('Tautan web publik & kartu QR', 'Public web link & QR card'),
         MosqueMicrositePage(ctx: ctx),
       ),
       if (ctx.can('zakat.view'))
@@ -91,23 +104,23 @@ class MosqueAccountTab extends ConsumerWidget {
           const Key('menu-zakat'),
           MoeslimIcons.keuangan,
           'Zakat Fitrah & Maal',
-          'Muzakki, beras/uang & mustahik',
+          context.tr('Muzakki, beras/uang & mustahik', 'Donors, rice/cash & recipients'),
           ZakatPage(ctx: ctx),
         ),
       if (ctx.can('qurban.view'))
         (
           const Key('menu-qurban'),
           MoeslimIcons.kegiatan,
-          'Kurban & Kupon QR',
-          'Patungan 1/7, sembelih & scan QR',
+          context.tr('Kurban & Kupon QR', 'Qurban & QR Coupons'),
+          context.tr('Patungan 1/7, sembelih & scan QR', '1/7 shares, slaughter & QR scan'),
           QurbanPage(ctx: ctx),
         ),
       if (ctx.can('finance.view'))
         (
           const Key('menu-report'),
           MoeslimIcons.grafikBatang,
-          'Laporan Keuangan',
-          'Grafik & ekspor CSV',
+          context.tr('Laporan Keuangan', 'Financial Reports'),
+          context.tr('Grafik & ekspor CSV', 'Charts & CSV export'),
           ReportPage(ctx: ctx),
         ),
     ];
@@ -124,10 +137,10 @@ class MosqueAccountTab extends ConsumerWidget {
               child: Icon(MoeslimIcons.profil),
             ),
             title: Text('${user['name'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.w700)),
-            subtitle: Text('${roleLabels[ctx.role] ?? ctx.role} • ${ctx.name}'),
+            subtitle: Text('${roleLabel(ctx.role, lang: lang)} • ${ctx.name}'),
           ),
         ),
-        const SectionHeader('Langganan Moeslim Mosque'),
+        SectionHeader(context.tr('Langganan Moeslim Mosque', 'Moeslim Mosque Subscription')),
         Card(
           key: const Key('subscription-card'),
           margin: EdgeInsets.zero,
@@ -142,7 +155,10 @@ class MosqueAccountTab extends ConsumerWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        '${rupiah(sub?['price_idr'] as num? ?? 59000)} / bulan per masjid',
+                        context.tr(
+                          '${rupiah(sub?['price_idr'] as num? ?? 59000)} / bulan per masjid',
+                          '${rupiah(sub?['price_idr'] as num? ?? 59000)} / month per mosque',
+                        ),
                         style: const TextStyle(fontWeight: FontWeight.w700),
                       ),
                     ),
@@ -151,25 +167,36 @@ class MosqueAccountTab extends ConsumerWidget {
                 ),
                 if (ends != null) ...[
                   const SizedBox(height: 4),
-                  Text('${sub?['state'] == 'trialing' ? 'Uji coba berakhir' : 'Berlaku hingga'} ${longDate(ends)}'),
+                  Text(
+                    context.tr(
+                      '${trialing ? 'Uji coba berakhir' : 'Berlaku hingga'} ${context.longDateText(ends)}',
+                      '${trialing ? 'Trial ends' : 'Valid until'} ${context.longDateText(ends)}',
+                    ),
+                  ),
                 ],
                 if (usage != null) ...[
                   const SizedBox(height: 12),
-                  _UsageBar('Pengurus aktif', usage['members'] as Map),
+                  _UsageBar(context.tr('Pengurus aktif', 'Active committee'), usage['members'] as Map),
                   _UsageBar('TV Display', usage['displays'] as Map),
-                  _UsageBar('Penyimpanan lampiran', usage['storage'] as Map, bytes: true),
-                  _UsageBar('Agenda & pengumuman aktif', usage['active_content'] as Map),
+                  _UsageBar(context.tr('Penyimpanan lampiran', 'Attachment storage'), usage['storage'] as Map, bytes: true),
+                  _UsageBar(
+                    context.tr('Agenda & pengumuman aktif', 'Active events & announcements'),
+                    usage['active_content'] as Map,
+                  ),
                 ],
                 const SizedBox(height: 4),
-                const Text(
-                  'Langganan hanya untuk fitur Mosque. Moeslim Personal tetap gratis.',
-                  style: TextStyle(fontSize: 12),
+                Text(
+                  context.tr(
+                    'Langganan hanya untuk fitur Mosque. Moeslim Personal tetap gratis.',
+                    'Subscription applies to Mosque features only. Moeslim Personal remains free.',
+                  ),
+                  style: const TextStyle(fontSize: 12),
                 ),
               ],
             ),
           ),
         ),
-        const SectionHeader('Kelola Masjid'),
+        SectionHeader(context.tr('Kelola Masjid', 'Manage Mosque')),
         Card(
           margin: EdgeInsets.zero,
           child: Column(
@@ -195,11 +222,11 @@ class MosqueAccountTab extends ConsumerWidget {
           ),
           onPressed: () => ref.read(sessionProvider.notifier).logout(),
           icon: const Icon(MoeslimIcons.logout),
-          label: const Text('Keluar dari Moeslim Mosque'),
+          label: Text(context.tr('Keluar dari Moeslim Mosque', 'Sign Out of Moeslim Mosque')),
         ),
       ],
     );
-  }
+  });
 }
 
 class _UsageBar extends StatelessWidget {

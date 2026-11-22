@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_prayer/shared_prayer.dart';
 
 import 'display_api.dart';
 
@@ -26,6 +27,7 @@ class DisplayState {
   final DateTime? lastSync;
   final Duration clockSkew; // server - perangkat
   final bool offline;
+  final AppLanguage language;
 
   const DisplayState({
     this.token,
@@ -34,14 +36,26 @@ class DisplayState {
     this.lastSync,
     this.clockSkew = Duration.zero,
     this.offline = false,
+    this.language = AppLanguage.id,
   });
 
   bool get paired => token != null;
+
+  /// Bahasa aktif layar TV: membaca `device.config.language` bila diatur dari admin,
+  /// jika tidak memakai bahasa lokal [language] (bawaan Bahasa Indonesia).
+  AppLanguage get effectiveLanguage {
+    final config = (content?['device'] as Map?)?['config'] as Map?;
+    final cfgLang = config?['language'] as String?;
+    if (cfgLang != null && cfgLang.trim().isNotEmpty) {
+      return AppLanguage.fromCode(cfgLang);
+    }
+    return language;
+  }
 }
 
 class DisplayController extends Notifier<DisplayState> {
   static const _kToken = 'display.token', _kContent = 'display.content', _kSync = 'display.lastSync';
-  static const _kEtag = 'display.etag', _kSkew = 'display.skewMs';
+  static const _kEtag = 'display.etag', _kSkew = 'display.skewMs', _kLang = 'display.language';
   static const refreshEvery = Duration(seconds: 60);
 
   DateTime? _lastAttempt;
@@ -64,16 +78,31 @@ class DisplayController extends Notifier<DisplayState> {
       etag: _prefs.getString(_kEtag),
       lastSync: DateTime.tryParse(_prefs.getString(_kSync) ?? ''),
       clockSkew: Duration(milliseconds: _prefs.getInt(_kSkew) ?? 0),
+      language: AppLanguage.fromCode(_prefs.getString(_kLang)),
+    );
+  }
+
+  Future<void> setLanguage(AppLanguage lang) async {
+    await _prefs.setString(_kLang, lang.code);
+    state = DisplayState(
+      token: state.token,
+      content: state.content,
+      etag: state.etag,
+      lastSync: state.lastSync,
+      clockSkew: state.clockSkew,
+      offline: state.offline,
+      language: lang,
     );
   }
 
   Future<String> pair(String code) async {
-    final r = await ref.read(displayApiProvider).pair(code);
+    final lang = state.effectiveLanguage;
+    final r = await ref.read(displayApiProvider).pair(code, lang: lang);
     await _prefs.setString(_kToken, r.token);
     for (final k in [_kContent, _kEtag, _kSync]) {
       await _prefs.remove(k);
     }
-    state = DisplayState(token: r.token);
+    state = DisplayState(token: r.token, language: state.language);
     await refresh(force: true);
     return r.mosqueName;
   }
@@ -92,7 +121,9 @@ class DisplayController extends Notifier<DisplayState> {
     final clock = ref.read(clockProvider);
     _lastAttempt = clock();
     try {
-      final res = await ref.read(displayApiProvider).content(token, etag: force ? null : state.etag);
+      final res = await ref
+          .read(displayApiProvider)
+          .content(token, etag: force ? null : state.etag, lang: state.effectiveLanguage);
       final now = clock();
       var content = state.content;
       var skew = state.clockSkew;
@@ -106,7 +137,14 @@ class DisplayController extends Notifier<DisplayState> {
         if (res.etag != null) await _prefs.setString(_kEtag, res.etag!);
       }
       await _prefs.setString(_kSync, now.toIso8601String());
-      state = DisplayState(token: token, content: content, etag: res.etag, lastSync: now, clockSkew: skew);
+      state = DisplayState(
+        token: token,
+        content: content,
+        etag: res.etag,
+        lastSync: now,
+        clockSkew: skew,
+        language: state.language,
+      );
     } on DisplayApiException catch (e) {
       if (e.unpaired) {
         await unpair();
@@ -118,6 +156,7 @@ class DisplayController extends Notifier<DisplayState> {
           lastSync: state.lastSync,
           clockSkew: state.clockSkew,
           offline: true,
+          language: state.language,
         );
       }
     } finally {
@@ -129,7 +168,7 @@ class DisplayController extends Notifier<DisplayState> {
     for (final k in [_kToken, _kContent, _kEtag, _kSync, _kSkew]) {
       await _prefs.remove(k);
     }
-    state = const DisplayState();
+    state = DisplayState(language: state.language);
   }
 }
 

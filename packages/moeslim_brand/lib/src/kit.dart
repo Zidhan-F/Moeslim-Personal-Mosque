@@ -79,7 +79,7 @@ enum BrandTile {
         catatanIbadah => SoftAsset.journal,
         display => SoftAsset.display,
         doaDzikir => SoftAsset.dua,
-        imam => SoftAsset.profile,
+        imam => SoftAsset.imam,
         iqamah => SoftAsset.clock,
         jadwalSholat => SoftAsset.prayerTime,
         kalenderHijriah => SoftAsset.calendar,

@@ -7,7 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:moeslim_display/main.dart';
-import 'package:moeslim_display/src/schedule.dart';
+import 'package:display_ui/display_ui.dart';
 import 'package:moeslim_display/src/screens.dart';
 import 'package:moeslim_display/src/state.dart';
 import 'package:shared_preferences/shared_preferences.dart';

@@ -10,8 +10,10 @@ import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:shared_prayer/shared_prayer.dart';
 
 import '../../core/format.dart';
+import '../../core/l10n.dart';
 import '../../ui/components.dart';
 import 'masjid_api.dart';
 import 'mosque_providers.dart';
@@ -20,15 +22,19 @@ import 'session.dart';
 const _idrDenominations = [100000, 50000, 20000, 10000, 5000, 2000, 1000, 500];
 
 /// Simpan gambar PNG dari widget di dalam [RepaintBoundary] ke direktori dokumen perangkat.
-Future<String> saveBoundaryPng(GlobalKey boundaryKey, String filename) async {
+Future<String> saveBoundaryPng(
+  GlobalKey boundaryKey,
+  String filename, {
+  AppLanguage lang = AppLanguage.id,
+}) async {
   final boundary = boundaryKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
   if (boundary == null) {
-    throw StateError('Pratinjau belum siap dirender.');
+    throw StateError(lang == AppLanguage.en ? 'Preview is not ready to render.' : 'Pratinjau belum siap dirender.');
   }
   final image = await boundary.toImage(pixelRatio: 2.5);
   final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
   if (bytes == null) {
-    throw StateError('Gagal mengonversi gambar PNG.');
+    throw StateError(lang == AppLanguage.en ? 'Failed to convert PNG image.' : 'Gagal mengonversi gambar PNG.');
   }
   final dir = await getApplicationDocumentsDirectory();
   final file = File('${dir.path}/$filename');
@@ -56,25 +62,56 @@ class _FridayReportPageState extends ConsumerState<FridayReportPage> {
     return d.subtract(Duration(days: diff));
   }
 
-  Future<void> _copyWa(Map<String, dynamic> r) async {
-    final text = (r['whatsapp_text'] as String?) ?? '';
+  Future<void> _copyWa(BuildContext context, Map<String, dynamic> r) async {
+    final isEn = context.isEn;
+    final funds = (r['funds'] as List? ?? const []).cast<Map>();
+    final text = isEn
+        ? [
+            '*FRIDAY CASH REPORT*',
+            '*${r['mosque_name'] ?? widget.ctx.name}*',
+            'Period: ${r['from']} to ${r['to']}',
+            '',
+            'Opening Balance: ${rupiah((r['opening_balance'] as num?) ?? 0)}',
+            'Weekly Income: + ${rupiah((r['total_in'] as num?) ?? 0)}',
+            'Weekly Expenses: - ${rupiah((r['total_out'] as num?) ?? 0)}',
+            '*Closing Cash Balance: ${rupiah((r['closing_balance'] as num?) ?? 0)}*',
+            if (funds.isNotEmpty) ...[
+              '',
+              'Fund Balances:',
+              for (final f in funds) '- ${f['name']}: ${rupiah((f['balance'] as num?) ?? 0)}',
+            ],
+            '',
+            "Jazakumullahu khairan for the congregation's donations and trust.",
+          ].join('\n')
+        : (r['whatsapp_text'] as String?) ?? '';
     await Clipboard.setData(ClipboardData(text: text));
-    if (mounted) showSnack(context, 'Teks Laporan Kas Jumat disalin. Siap tempel ke WhatsApp.');
+    if (context.mounted) {
+      showSnack(
+        context,
+        isEn
+            ? 'Friday Cash Report copied. Ready to paste into WhatsApp.'
+            : 'Teks Laporan Kas Jumat disalin. Siap tempel ke WhatsApp.',
+      );
+    }
   }
 
-  Future<void> _savePng(Map<String, dynamic> r) async {
+  Future<void> _savePng(BuildContext context, Map<String, dynamic> r) async {
+    final lang = context.lang;
     setState(() => _saving = true);
     try {
-      final path = await saveBoundaryPng(_posterKey, 'poster-kas-jumat-${r['to']}.png');
-      if (mounted) showSnack(context, 'Poster tersimpan: $path');
+      final path = await saveBoundaryPng(_posterKey, 'poster-kas-jumat-${r['to']}.png', lang: lang);
+      if (context.mounted) {
+        showSnack(context, lang == AppLanguage.en ? 'Poster saved: $path' : 'Poster tersimpan: $path');
+      }
     } catch (e) {
-      if (mounted) showSnack(context, '$e');
+      if (context.mounted) showSnack(context, '$e');
     } finally {
       if (mounted) setState(() => _saving = false);
     }
   }
 
-  Future<void> _savePdf(Map<String, dynamic> r) async {
+  Future<void> _savePdf(BuildContext context, Map<String, dynamic> r) async {
+    final isEn = context.isEn;
     setState(() => _saving = true);
     try {
       final doc = pw.Document();
@@ -99,7 +136,7 @@ class _FridayReportPageState extends ConsumerState<FridayReportPage> {
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
                     pw.Text(
-                      'LAPORAN KAS JUMAT',
+                      isEn ? 'FRIDAY CASH REPORT' : 'LAPORAN KAS JUMAT',
                       style: pw.TextStyle(color: PdfColors.amber100, fontSize: 11, fontWeight: pw.FontWeight.bold),
                     ),
                     pw.SizedBox(height: 4),
@@ -109,7 +146,7 @@ class _FridayReportPageState extends ConsumerState<FridayReportPage> {
                     ),
                     pw.SizedBox(height: 2),
                     pw.Text(
-                      'Periode: ${r['from']} s.d. ${r['to']}',
+                      isEn ? 'Period: ${r['from']} to ${r['to']}' : 'Periode: ${r['from']} s.d. ${r['to']}',
                       style: const pw.TextStyle(color: PdfColors.white, fontSize: 11),
                     ),
                   ],
@@ -120,26 +157,31 @@ class _FridayReportPageState extends ConsumerState<FridayReportPage> {
                 headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white),
                 headerDecoration: pw.BoxDecoration(color: PdfColor.fromInt(0xFF0A6B4F)),
                 cellPadding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                headers: ['Uraian', 'Nominal'],
+                headers: isEn ? ['Description', 'Amount'] : ['Uraian', 'Nominal'],
                 data: [
-                  ['Saldo Awal Pekan', rupiah((r['opening_balance'] as num?) ?? 0)],
-                  ['Total Pemasukan', '+ ${rupiah((r['total_in'] as num?) ?? 0)}'],
-                  ['Total Pengeluaran', '- ${rupiah((r['total_out'] as num?) ?? 0)}'],
-                  ['Saldo Akhir Kas', rupiah((r['closing_balance'] as num?) ?? 0)],
+                  [isEn ? 'Weekly Opening Balance' : 'Saldo Awal Pekan', rupiah((r['opening_balance'] as num?) ?? 0)],
+                  [isEn ? 'Total Income' : 'Total Pemasukan', '+ ${rupiah((r['total_in'] as num?) ?? 0)}'],
+                  [isEn ? 'Total Expenses' : 'Total Pengeluaran', '- ${rupiah((r['total_out'] as num?) ?? 0)}'],
+                  [isEn ? 'Closing Cash Balance' : 'Saldo Akhir Kas', rupiah((r['closing_balance'] as num?) ?? 0)],
                 ],
               ),
               if (funds.isNotEmpty) ...[
                 pw.SizedBox(height: 16),
-                pw.Text('Rincian Saldo per Dana', style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold)),
+                pw.Text(
+                  isEn ? 'Balance Breakdown by Fund' : 'Rincian Saldo per Dana',
+                  style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold),
+                ),
                 pw.SizedBox(height: 6),
                 pw.TableHelper.fromTextArray(
                   cellPadding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  headers: ['Dana', 'Status', 'Saldo'],
+                  headers: isEn ? ['Fund', 'Status', 'Balance'] : ['Dana', 'Status', 'Saldo'],
                   data: [
                     for (final f in funds)
                       [
                         '${f['name']}',
-                        f['restricted'] == true ? 'Terikat' : 'Umum',
+                        f['restricted'] == true
+                            ? (isEn ? 'Restricted' : 'Terikat')
+                            : (isEn ? 'General' : 'Umum'),
                         rupiah((f['balance'] as num?) ?? 0),
                       ],
                   ],
@@ -147,7 +189,10 @@ class _FridayReportPageState extends ConsumerState<FridayReportPage> {
               ],
               if (topIn.isNotEmpty) ...[
                 pw.SizedBox(height: 14),
-                pw.Text('Pemasukan Utama Pekan Ini', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
+                pw.Text(
+                  isEn ? 'Top Income This Week' : 'Pemasukan Utama Pekan Ini',
+                  style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+                ),
                 pw.SizedBox(height: 4),
                 for (final t in topIn)
                   pw.Row(
@@ -160,7 +205,10 @@ class _FridayReportPageState extends ConsumerState<FridayReportPage> {
               ],
               if (topOut.isNotEmpty) ...[
                 pw.SizedBox(height: 12),
-                pw.Text('Pengeluaran Utama Pekan Ini', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
+                pw.Text(
+                  isEn ? 'Top Expenses This Week' : 'Pengeluaran Utama Pekan Ini',
+                  style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+                ),
                 pw.SizedBox(height: 4),
                 for (final t in topOut)
                   pw.Row(
@@ -174,7 +222,9 @@ class _FridayReportPageState extends ConsumerState<FridayReportPage> {
               pw.Spacer(),
               pw.Divider(color: PdfColors.grey400),
               pw.Text(
-                'Jazakumullahu khairan katsiran atas infaq dan amanah jamaah. Dicetak melalui Moeslim Mosque.',
+                isEn
+                    ? "Jazakumullahu khairan for the congregation's donations and trust. Printed via Moeslim Mosque."
+                    : 'Jazakumullahu khairan katsiran atas infaq dan amanah jamaah. Dicetak melalui Moeslim Mosque.',
                 style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
               ),
             ],
@@ -184,20 +234,25 @@ class _FridayReportPageState extends ConsumerState<FridayReportPage> {
       final dir = await getApplicationDocumentsDirectory();
       final file = File('${dir.path}/laporan-kas-jumat-${r['to']}.pdf');
       await file.writeAsBytes(await doc.save());
-      if (mounted) showSnack(context, 'PDF Mading tersimpan: ${file.path}');
+      if (context.mounted) {
+        showSnack(
+          context,
+          isEn ? 'Notice Board PDF saved: ${file.path}' : 'PDF Mading tersimpan: ${file.path}',
+        );
+      }
     } catch (e) {
-      if (mounted) showSnack(context, '$e');
+      if (context.mounted) showSnack(context, '$e');
     } finally {
       if (mounted) setState(() => _saving = false);
     }
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => mosqueScoped(context, (context) {
     final key = (widget.ctx.id, isoDate(_friday));
     final report = ref.watch(fridayReportProvider(key));
     return Scaffold(
-      appBar: AppBar(title: const Text('Laporan Kas Jumat'), centerTitle: true),
+      appBar: AppBar(title: Text(context.tr('Laporan Kas Jumat', 'Friday Cash Report')), centerTitle: true),
       body: RefreshIndicator(
         onRefresh: () => ref.refresh(fridayReportProvider(key).future),
         child: ListView(
@@ -207,8 +262,8 @@ class _FridayReportPageState extends ConsumerState<FridayReportPage> {
               margin: EdgeInsets.zero,
               child: ListTile(
                 leading: const Icon(MoeslimIcons.kalender, color: BrandColors.emerald),
-                title: const Text('Tanggal Jumat'),
-                subtitle: Text(longDate(_friday)),
+                title: Text(context.tr('Tanggal Jumat', 'Friday Date')),
+                subtitle: Text(context.longDateText(_friday)),
                 trailing: TextButton(
                   onPressed: () async {
                     final d = await showDatePicker(
@@ -219,7 +274,7 @@ class _FridayReportPageState extends ConsumerState<FridayReportPage> {
                     );
                     if (d != null) setState(() => _friday = d);
                   },
-                  child: const Text('Ubah'),
+                  child: Text(context.tr('Ubah', 'Change')),
                 ),
               ),
             ),
@@ -238,9 +293,9 @@ class _FridayReportPageState extends ConsumerState<FridayReportPage> {
                   FilledButton.icon(
                     key: const Key('friday-copy-wa'),
                     style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50), shape: const StadiumBorder()),
-                    onPressed: _saving ? null : () => _copyWa(r),
+                    onPressed: _saving ? null : () => _copyWa(context, r),
                     icon: const Icon(Icons.copy_rounded),
-                    label: const Text('Salin Teks WhatsApp'),
+                    label: Text(context.tr('Salin Teks WhatsApp', 'Copy WhatsApp Text')),
                   ),
                   const SizedBox(height: 10),
                   Row(
@@ -249,9 +304,9 @@ class _FridayReportPageState extends ConsumerState<FridayReportPage> {
                         child: OutlinedButton.icon(
                           key: const Key('friday-save-pdf'),
                           style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
-                          onPressed: _saving ? null : () => _savePdf(r),
+                          onPressed: _saving ? null : () => _savePdf(context, r),
                           icon: const Icon(Icons.picture_as_pdf_outlined),
-                          label: const Text('PDF Mading'),
+                          label: Text(context.tr('PDF Mading', 'Notice Board PDF')),
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -259,7 +314,7 @@ class _FridayReportPageState extends ConsumerState<FridayReportPage> {
                         child: OutlinedButton.icon(
                           key: const Key('friday-save-png'),
                           style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
-                          onPressed: _saving ? null : () => _savePng(r),
+                          onPressed: _saving ? null : () => _savePng(context, r),
                           icon: const Icon(Icons.image_outlined),
                           label: const Text('Poster PNG'),
                         ),
@@ -273,7 +328,7 @@ class _FridayReportPageState extends ConsumerState<FridayReportPage> {
         ),
       ),
     );
-  }
+  });
 }
 
 class _FridayPosterCard extends StatelessWidget {
@@ -311,9 +366,9 @@ class _FridayPosterCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'LAPORAN KAS JUMAT',
-                  style: TextStyle(color: BrandColors.gold, fontSize: 11.5, fontWeight: FontWeight.w800, letterSpacing: 1.4),
+                Text(
+                  context.tr('LAPORAN KAS JUMAT', 'FRIDAY CASH REPORT'),
+                  style: const TextStyle(color: BrandColors.gold, fontSize: 11.5, fontWeight: FontWeight.w800, letterSpacing: 1.4),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -322,7 +377,10 @@ class _FridayPosterCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Periode ${report['from']} s.d. ${report['to']}',
+                  context.tr(
+                    'Periode ${report['from']} s.d. ${report['to']}',
+                    'Period ${report['from']} to ${report['to']}',
+                  ),
                   style: const TextStyle(color: BrandColors.cream, fontSize: 12.5),
                 ),
               ],
@@ -335,11 +393,11 @@ class _FridayPosterCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _PosterRow('Saldo Awal', rupiah(opening), color: BrandColors.deep),
+                  _PosterRow(context.tr('Saldo Awal', 'Opening Balance'), rupiah(opening), color: BrandColors.deep),
                   const SizedBox(height: 6),
-                  _PosterRow('Pemasukan Pekan Ini', '+ ${rupiah(totalIn)}', color: MosqueColors.income),
+                  _PosterRow(context.tr('Pemasukan Pekan Ini', 'Weekly Income'), '+ ${rupiah(totalIn)}', color: MosqueColors.income),
                   const SizedBox(height: 6),
-                  _PosterRow('Pengeluaran Pekan Ini', '- ${rupiah(totalOut)}', color: MosqueColors.expense),
+                  _PosterRow(context.tr('Pengeluaran Pekan Ini', 'Weekly Expenses'), '- ${rupiah(totalOut)}', color: MosqueColors.expense),
                   const SizedBox(height: 10),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -349,10 +407,10 @@ class _FridayPosterCard extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        const Expanded(
+                        Expanded(
                           child: Text(
-                            'Saldo Akhir Kas',
-                            style: TextStyle(color: BrandColors.cream, fontWeight: FontWeight.w600),
+                            context.tr('Saldo Akhir Kas', 'Closing Cash Balance'),
+                            style: const TextStyle(color: BrandColors.cream, fontWeight: FontWeight.w600),
                           ),
                         ),
                         Text(
@@ -365,9 +423,9 @@ class _FridayPosterCard extends StatelessWidget {
                   ),
                   if (funds.isNotEmpty) ...[
                     const SizedBox(height: 14),
-                    const Text(
-                      'RINCIAN SALDO DANA',
-                      style: TextStyle(
+                    Text(
+                      context.tr('RINCIAN SALDO DANA', 'FUND BALANCE BREAKDOWN'),
+                      style: const TextStyle(
                         color: BrandColors.dark,
                         fontSize: 11.5,
                         fontWeight: FontWeight.w800,
@@ -384,10 +442,13 @@ class _FridayPosterCard extends StatelessWidget {
                   const SizedBox(height: 12),
                   const Divider(height: 1),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Jazakumullahu khairan katsiran atas infaq dan amanah jamaah.',
+                  Text(
+                    context.tr(
+                      'Jazakumullahu khairan katsiran atas infaq dan amanah jamaah.',
+                      "Jazakumullahu khairan for the congregation's donations and trust.",
+                    ),
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 11.5, color: BrandColors.textMuted),
+                    style: const TextStyle(fontSize: 11.5, color: BrandColors.textMuted),
                   ),
                 ],
               ),
@@ -429,11 +490,11 @@ class DonationBoxCountPage extends ConsumerStatefulWidget {
 class _DonationBoxCountPageState extends ConsumerState<DonationBoxCountPage> {
   int _tab = 0;
   String _idempotencyKey = MasjidApi.newIdempotencyKey();
-  final _boxName = TextEditingController(text: 'Kotak Amal Jumat Utama');
+  final _boxName = TextEditingController();
   final _witness1 = TextEditingController();
   final _witness2 = TextEditingController();
   final _notes = TextEditingController();
-  final Map<int, TextEditingController> _qty = {for (final d in _idrDenominations) d: TextEditingController(text: '0')};
+  final Map<int, TextEditingController> _qty = {for (final d in _idrDenominations) d: TextEditingController()};
   DateTime _date = DateTime.now();
   Map<String, dynamic>? _setup;
   int? _fundId, _accountId, _categoryId;
@@ -477,16 +538,25 @@ class _DonationBoxCountPageState extends ConsumerState<DonationBoxCountPage> {
 
   void _step(int denom, int delta) {
     final next = (_countOf(denom) + delta).clamp(0, 100000);
-    setState(() => _qty[denom]!.text = '$next');
+    setState(() => _qty[denom]!.text = next == 0 ? '' : '$next');
   }
 
-  Future<void> _submit() async {
+  Future<void> _submit(BuildContext context) async {
+    final isEn = context.isEn;
     if (_total <= 0) {
-      setState(() => _error = 'Isi minimal satu pecahan uang kotak amal.');
+      setState(
+        () => _error = isEn
+            ? 'Enter at least one bill or coin denomination.'
+            : 'Isi minimal satu pecahan uang kotak amal.',
+      );
       return;
     }
     if (_witness1.text.trim().isEmpty || _witness2.text.trim().isEmpty) {
-      setState(() => _error = 'Nama Saksi 1 dan Saksi 2 wajib diisi untuk akuntabilitas.');
+      setState(
+        () => _error = isEn
+            ? 'Witness 1 and Witness 2 names are required for accountability.'
+            : 'Nama Saksi 1 dan Saksi 2 wajib diisi untuk akuntabilitas.',
+      );
       return;
     }
     setState(() {
@@ -498,10 +568,13 @@ class _DonationBoxCountPageState extends ConsumerState<DonationBoxCountPage> {
         for (final d in _idrDenominations)
           if (_countOf(d) > 0) '$d': _countOf(d),
       };
+      final boxName = _boxName.text.trim().isNotEmpty
+          ? _boxName.text.trim()
+          : (isEn ? 'Main Friday Donation Box' : 'Kotak Amal Jumat Utama');
       await ref.read(masjidApiProvider).createDonationBoxCount(
         widget.ctx.id,
         {
-          'box_name': _boxName.text.trim(),
+          'box_name': boxName,
           'date': isoDate(_date),
           'fund_id': _fundId,
           'cash_account_id': _accountId,
@@ -518,12 +591,17 @@ class _DonationBoxCountPageState extends ConsumerState<DonationBoxCountPage> {
       ref.invalidate(financeSummaryProvider);
       ref.invalidate(fridayReportProvider);
       ref.invalidate(dashboardProvider(widget.ctx.id));
-      if (!mounted) return;
-      showSnack(context, 'Hitungan kotak amal (${rupiah(_total)}) dicatat ke buku kas.');
+      if (!context.mounted) return;
+      showSnack(
+        context,
+        isEn
+            ? 'Donation box count (${rupiah(_total)}) recorded to cash ledger.'
+            : 'Hitungan kotak amal (${rupiah(_total)}) dicatat ke buku kas.',
+      );
       setState(() {
         _idempotencyKey = MasjidApi.newIdempotencyKey();
         for (final c in _qty.values) {
-          c.text = '0';
+          c.clear();
         }
         _notes.clear();
         _tab = 1;
@@ -536,19 +614,19 @@ class _DonationBoxCountPageState extends ConsumerState<DonationBoxCountPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => mosqueScoped(context, (context) {
     final history = ref.watch(donationBoxCountsProvider(widget.ctx.id));
     final funds = ((_setup?['funds'] as List?) ?? const []).cast<Map>();
     final accounts = ((_setup?['accounts'] as List?) ?? const []).cast<Map>();
     final cats = ((_setup?['categories'] as List?) ?? const []).cast<Map>().where((c) => c['flow'] == 'in').toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Hitung Kotak Amal'), centerTitle: true),
+      appBar: AppBar(title: Text(context.tr('Hitung Kotak Amal', 'Donation Box Count')), centerTitle: true),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
         children: [
           PillTabs(
-            labels: const ['Hitung Baru', 'Riwayat Hitungan'],
+            labels: [context.tr('Hitung Baru', 'New Count'), context.tr('Riwayat Hitungan', 'Count History')],
             index: _tab,
             onChanged: (i) => setState(() => _tab = i),
           ),
@@ -565,9 +643,11 @@ class _DonationBoxCountPageState extends ConsumerState<DonationBoxCountPage> {
                       TextField(
                         key: const Key('box-name'),
                         controller: _boxName,
-                        decoration: const InputDecoration(
-                          labelText: 'Nama Kotak Amal *',
-                          prefixIcon: Icon(MoeslimIcons.saldo),
+                        decoration: InputDecoration(
+                          labelText: context.tr('Nama Kotak Amal *', 'Donation Box Name *'),
+                          hintText: context.tr('Contoh: Kotak Amal Jumat Utama', 'Example: Main Friday Donation Box'),
+                          floatingLabelBehavior: FloatingLabelBehavior.always,
+                          prefixIcon: const Icon(MoeslimIcons.saldo),
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -577,9 +657,9 @@ class _DonationBoxCountPageState extends ConsumerState<DonationBoxCountPage> {
                             child: TextField(
                               key: const Key('witness-1'),
                               controller: _witness1,
-                              decoration: const InputDecoration(
-                                labelText: 'Saksi 1 *',
-                                prefixIcon: Icon(MoeslimIcons.profil),
+                              decoration: InputDecoration(
+                                labelText: context.tr('Saksi 1 *', 'Witness 1 *'),
+                                prefixIcon: const Icon(MoeslimIcons.profil),
                               ),
                             ),
                           ),
@@ -588,9 +668,9 @@ class _DonationBoxCountPageState extends ConsumerState<DonationBoxCountPage> {
                             child: TextField(
                               key: const Key('witness-2'),
                               controller: _witness2,
-                              decoration: const InputDecoration(
-                                labelText: 'Saksi 2 *',
-                                prefixIcon: Icon(MoeslimIcons.profil),
+                              decoration: InputDecoration(
+                                labelText: context.tr('Saksi 2 *', 'Witness 2 *'),
+                                prefixIcon: const Icon(MoeslimIcons.profil),
                               ),
                             ),
                           ),
@@ -602,7 +682,7 @@ class _DonationBoxCountPageState extends ConsumerState<DonationBoxCountPage> {
                           Expanded(
                             child: DropdownButtonFormField<int>(
                               initialValue: _fundId,
-                              decoration: const InputDecoration(labelText: 'Dana'),
+                              decoration: InputDecoration(labelText: context.tr('Dana', 'Fund')),
                               items: [
                                 for (final f in funds)
                                   DropdownMenuItem(value: f['id'] as int, child: Text('${f['name']}')),
@@ -614,7 +694,7 @@ class _DonationBoxCountPageState extends ConsumerState<DonationBoxCountPage> {
                           Expanded(
                             child: DropdownButtonFormField<int>(
                               initialValue: _accountId,
-                              decoration: const InputDecoration(labelText: 'Akun Kas'),
+                              decoration: InputDecoration(labelText: context.tr('Akun Kas', 'Cash Account')),
                               items: [
                                 for (final a in accounts)
                                   DropdownMenuItem(value: a['id'] as int, child: Text('${a['name']}')),
@@ -628,7 +708,7 @@ class _DonationBoxCountPageState extends ConsumerState<DonationBoxCountPage> {
                         const SizedBox(height: 10),
                         DropdownButtonFormField<int?>(
                           initialValue: _categoryId,
-                          decoration: const InputDecoration(labelText: 'Kategori Pemasukan'),
+                          decoration: InputDecoration(labelText: context.tr('Kategori Pemasukan', 'Income Category')),
                           items: [
                             for (final c in cats) DropdownMenuItem(value: c['id'] as int, child: Text('${c['name']}')),
                           ],
@@ -648,11 +728,14 @@ class _DonationBoxCountPageState extends ConsumerState<DonationBoxCountPage> {
                           if (d != null) setState(() => _date = d);
                         },
                         child: InputDecorator(
-                          decoration: const InputDecoration(labelText: 'Tanggal Hitung', prefixIcon: Icon(MoeslimIcons.kalender)),
-                          child: Text(longDate(_date)),
+                          decoration: InputDecoration(
+                            labelText: context.tr('Tanggal Hitung', 'Count Date'),
+                            prefixIcon: const Icon(MoeslimIcons.kalender),
+                          ),
+                          child: Text(context.longDateText(_date)),
                         ),
                       ),
-                      const SectionHeader('Pecahan Uang (Lembar / Koin)'),
+                      SectionHeader(context.tr('Pecahan Uang (Lembar / Koin)', 'Cash Denominations (Bills / Coins)')),
                       Card(
                         margin: EdgeInsets.zero,
                         child: Column(
@@ -667,7 +750,7 @@ class _DonationBoxCountPageState extends ConsumerState<DonationBoxCountPage> {
                                       child: Text(rupiah(d), style: const TextStyle(fontWeight: FontWeight.w700)),
                                     ),
                                     IconButton(
-                                      tooltip: 'Kurangi $d',
+                                      tooltip: context.tr('Kurangi $d', 'Decrease $d'),
                                       icon: const Icon(Icons.remove_circle_outline),
                                       onPressed: () => _step(d, -1),
                                     ),
@@ -681,13 +764,14 @@ class _DonationBoxCountPageState extends ConsumerState<DonationBoxCountPage> {
                                         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                                         decoration: const InputDecoration(
                                           isDense: true,
+                                          hintText: '0',
                                           contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 6),
                                         ),
                                         onChanged: (_) => setState(() {}),
                                       ),
                                     ),
                                     IconButton(
-                                      tooltip: 'Tambah $d',
+                                      tooltip: context.tr('Tambah $d', 'Increase $d'),
                                       icon: const Icon(Icons.add_circle_outline, color: BrandColors.emerald),
                                       onPressed: () => _step(d, 1),
                                     ),
@@ -707,7 +791,7 @@ class _DonationBoxCountPageState extends ConsumerState<DonationBoxCountPage> {
                       const SizedBox(height: 10),
                       TextField(
                         controller: _notes,
-                        decoration: const InputDecoration(labelText: 'Catatan (opsional)'),
+                        decoration: InputDecoration(labelText: context.tr('Catatan (opsional)', 'Notes (optional)')),
                       ),
                       const SizedBox(height: 12),
                       Container(
@@ -718,8 +802,11 @@ class _DonationBoxCountPageState extends ConsumerState<DonationBoxCountPage> {
                         ),
                         child: Row(
                           children: [
-                            const Expanded(
-                              child: Text('Total Hitungan', style: TextStyle(fontWeight: FontWeight.w700)),
+                            Expanded(
+                              child: Text(
+                                context.tr('Total Hitungan', 'Total Count'),
+                                style: const TextStyle(fontWeight: FontWeight.w700),
+                              ),
                             ),
                             Text(
                               rupiah(_total),
@@ -738,9 +825,9 @@ class _DonationBoxCountPageState extends ConsumerState<DonationBoxCountPage> {
                       FilledButton.icon(
                         key: const Key('save-box-count'),
                         style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52), shape: const StadiumBorder()),
-                        onPressed: _busy ? null : _submit,
+                        onPressed: _busy ? null : () => _submit(context),
                         icon: const Icon(MoeslimIcons.check),
-                        label: const Text('Catat ke Buku Kas'),
+                        label: Text(context.tr('Catat ke Buku Kas', 'Record to Cash Ledger')),
                       ),
                     ],
                   )
@@ -749,7 +836,10 @@ class _DonationBoxCountPageState extends ConsumerState<DonationBoxCountPage> {
               value: history,
               onRetry: () => ref.invalidate(donationBoxCountsProvider(widget.ctx.id)),
               data: (list) => list.isEmpty
-                  ? const EmptyState(MoeslimIcons.saldo, 'Belum ada riwayat hitungan kotak amal')
+                  ? EmptyState(
+                      MoeslimIcons.saldo,
+                      context.tr('Belum ada riwayat hitungan kotak amal', 'No donation box count history yet'),
+                    )
                   : Column(
                       children: [
                         for (final item in list)
@@ -763,7 +853,7 @@ class _DonationBoxCountPageState extends ConsumerState<DonationBoxCountPage> {
                               ),
                               title: Text('${item['box_name']}', style: const TextStyle(fontWeight: FontWeight.w700)),
                               subtitle: Text(
-                                '${item['date']} • Saksi: ${item['witness_1_name']} & ${item['witness_2_name']}'
+                                '${item['date']} • ${context.tr('Saksi', 'Witnesses')}: ${item['witness_1_name']} & ${item['witness_2_name']}'
                                 '${(item['transaction'] as Map?)?['reference_no'] != null ? '\nRef: ${(item['transaction'] as Map)['reference_no']}' : ''}',
                               ),
                               isThreeLine: true,
@@ -790,7 +880,7 @@ class _DonationBoxCountPageState extends ConsumerState<DonationBoxCountPage> {
         ],
       ),
     );
-  }
+  });
 }
 
 /// Kuitansi Donasi Digital bernomor resmi + QR verifikasi publik + ekspor PDF/PNG/WA.
@@ -825,37 +915,63 @@ class _ReceiptSheetState extends ConsumerState<ReceiptSheet> {
     }
   }
 
-  Future<void> _copyWa(Map<String, dynamic> r) async {
-    final text = [
-      '*KUITANSI DONASI RESMI*',
-      '*${r['mosque_name']}*',
-      'No: ${r['receipt_no']}',
-      'Tanggal: ${r['date']}',
-      'Diterima dari: ${r['donor_name']}',
-      'Nominal: *${rupiah((r['amount'] as num?) ?? 0)}*',
-      'Dana: ${r['fund_name'] ?? '-'}',
-      'Keterangan: ${r['description']}',
-      '',
-      'Verifikasi keaslian: ${r['verify_url']}',
-      'Jazakumullahu khairan katsiran.',
-    ].join('\n');
+  Future<void> _copyWa(BuildContext context, Map<String, dynamic> r) async {
+    final isEn = context.isEn;
+    final text = isEn
+        ? [
+            '*OFFICIAL DONATION RECEIPT*',
+            '*${r['mosque_name']}*',
+            'No: ${r['receipt_no']}',
+            'Date: ${r['date']}',
+            'Received from: ${r['donor_name']}',
+            'Amount: *${rupiah((r['amount'] as num?) ?? 0)}*',
+            'Fund: ${r['fund_name'] ?? '-'}',
+            'Description: ${r['description']}',
+            '',
+            'Verify authenticity: ${r['verify_url']}',
+            'Jazakumullahu khairan katsiran.',
+          ].join('\n')
+        : [
+            '*KUITANSI DONASI RESMI*',
+            '*${r['mosque_name']}*',
+            'No: ${r['receipt_no']}',
+            'Tanggal: ${r['date']}',
+            'Diterima dari: ${r['donor_name']}',
+            'Nominal: *${rupiah((r['amount'] as num?) ?? 0)}*',
+            'Dana: ${r['fund_name'] ?? '-'}',
+            'Keterangan: ${r['description']}',
+            '',
+            'Verifikasi keaslian: ${r['verify_url']}',
+            'Jazakumullahu khairan katsiran.',
+          ].join('\n');
     await Clipboard.setData(ClipboardData(text: text));
-    if (mounted) showSnack(context, 'Teks kuitansi disalin. Siap kirim ke WhatsApp donatur.');
+    if (context.mounted) {
+      showSnack(
+        context,
+        isEn
+            ? 'Receipt text copied. Ready to send to donor on WhatsApp.'
+            : 'Teks kuitansi disalin. Siap kirim ke WhatsApp donatur.',
+      );
+    }
   }
 
-  Future<void> _savePng(Map<String, dynamic> r) async {
+  Future<void> _savePng(BuildContext context, Map<String, dynamic> r) async {
+    final lang = context.lang;
     setState(() => _saving = true);
     try {
-      final path = await saveBoundaryPng(_cardKey, 'kuitansi-${r['receipt_no']}.png');
-      if (mounted) showSnack(context, 'Kuitansi PNG tersimpan: $path');
+      final path = await saveBoundaryPng(_cardKey, 'kuitansi-${r['receipt_no']}.png', lang: lang);
+      if (context.mounted) {
+        showSnack(context, lang == AppLanguage.en ? 'PNG receipt saved: $path' : 'Kuitansi PNG tersimpan: $path');
+      }
     } catch (e) {
-      if (mounted) showSnack(context, '$e');
+      if (context.mounted) showSnack(context, '$e');
     } finally {
       if (mounted) setState(() => _saving = false);
     }
   }
 
-  Future<void> _savePdf(Map<String, dynamic> r) async {
+  Future<void> _savePdf(BuildContext context, Map<String, dynamic> r) async {
+    final isEn = context.isEn;
     setState(() => _saving = true);
     try {
       final doc = pw.Document();
@@ -876,7 +992,10 @@ class _ReceiptSheetState extends ConsumerState<ReceiptSheet> {
                 child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
-                    pw.Text('KUITANSI DONASI RESMI', style: pw.TextStyle(color: PdfColors.amber100, fontSize: 10, fontWeight: pw.FontWeight.bold)),
+                    pw.Text(
+                      isEn ? 'OFFICIAL DONATION RECEIPT' : 'KUITANSI DONASI RESMI',
+                      style: pw.TextStyle(color: PdfColors.amber100, fontSize: 10, fontWeight: pw.FontWeight.bold),
+                    ),
                     pw.SizedBox(height: 3),
                     pw.Text('${r['mosque_name']}', style: pw.TextStyle(color: PdfColors.white, fontSize: 16, fontWeight: pw.FontWeight.bold)),
                     pw.Text('No. ${r['receipt_no']}', style: const pw.TextStyle(color: PdfColors.white, fontSize: 10)),
@@ -884,13 +1003,16 @@ class _ReceiptSheetState extends ConsumerState<ReceiptSheet> {
                 ),
               ),
               pw.SizedBox(height: 14),
-              pw.Text('Telah diterima dari: ${r['donor_name']}', style: const pw.TextStyle(fontSize: 11)),
+              pw.Text(
+                isEn ? 'Received from: ${r['donor_name']}' : 'Telah diterima dari: ${r['donor_name']}',
+                style: const pw.TextStyle(fontSize: 11),
+              ),
               pw.SizedBox(height: 6),
               pw.Text(rupiah((r['amount'] as num?) ?? 0), style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold)),
               pw.SizedBox(height: 10),
-              pw.Text('Dana: ${r['fund_name'] ?? '-'}', style: const pw.TextStyle(fontSize: 10.5)),
-              pw.Text('Tanggal: ${r['date']}', style: const pw.TextStyle(fontSize: 10.5)),
-              pw.Text('Keterangan: ${r['description']}', style: const pw.TextStyle(fontSize: 10.5)),
+              pw.Text('${isEn ? 'Fund' : 'Dana'}: ${r['fund_name'] ?? '-'}', style: const pw.TextStyle(fontSize: 10.5)),
+              pw.Text('${isEn ? 'Date' : 'Tanggal'}: ${r['date']}', style: const pw.TextStyle(fontSize: 10.5)),
+              pw.Text('${isEn ? 'Description' : 'Keterangan'}: ${r['description']}', style: const pw.TextStyle(fontSize: 10.5)),
               pw.SizedBox(height: 16),
               if (verifyUrl.isNotEmpty)
                 pw.Row(
@@ -899,7 +1021,9 @@ class _ReceiptSheetState extends ConsumerState<ReceiptSheet> {
                     pw.SizedBox(width: 12),
                     pw.Expanded(
                       child: pw.Text(
-                        'Pindai kode QR untuk memverifikasi keaslian kuitansi secara daring.\n$verifyUrl',
+                        isEn
+                            ? 'Scan the QR code to verify receipt authenticity online.\n$verifyUrl'
+                            : 'Pindai kode QR untuk memverifikasi keaslian kuitansi secara daring.\n$verifyUrl',
                         style: const pw.TextStyle(fontSize: 8.5, color: PdfColors.grey700),
                       ),
                     ),
@@ -912,16 +1036,18 @@ class _ReceiptSheetState extends ConsumerState<ReceiptSheet> {
       final dir = await getApplicationDocumentsDirectory();
       final file = File('${dir.path}/kuitansi-${r['receipt_no']}.pdf');
       await file.writeAsBytes(await doc.save());
-      if (mounted) showSnack(context, 'Kuitansi PDF tersimpan: ${file.path}');
+      if (context.mounted) {
+        showSnack(context, isEn ? 'PDF receipt saved: ${file.path}' : 'Kuitansi PDF tersimpan: ${file.path}');
+      }
     } catch (e) {
-      if (mounted) showSnack(context, '$e');
+      if (context.mounted) showSnack(context, '$e');
     } finally {
       if (mounted) setState(() => _saving = false);
     }
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => mosqueScoped(context, (context) {
     final r = _receipt;
     return SafeArea(
       child: SingleChildScrollView(
@@ -932,7 +1058,7 @@ class _ReceiptSheetState extends ConsumerState<ReceiptSheet> {
                 children: [
                   Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
                   const SizedBox(height: 8),
-                  TextButton(onPressed: _load, child: const Text('Coba lagi')),
+                  TextButton(onPressed: _load, child: Text(context.tr('Coba lagi', 'Try again'))),
                 ],
               )
             : r == null
@@ -962,9 +1088,9 @@ class _ReceiptSheetState extends ConsumerState<ReceiptSheet> {
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          const Text(
-                                            'KUITANSI DONASI DIGITAL',
-                                            style: TextStyle(
+                                          Text(
+                                            context.tr('KUITANSI DONASI DIGITAL', 'DIGITAL DONATION RECEIPT'),
+                                            style: const TextStyle(
                                               color: BrandColors.gold,
                                               fontSize: 10.5,
                                               fontWeight: FontWeight.w800,
@@ -989,7 +1115,9 @@ class _ReceiptSheetState extends ConsumerState<ReceiptSheet> {
                                         borderRadius: BorderRadius.circular(20),
                                       ),
                                       child: Text(
-                                        r['status'] == 'reversed' ? 'Dibatalkan' : 'Terverifikasi',
+                                        r['status'] == 'reversed'
+                                            ? context.tr('Dibatalkan', 'Cancelled')
+                                            : context.tr('Terverifikasi', 'Verified'),
                                         style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w700),
                                       ),
                                     ),
@@ -1003,7 +1131,10 @@ class _ReceiptSheetState extends ConsumerState<ReceiptSheet> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.stretch,
                                     children: [
-                                      const Text('Telah diterima dari', style: TextStyle(fontSize: 11.5, color: BrandColors.textMuted)),
+                                      Text(
+                                        context.tr('Telah diterima dari', 'Received from'),
+                                        style: const TextStyle(fontSize: 11.5, color: BrandColors.textMuted),
+                                      ),
                                       Text('${r['donor_name']}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                                       const SizedBox(height: 8),
                                       Text(
@@ -1015,11 +1146,11 @@ class _ReceiptSheetState extends ConsumerState<ReceiptSheet> {
                                         ),
                                       ),
                                       const SizedBox(height: 10),
-                                      _PosterRow('Tanggal', '${r['date']}', color: BrandColors.deep),
+                                      _PosterRow(context.tr('Tanggal', 'Date'), '${r['date']}', color: BrandColors.deep),
                                       const SizedBox(height: 4),
-                                      _PosterRow('Dana', '${r['fund_name'] ?? '-'}', color: BrandColors.deep),
+                                      _PosterRow(context.tr('Dana', 'Fund'), '${r['fund_name'] ?? '-'}', color: BrandColors.deep),
                                       const SizedBox(height: 4),
-                                      _PosterRow('Keterangan', '${r['description']}', color: BrandColors.deep),
+                                      _PosterRow(context.tr('Keterangan', 'Description'), '${r['description']}', color: BrandColors.deep),
                                       const SizedBox(height: 12),
                                       Container(
                                         padding: const EdgeInsets.all(10),
@@ -1039,10 +1170,13 @@ class _ReceiptSheetState extends ConsumerState<ReceiptSheet> {
                                               ),
                                             ),
                                             const SizedBox(width: 12),
-                                            const Expanded(
+                                            Expanded(
                                               child: Text(
-                                                'Pindai QR untuk verifikasi keaslian kuitansi dari buku kas resmi masjid.',
-                                                style: TextStyle(fontSize: 11.5, color: BrandColors.textMuted),
+                                                context.tr(
+                                                  'Pindai QR untuk verifikasi keaslian kuitansi dari buku kas resmi masjid.',
+                                                  'Scan QR to verify receipt authenticity from the official mosque ledger.',
+                                                ),
+                                                style: const TextStyle(fontSize: 11.5, color: BrandColors.textMuted),
                                               ),
                                             ),
                                           ],
@@ -1060,9 +1194,9 @@ class _ReceiptSheetState extends ConsumerState<ReceiptSheet> {
                       FilledButton.icon(
                         key: const Key('receipt-copy-wa'),
                         style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48), shape: const StadiumBorder()),
-                        onPressed: _saving ? null : () => _copyWa(r),
+                        onPressed: _saving ? null : () => _copyWa(context, r),
                         icon: const Icon(Icons.copy_rounded),
-                        label: const Text('Salin Teks WA Donatur'),
+                        label: Text(context.tr('Salin Teks WA Donatur', 'Copy WhatsApp Text for Donor')),
                       ),
                       const SizedBox(height: 8),
                       Row(
@@ -1070,18 +1204,18 @@ class _ReceiptSheetState extends ConsumerState<ReceiptSheet> {
                           Expanded(
                             child: OutlinedButton.icon(
                               key: const Key('receipt-save-pdf'),
-                              onPressed: _saving ? null : () => _savePdf(r),
+                              onPressed: _saving ? null : () => _savePdf(context, r),
                               icon: const Icon(Icons.picture_as_pdf_outlined),
-                              label: const Text('Simpan PDF'),
+                              label: Text(context.tr('Simpan PDF', 'Save PDF')),
                             ),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: OutlinedButton.icon(
                               key: const Key('receipt-save-png'),
-                              onPressed: _saving ? null : () => _savePng(r),
+                              onPressed: _saving ? null : () => _savePng(context, r),
                               icon: const Icon(Icons.image_outlined),
-                              label: const Text('Simpan PNG'),
+                              label: Text(context.tr('Simpan PNG', 'Save PNG')),
                             ),
                           ),
                         ],
@@ -1090,5 +1224,5 @@ class _ReceiptSheetState extends ConsumerState<ReceiptSheet> {
                   ),
       ),
     );
-  }
+  });
 }

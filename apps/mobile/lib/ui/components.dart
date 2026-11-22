@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 
+import '../core/l10n.dart';
+
 /// Pola geometris islami (bintang delapan) yang halus untuk latar header/kartu.
 class IslamicPatternPainter extends CustomPainter {
   final Color color;
@@ -236,16 +238,7 @@ class MenuTile extends StatelessWidget {
               else if (tile != null)
                 FeatureTileArt(tile!, size: 40)
               else
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: scheme.primary.withValues(alpha: .12),
-                    borderRadius: BorderRadius.circular(11),
-                  ),
-                  alignment: Alignment.center,
-                  child: Icon(icon, color: scheme.primary, size: 22),
-                ),
+                Icon(icon, color: scheme.primary, size: 40),
               const SizedBox(height: 6),
               Text(
                 label,
@@ -311,8 +304,10 @@ class _PillTabsState extends State<PillTabs> {
       final viewport = _viewportKey.currentContext?.findRenderObject();
       if (tab is! RenderBox || viewport is! RenderBox) return;
       final left = tab.localToGlobal(Offset.zero, ancestor: viewport).dx + _scroll.offset;
-      final target = (left + tab.size.width / 2 - viewport.size.width / 2)
-          .clamp(_scroll.position.minScrollExtent, _scroll.position.maxScrollExtent);
+      final target = (left + tab.size.width / 2 - viewport.size.width / 2).clamp(
+        _scroll.position.minScrollExtent,
+        _scroll.position.maxScrollExtent,
+      );
       _scroll.animateTo(target, duration: const Duration(milliseconds: 220), curve: Curves.easeOut);
     });
   }
@@ -327,10 +322,7 @@ class _PillTabsState extends State<PillTabs> {
       softWrap: false,
       overflow: TextOverflow.ellipsis,
       textAlign: TextAlign.center,
-      style: TextStyle(
-        fontWeight: FontWeight.w600,
-        color: selected ? scheme.onPrimary : scheme.onSurface,
-      ),
+      style: TextStyle(fontWeight: FontWeight.w600, color: selected ? scheme.onPrimary : scheme.onSurface),
     );
     return Semantics(
       key: _keys[i],
@@ -402,7 +394,7 @@ class CoreSwitcher extends StatelessWidget {
     final label = current == AppCore.personal ? 'Moeslim Personal' : 'Moeslim Mosque';
     return PopupMenuButton<AppCore>(
       key: const Key('core-switcher'),
-      tooltip: 'Ganti mode',
+      tooltip: context.tr('Ganti mode', 'Switch mode'),
       onSelected: onSelected,
       itemBuilder: (_) => [
         for (final c in AppCore.values)
@@ -412,7 +404,11 @@ class CoreSwitcher extends StatelessWidget {
               contentPadding: EdgeInsets.zero,
               leading: Icon(c == AppCore.personal ? MoeslimIcons.profil : MoeslimIcons.masjid),
               title: Text(c == AppCore.personal ? 'Moeslim Personal' : 'Moeslim Mosque'),
-              subtitle: Text(c == AppCore.personal ? 'Ibadah harian pribadi' : 'Fitur tambahan pengurus masjid'),
+              subtitle: Text(
+                c == AppCore.personal
+                    ? context.tr('Ibadah harian pribadi', 'Personal daily worship')
+                    : context.tr('Fitur tambahan pengurus masjid', 'Optional tools for mosque managers'),
+              ),
               trailing: c == current ? Icon(MoeslimIcons.berhasil, color: scheme.primary) : null,
             ),
           ),

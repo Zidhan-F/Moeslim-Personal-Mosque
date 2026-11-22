@@ -3,8 +3,20 @@ import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:personal_core/personal_core.dart';
 
+import '../../core/l10n.dart';
 import '../../core/providers.dart';
 import '../../ui/components.dart';
+
+String _khatamStatusLabel(BuildContext context, KhatamPlan plan, DateTime now) {
+  if (!context.isEn) return plan.statusLabelAt(now);
+  if (plan.completedPages >= KhatamPlan.totalMushafPages) {
+    return 'Alhamdulillah, 604 Pages Completed!';
+  }
+  final delta = plan.deltaPagesAt(now);
+  if (delta > 2) return '$delta pages ahead of schedule';
+  if (delta < -2) return '${delta.abs()} pages behind schedule';
+  return 'On track with your daily goal';
+}
 
 class KhatamPlannerPage extends ConsumerStatefulWidget {
   const KhatamPlannerPage({super.key});
@@ -59,11 +71,11 @@ class _KhatamPlannerPageState extends ConsumerState<KhatamPlannerPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Perencana Khatam Al-Qur\'an'),
+        title: Text(context.tr('Perencana Khatam Al-Qur\'an', 'Qur\'an Khatam Planner')),
         centerTitle: true,
         actions: [
           IconButton(
-            tooltip: 'Mulai ulang khatam dari halaman 1',
+            tooltip: context.tr('Mulai ulang khatam dari halaman 1', 'Restart khatam from page 1'),
             onPressed: _resetPlan,
             icon: const Icon(MoeslimIcons.ulang),
           ),
@@ -78,13 +90,19 @@ class _KhatamPlannerPageState extends ConsumerState<KhatamPlannerPage> {
                   child: Column(
                     children: [
                       Text(
-                        '${plan.completedPages} / ${KhatamPlan.totalMushafPages} Halaman',
+                        context.tr(
+                          '${plan.completedPages} / ${KhatamPlan.totalMushafPages} Halaman',
+                          '${plan.completedPages} / ${KhatamPlan.totalMushafPages} Pages',
+                        ),
                         key: const Key('khatam-progress-pages'),
                         style: t.headlineSmall?.copyWith(fontWeight: FontWeight.w800, color: scheme.primary),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Juz ${plan.currentJuz} · Halaman berikutnya: ${plan.currentPageToRead}',
+                        context.tr(
+                          'Juz ${plan.currentJuz} · Halaman berikutnya: ${plan.currentPageToRead}',
+                          'Juz ${plan.currentJuz} · Next page: ${plan.currentPageToRead}',
+                        ),
                         style: t.titleMedium,
                       ),
                       const SizedBox(height: 8),
@@ -95,7 +113,7 @@ class _KhatamPlannerPageState extends ConsumerState<KhatamPlannerPage> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        plan.statusLabelAt(now),
+                        _khatamStatusLabel(context, plan, now),
                         key: const Key('khatam-status-label'),
                         style: t.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
                       ),
@@ -109,7 +127,10 @@ class _KhatamPlannerPageState extends ConsumerState<KhatamPlannerPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text('Catat Kemajuan Bacaan Hari Ini', style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                        Text(
+                          context.tr('Catat Kemajuan Bacaan Hari Ini', 'Log Today\'s Reading Progress'),
+                          style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                        ),
                         const SizedBox(height: 10),
                         Wrap(
                           spacing: 8,
@@ -119,19 +140,24 @@ class _KhatamPlannerPageState extends ConsumerState<KhatamPlannerPage> {
                               key: const Key('khatam-add-prayer-portion'),
                               onPressed: () => _addPages(plan.pagesPerPrayer),
                               icon: const Icon(MoeslimIcons.berhasil),
-                              label: Text('+${plan.pagesPerPrayer} Hal (1 Waktu Salat)'),
+                              label: Text(
+                                context.tr(
+                                  '+${plan.pagesPerPrayer} Hal (1 Waktu Salat)',
+                                  '+${plan.pagesPerPrayer} Pages (1 Prayer)',
+                                ),
+                              ),
                             ),
                             OutlinedButton.icon(
                               key: const Key('khatam-add-one-page'),
                               onPressed: () => _addPages(1),
                               icon: const Icon(MoeslimIcons.tambahLingkar),
-                              label: const Text('+1 Halaman'),
+                              label: Text(context.tr('+1 Halaman', '+1 Page')),
                             ),
                             if (plan.completedPages > 0)
                               OutlinedButton.icon(
                                 onPressed: () => _addPages(-1),
                                 icon: const Icon(MoeslimIcons.minusLingkar),
-                                label: const Text('-1 Halaman'),
+                                label: Text(context.tr('-1 Halaman', '-1 Page')),
                               ),
                           ],
                         ),
@@ -139,7 +165,7 @@ class _KhatamPlannerPageState extends ConsumerState<KhatamPlannerPage> {
                     ),
                   ),
                 ),
-                const SectionHeader('Target Durasi Khatam (604 Halaman)'),
+                SectionHeader(context.tr('Target Durasi Khatam (604 Halaman)', 'Khatam Duration Goal (604 Pages)')),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
@@ -148,13 +174,13 @@ class _KhatamPlannerPageState extends ConsumerState<KhatamPlannerPage> {
                       ChoiceChip(
                         key: Key('khatam-target-$days'),
                         materialTapTargetSize: MaterialTapTargetSize.padded,
-                        label: Text('$days Hari'),
+                        label: Text(context.tr('$days Hari', '$days Days')),
                         selected: plan.targetDays == days,
                         onSelected: (_) => _setTargetDays(days),
                       ),
                   ],
                 ),
-                const SectionHeader('Pembagian Porsi per Waktu Salat'),
+                SectionHeader(context.tr('Pembagian Porsi per Waktu Salat', 'Pages per Prayer Time')),
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
@@ -162,18 +188,27 @@ class _KhatamPlannerPageState extends ConsumerState<KhatamPlannerPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Target Harian: ${plan.dailyTargetPages.toStringAsFixed(1)} halaman / hari',
+                          context.tr(
+                            'Target Harian: ${plan.dailyTargetPages.toStringAsFixed(1)} halaman / hari',
+                            'Daily Target: ${plan.dailyTargetPages.toStringAsFixed(1)} pages / day',
+                          ),
                           style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 8),
-                        for (final p in ['Subuh', 'Dzuhur', 'Ashar', 'Maghrib', 'Isya'])
+                        for (final p in const [
+                          ('Subuh', 'Fajr'),
+                          ('Dzuhur', 'Dhuhr'),
+                          ('Ashar', 'Asr'),
+                          ('Maghrib', 'Maghrib'),
+                          ('Isya', 'Isha'),
+                        ])
                           ListTile(
                             dense: true,
                             contentPadding: EdgeInsets.zero,
                             leading: Icon(MoeslimIcons.quranTerbuka, color: scheme.primary),
-                            title: Text('Ba\'da Salat $p'),
+                            title: Text(context.tr("Ba'da Salat ${p.$1}", 'After ${p.$2} Prayer')),
                             trailing: Text(
-                              '${plan.pagesPerPrayer} halaman',
+                              context.tr('${plan.pagesPerPrayer} halaman', '${plan.pagesPerPrayer} pages'),
                               style: const TextStyle(fontWeight: FontWeight.w700),
                             ),
                           ),

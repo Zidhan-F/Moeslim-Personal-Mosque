@@ -410,6 +410,39 @@ MockClient fakeMosqueBackend(
         'qris': {'has_image': false, 'enabled': false, 'label': 'Infaq Masjid'},
         'override': null,
       });
+    case ('GET', '/mosques/M1/displays/preview'):
+      return json({
+        'data': {
+          'mosque': {
+            'id': 'M1',
+            'name': 'Masjid Al-Ikhlas',
+            'address': 'Jl. Merdeka 1',
+            'city': 'Jakarta',
+            'latitude': -6.2,
+            'longitude': 106.8,
+            'timezone': 'Asia/Jakarta',
+            'prayer_method': 'kemenag',
+            'settings': {
+              'iqamah_minutes': {'fajr': 10, 'dhuhr': 10, 'asr': 10, 'maghrib': 5, 'isha': 10},
+              'praying_minutes': {'fajr': 15, 'dhuhr': 15, 'asr': 15, 'maghrib': 15, 'isha': 15, 'jumuah': 45},
+            },
+          },
+          'events': [
+            {'id': 7, 'title': 'Kajian Ahad', 'category': 'kajian', 'starts_at': '2026-11-22T00:00:00Z'},
+          ],
+          'announcements': [
+            {'id': 3, 'title': 'Kerja bakti', 'body': 'Ahad pagi', 'priority': 1},
+          ],
+          'staff_today': [
+            {'duty_type': 'imam', 'prayer': 'maghrib', 'name': 'Ust. Ahmad'},
+          ],
+          'friday_staff': null,
+          'finance': null,
+          'qris': null,
+          'override': null,
+        },
+        'server_time': '2026-11-20T03:00:00Z',
+      });
     case ('PATCH', '/mosques/M1/displays/settings'):
       return json({'data': jsonDecode(req.body)});
     case ('POST', '/mosques/M1/displays/override'):
@@ -421,6 +454,16 @@ MockClient fakeMosqueBackend(
     case ('POST', '/mosques/M1/displays/pairing-codes'):
       return json({
         'data': {'code': '482913', 'expires_at': '2026-11-20T10:10:00Z'},
+      }, 201);
+    case ('POST', '/mosques/M1/displays/approve-session'):
+      final body = jsonDecode(req.body) as Map;
+      return json({
+        'data': {
+          'id': 6,
+          'name': (body['name'] as String?)?.trim().isNotEmpty == true ? body['name'] : 'TV Display Web',
+          'status': 'active',
+          'config': <String, dynamic>{},
+        },
       }, 201);
     case ('PATCH', '/mosques/M1/displays/5'):
       return json({'data': {}});

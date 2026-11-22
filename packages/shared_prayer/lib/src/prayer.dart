@@ -2,45 +2,61 @@ import 'dart:math' as math;
 
 import 'astro.dart';
 import 'coordinates.dart';
+import 'language.dart';
 
 /// Lima waktu sholat wajib.
 enum Prayer {
-  fajr('Subuh'),
-  dhuhr('Dzuhur'),
-  asr('Ashar'),
-  maghrib('Maghrib'),
-  isha('Isya');
+  fajr('Subuh', 'Fajr'),
+  dhuhr('Dzuhur', 'Dhuhr'),
+  asr('Ashar', 'Asr'),
+  maghrib('Maghrib', 'Maghrib'),
+  isha('Isya', 'Isha');
 
   final String label;
-  const Prayer(this.label);
+  final String labelEn;
+  const Prayer(this.label, this.labelEn);
+
+  String labelFor(AppLanguage lang) => lang == AppLanguage.en ? labelEn : label;
 }
 
 /// Mazhab perhitungan bayangan Ashar.
-enum AsrMadhab { shafii, hanafi }
+enum AsrMadhab {
+  shafii,
+  hanafi;
+
+  String labelFor(AppLanguage lang) => switch (this) {
+    AsrMadhab.shafii => lang == AppLanguage.en ? "Shafi'i / Standard" : "Syafi'i / Standar",
+    AsrMadhab.hanafi => 'Hanafi',
+  };
+}
 
 /// Metode perhitungan jadwal sholat.
 enum CalculationMethod {
   /// Kementerian Agama RI: Subuh −20°, Isya −18°, ihtiyat 2 menit.
-  kemenag('Kemenag RI', fajrAngle: 20, ishaAngle: 18, ihtiyatMinutes: 2),
-  muslimWorldLeague('Muslim World League', fajrAngle: 18, ishaAngle: 17),
-  ummAlQura('Umm al-Qura', fajrAngle: 18.5, ishaMinutesAfterMaghrib: 90),
-  isna('ISNA', fajrAngle: 15, ishaAngle: 15),
-  egypt('Mesir', fajrAngle: 19.5, ishaAngle: 17.5),
-  jakim('JAKIM Malaysia', fajrAngle: 20, ishaAngle: 18, ihtiyatMinutes: 1);
+  kemenag('Kemenag RI', 'Kemenag RI (Indonesia)', fajrAngle: 20, ishaAngle: 18, ihtiyatMinutes: 2),
+  muslimWorldLeague('Muslim World League', 'Muslim World League', fajrAngle: 18, ishaAngle: 17),
+  ummAlQura('Umm al-Qura', 'Umm al-Qura', fajrAngle: 18.5, ishaMinutesAfterMaghrib: 90),
+  isna('ISNA', 'ISNA (North America)', fajrAngle: 15, ishaAngle: 15),
+  egypt('Mesir', 'Egyptian General Authority', fajrAngle: 19.5, ishaAngle: 17.5),
+  jakim('JAKIM Malaysia', 'JAKIM Malaysia', fajrAngle: 20, ishaAngle: 18, ihtiyatMinutes: 1);
 
   final String label;
+  final String labelEn;
   final double fajrAngle;
   final double? ishaAngle;
   final int? ishaMinutesAfterMaghrib;
   final int ihtiyatMinutes;
 
   const CalculationMethod(
-    this.label, {
+    this.label,
+    this.labelEn, {
     required this.fajrAngle,
     this.ishaAngle,
     this.ishaMinutesAfterMaghrib,
     this.ihtiyatMinutes = 0,
   });
+
+  String labelFor(AppLanguage lang) => lang == AppLanguage.en ? labelEn : label;
 }
 
 /// Hasil perhitungan satu hari (waktu lokal sesuai offset yang diberikan).

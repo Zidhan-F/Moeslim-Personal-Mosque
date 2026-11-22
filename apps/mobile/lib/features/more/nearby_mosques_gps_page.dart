@@ -5,6 +5,8 @@ import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:personal_core/personal_core.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/l10n.dart';
+import '../../core/location_service.dart';
 import '../../core/providers.dart';
 
 class NearbyMosquesGpsPage extends ConsumerStatefulWidget {
@@ -29,10 +31,78 @@ class _NearbyMosquesGpsPageState extends ConsumerState<NearbyMosquesGpsPage> {
     super.dispose();
   }
 
+  static String _localizeCardinal(String dir, AppLanguage lang) {
+    if (lang != AppLanguage.en) return dir;
+    return switch (dir) {
+      'Utara' => 'North',
+      'Timur Laut' => 'Northeast',
+      'Timur' => 'East',
+      'Tenggara' => 'Southeast',
+      'Selatan' => 'South',
+      'Barat Daya' => 'Southwest',
+      'Barat' => 'West',
+      'Barat Laut' => 'Northwest',
+      _ => dir,
+    };
+  }
+
+  static String _localizeMosqueKind(String kind, AppLanguage lang) {
+    if (lang != AppLanguage.en) return kind;
+    return switch (kind) {
+      'Masjid' => 'Mosque',
+      'Musholla' => 'Prayer Room',
+      'Masjid Negara' => 'National Mosque',
+      'Masjid Agung' => 'Grand Mosque',
+      'Masjid Raya' => 'Great Mosque',
+      'Masjid Pusat Dakwah' => 'Islamic Center Mosque',
+      'Masjid Nasional' => 'National Mosque',
+      'Masjid Bersejarah' => 'Historic Mosque',
+      'Masjid / Musholla Sekitar' => 'Saved Mosque / Prayer Room',
+      _ => kind,
+    };
+  }
+
+  static String _localizeFacilities(String facilities, AppLanguage lang) {
+    if (lang != AppLanguage.en) return facilities;
+    const map = <String, String>{
+      'Tempat Wudhu Tradisional': 'Traditional Wudu Area',
+      'Tempat Wudhu': 'Wudu Area',
+      'Ruang Salat Utama': 'Main Prayer Hall',
+      'Parkir Luas': 'Spacious Parking',
+      'Parkir Basement': 'Basement Parking',
+      'Basement Parkir & Wudhu': 'Basement Parking & Wudu',
+      'Parkir': 'Parking',
+      'Perpustakaan Islam': 'Islamic Library',
+      'Perpustakaan': 'Library',
+      'Akses Disabilitas': 'Wheelchair Access',
+      'Air Wudhu Siap': 'Wudu Facilities',
+      'Air Minum': 'Drinking Water',
+      'Toilet': 'Restrooms',
+      'Kajian Rutin': 'Regular Lectures',
+      "Kajian Ba'da Salat": 'Post-Prayer Lectures',
+      'Kajian': 'Lectures',
+      'Aula': 'Hall',
+      'Ruang Ber-AC': 'Air-Conditioned Hall',
+      'Alun-Alun': 'City Square',
+      'Menara Pandang': 'Observation Tower',
+      'Menara': 'Minaret',
+      'Poliklinik': 'Clinic',
+      'Serambi Kajian': 'Study Veranda',
+      'Payung Elektrik': 'Retractable Umbrellas',
+      'Belum ada data fasilitas': 'No facility data yet',
+      'Dari Google Maps': 'From Google Maps',
+    };
+    return facilities
+        .split(', ')
+        .map((part) => map[part.trim()] ?? part.trim())
+        .join(', ');
+  }
+
   /// Memuat masjid sekitar titik acuan dari OpenStreetMap; bila gagal, memakai daftar bawaan.
   Future<void> _load() async {
     final origin = (ref.read(settingsProvider).value ?? PersonalSettings.defaults).effectiveCoordinates;
-    final key = '${origin.latitude.toStringAsFixed(3)},${origin.longitude.toStringAsFixed(3)}';
+    final lang = ref.read(appLanguageProvider);
+    final key = '${origin.latitude.toStringAsFixed(3)},${origin.longitude.toStringAsFixed(3)}_${lang.code}';
     _loadedKey = key;
     setState(() => _loading = true);
     final repo = ref.read(nearbyMosqueRepoProvider);
@@ -43,13 +113,13 @@ class _NearbyMosquesGpsPageState extends ConsumerState<NearbyMosquesGpsPage> {
     final google = ref.read(googleMosqueFinderProvider);
     if (google.enabled) {
       try {
-        online = await google.search(origin);
+        online = await google.search(origin, lang: lang);
         source = 'Google Maps';
       } catch (_) {}
     }
     if (online.isEmpty) {
       try {
-        online = await ref.read(onlineMosqueFinderProvider).search(origin);
+        online = await ref.read(onlineMosqueFinderProvider).search(origin, lang: lang);
         source = 'OpenStreetMap';
       } catch (_) {
         offline = true;
@@ -66,12 +136,17 @@ class _NearbyMosquesGpsPageState extends ConsumerState<NearbyMosquesGpsPage> {
 
   Future<void> _openGoogleMaps({NearbyMosqueItem? mosque}) async {
     final o = (ref.read(settingsProvider).value ?? PersonalSettings.defaults).effectiveCoordinates;
+    final queryTerm = ref.read(appLanguageProvider) == AppLanguage.en ? 'mosque' : 'masjid';
     final uri = mosque == null
-        ? Uri.parse('https://www.google.com/maps/search/masjid/@${o.latitude},${o.longitude},15z')
+        ? Uri.parse('https://www.google.com/maps/search/$queryTerm/@${o.latitude},${o.longitude},15z')
         : Uri.parse('https://www.google.com/maps/dir/?api=1&destination=${mosque.latitude},${mosque.longitude}');
     final ok = await launchUrl(uri, mode: LaunchMode.externalApplication).catchError((_) => false);
     if (!ok && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Tidak bisa membuka Google Maps.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.tr('Tidak bisa membuka Google Maps.', 'Could not open Google Maps.')),
+        ),
+      );
     }
   }
 
@@ -85,45 +160,58 @@ class _NearbyMosquesGpsPageState extends ConsumerState<NearbyMosquesGpsPage> {
     final saved = await showDialog<bool>(
       context: context,
       builder: (dialogCtx) => AlertDialog(
-        title: const Text('Catat Masjid / Musholla Sekitar'),
+        title: Text(dialogCtx.tr('Catat Masjid / Musholla Sekitar', 'Save Nearby Mosque / Prayer Room')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               key: const Key('add-nearby-mosque-name'),
               controller: nameCtrl,
-              decoration: const InputDecoration(labelText: 'Nama Masjid / Musholla'),
+              decoration: InputDecoration(
+                labelText: dialogCtx.tr('Nama Masjid / Musholla', 'Mosque / Prayer Room Name'),
+              ),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: addrCtrl,
-              decoration: const InputDecoration(labelText: 'Alamat / Patokan Lokasi'),
+              decoration: InputDecoration(
+                labelText: dialogCtx.tr('Alamat / Patokan Lokasi', 'Address / Landmark'),
+              ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Koordinat GPS aktif: ${coords.latitude.toStringAsFixed(4)}, ${coords.longitude.toStringAsFixed(4)}',
+              dialogCtx.tr(
+                'Koordinat GPS aktif: ${coords.latitude.toStringAsFixed(4)}, ${coords.longitude.toStringAsFixed(4)}',
+                'Active GPS coordinates: ${coords.latitude.toStringAsFixed(4)}, ${coords.longitude.toStringAsFixed(4)}',
+              ),
               style: Theme.of(dialogCtx).textTheme.bodySmall,
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogCtx, false), child: const Text('Batal')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx, false),
+            child: Text(dialogCtx.tr('Batal', 'Cancel')),
+          ),
           FilledButton(
             key: const Key('save-nearby-mosque-btn'),
             onPressed: () => Navigator.pop(dialogCtx, true),
-            child: const Text('Simpan'),
+            child: Text(dialogCtx.tr('Simpan', 'Save')),
           ),
         ],
       ),
     );
 
     if (saved == true && nameCtrl.text.trim().isNotEmpty) {
+      final lang = ref.read(appLanguageProvider);
       await ref.read(nearbyMosqueRepoProvider).addCustomMosque(
             NearbyMosqueItem(
               id: 'custom_${DateTime.now().millisecondsSinceEpoch}',
               name: nameCtrl.text.trim(),
-              kind: 'Masjid / Musholla Sekitar',
-              address: addrCtrl.text.trim().isEmpty ? settings.effectiveLocationName : addrCtrl.text.trim(),
+              kind: lang == AppLanguage.en ? 'Saved Mosque / Prayer Room' : 'Masjid / Musholla Sekitar',
+              address: addrCtrl.text.trim().isEmpty
+                  ? localizeLocationLabel(settings.effectiveLocationName, lang)
+                  : addrCtrl.text.trim(),
               latitude: coords.latitude,
               longitude: coords.longitude,
             ),
@@ -135,8 +223,9 @@ class _NearbyMosquesGpsPageState extends ConsumerState<NearbyMosquesGpsPage> {
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider).value ?? PersonalSettings.defaults;
+    final lang = context.lang;
     final origin = settings.effectiveCoordinates;
-    final originKey = '${origin.latitude.toStringAsFixed(3)},${origin.longitude.toStringAsFixed(3)}';
+    final originKey = '${origin.latitude.toStringAsFixed(3)},${origin.longitude.toStringAsFixed(3)}_${lang.code}';
     if (_loadedKey != originKey) {
       _loadedKey = originKey;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -148,19 +237,24 @@ class _NearbyMosquesGpsPageState extends ConsumerState<NearbyMosquesGpsPage> {
       final q = _query.toLowerCase();
       return r.mosque.name.toLowerCase().contains(q) ||
           r.mosque.address.toLowerCase().contains(q) ||
-          r.mosque.kind.toLowerCase().contains(q);
+          r.mosque.kind.toLowerCase().contains(q) ||
+          _localizeMosqueKind(r.mosque.kind, lang).toLowerCase().contains(q);
     }).toList();
     final t = Theme.of(context).textTheme;
     final scheme = Theme.of(context).colorScheme;
+    final locName = localizeLocationLabel(settings.effectiveLocationName, lang);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pencari Masjid Terdekat (GPS)'),
+        title: Text(context.tr('Pencari Masjid Terdekat (GPS)', 'Nearby Mosque Finder (GPS)')),
         centerTitle: true,
         actions: [
           IconButton(
             key: const Key('add-custom-nearby-mosque'),
-            tooltip: 'Simpan titik masjid/musholla di posisi GPS saat ini',
+            tooltip: context.tr(
+              'Simpan titik masjid/musholla di posisi GPS saat ini',
+              'Save a mosque or prayer room at your current GPS position',
+            ),
             onPressed: () => _showAddMosqueDialog(context, settings),
             icon: const Icon(MoeslimIcons.tambahLingkar),
           ),
@@ -176,10 +270,17 @@ class _NearbyMosquesGpsPageState extends ConsumerState<NearbyMosquesGpsPage> {
                 Card(
                   child: ListTile(
                     leading: Icon(MoeslimIcons.lokasi, color: scheme.primary),
-                    title: Text('Titik Acuan: ${settings.effectiveLocationName}', style: const TextStyle(fontWeight: FontWeight.w700)),
+                    title: Text(
+                      context.tr('Titik Acuan: $locName', 'Reference Point: $locName'),
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
                     subtitle: Text(
-                      'Koordinat: ${origin.latitude.toStringAsFixed(4)}, ${origin.longitude.toStringAsFixed(4)} '
-                      '(${settings.isUsingGpsLocation ? 'GPS Aktif' : 'Kota Terpilih'})',
+                      context.tr(
+                        'Koordinat: ${origin.latitude.toStringAsFixed(4)}, ${origin.longitude.toStringAsFixed(4)} '
+                            '(${settings.isUsingGpsLocation ? 'GPS Aktif' : 'Kota Terpilih'})',
+                        'Coordinates: ${origin.latitude.toStringAsFixed(4)}, ${origin.longitude.toStringAsFixed(4)} '
+                            '(${settings.isUsingGpsLocation ? 'GPS Active' : 'Selected City'})',
+                      ),
                     ),
                   ),
                 ),
@@ -189,10 +290,13 @@ class _NearbyMosquesGpsPageState extends ConsumerState<NearbyMosquesGpsPage> {
                   controller: _searchCtrl,
                   decoration: InputDecoration(
                     prefixIcon: const Icon(MoeslimIcons.pencarian),
-                    hintText: 'Cari masjid atau kota (mis. Istiqlal, Bandung, Al-Azhar)',
+                    hintText: context.tr(
+                      'Cari masjid atau kota (mis. Istiqlal, Bandung, Al-Azhar)',
+                      'Search mosque or city (e.g. Istiqlal, Bandung, Al-Azhar)',
+                    ),
                     suffixIcon: _query.isNotEmpty
                         ? IconButton(
-                            tooltip: 'Hapus pencarian',
+                            tooltip: context.tr('Hapus pencarian', 'Clear search'),
                             onPressed: () {
                               _searchCtrl.clear();
                               setState(() => _query = '');
@@ -208,7 +312,7 @@ class _NearbyMosquesGpsPageState extends ConsumerState<NearbyMosquesGpsPage> {
                   key: const Key('open-google-maps'),
                   onPressed: _openGoogleMaps,
                   icon: const Icon(MoeslimIcons.lokasi, size: 18),
-                  label: const Text('Cari masjid di Google Maps'),
+                  label: Text(context.tr('Cari masjid di Google Maps', 'Search mosques in Google Maps')),
                 ),
                 if (!_loading)
                   Padding(
@@ -218,8 +322,14 @@ class _NearbyMosquesGpsPageState extends ConsumerState<NearbyMosquesGpsPage> {
                         Expanded(
                           child: Text(
                             _offline
-                                ? 'Tidak ada internet: menampilkan daftar bawaan, bukan masjid di sekitar Anda.'
-                                : 'Masjid & musholla dalam radius 5 km (data $_source).',
+                                ? context.tr(
+                                    'Tidak ada internet: menampilkan daftar bawaan, bukan masjid di sekitar Anda.',
+                                    'No internet connection: showing built-in directory instead of mosques near you.',
+                                  )
+                                : context.tr(
+                                    'Masjid & musholla dalam radius 5 km (data $_source).',
+                                    'Mosques & prayer rooms within 5 km (data from $_source).',
+                                  ),
                             key: const Key('nearby-source-note'),
                             style: t.bodySmall,
                           ),
@@ -228,7 +338,7 @@ class _NearbyMosquesGpsPageState extends ConsumerState<NearbyMosquesGpsPage> {
                           TextButton(
                             key: const Key('nearby-retry'),
                             onPressed: _load,
-                            child: const Text('Coba lagi'),
+                            child: Text(context.tr('Coba lagi', 'Retry')),
                           ),
                       ],
                     ),
@@ -246,7 +356,10 @@ class _NearbyMosquesGpsPageState extends ConsumerState<NearbyMosquesGpsPage> {
                           children: [
                             Icon(MoeslimIcons.masjid, size: 32, color: scheme.primary),
                             const SizedBox(height: 8),
-                            Text('Masjid tidak ditemukan', style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                            Text(
+                              context.tr('Masjid tidak ditemukan', 'No mosques found'),
+                              style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                            ),
                             const SizedBox(height: 8),
                             OutlinedButton.icon(
                               onPressed: () {
@@ -254,7 +367,7 @@ class _NearbyMosquesGpsPageState extends ConsumerState<NearbyMosquesGpsPage> {
                                 setState(() => _query = '');
                               },
                               icon: const Icon(Icons.refresh),
-                              label: const Text('Reset pencarian'),
+                              label: Text(context.tr('Reset pencarian', 'Reset search')),
                             ),
                           ],
                         ),
@@ -281,7 +394,10 @@ class _NearbyMosquesGpsPageState extends ConsumerState<NearbyMosquesGpsPage> {
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
                                             Text(m.name, style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-                                            Text(m.kind, style: t.bodySmall?.copyWith(color: scheme.primary)),
+                                            Text(
+                                              _localizeMosqueKind(m.kind, lang),
+                                              style: t.bodySmall?.copyWith(color: scheme.primary),
+                                            ),
                                           ],
                                         ),
                                       ),
@@ -292,7 +408,7 @@ class _NearbyMosquesGpsPageState extends ConsumerState<NearbyMosquesGpsPage> {
                                           borderRadius: BorderRadius.circular(12),
                                         ),
                                         child: Text(
-                                          '${r.formattedDistance} · ${r.cardinalDirection}',
+                                          '${r.formattedDistance} · ${_localizeCardinal(r.cardinalDirection, lang)}',
                                           style: TextStyle(
                                             color: scheme.primary,
                                             fontWeight: FontWeight.w700,
@@ -305,7 +421,13 @@ class _NearbyMosquesGpsPageState extends ConsumerState<NearbyMosquesGpsPage> {
                                   const SizedBox(height: 8),
                                   Text(m.address, style: t.bodyMedium),
                                   const SizedBox(height: 4),
-                                  Text('Fasilitas: ${m.facilities}', style: t.bodySmall),
+                                  Text(
+                                    context.tr(
+                                      'Fasilitas: ${m.facilities}',
+                                      'Facilities: ${_localizeFacilities(m.facilities, lang)}',
+                                    ),
+                                    style: t.bodySmall,
+                                  ),
                                   const SizedBox(height: 8),
                                   Wrap(
                                     alignment: WrapAlignment.end,
@@ -314,19 +436,27 @@ class _NearbyMosquesGpsPageState extends ConsumerState<NearbyMosquesGpsPage> {
                                       TextButton.icon(
                                         onPressed: () => _openGoogleMaps(mosque: m),
                                         icon: const Icon(Icons.directions_outlined, size: 18),
-                                        label: const Text('Rute di Google Maps'),
+                                        label: Text(context.tr('Rute di Google Maps', 'Directions in Google Maps')),
                                       ),
                                       OutlinedButton.icon(
-                                      onPressed: () {
-                                        final mapsUri = 'https://www.google.com/maps/dir/?api=1&destination=${m.latitude},${m.longitude}';
-                                        Clipboard.setData(ClipboardData(text: '${m.name} (${m.address}) - $mapsUri'));
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text('Tautan koordinat peta ${m.name} disalin.')),
-                                        );
-                                      },
-                                      icon: const Icon(MoeslimIcons.lokasi, size: 16),
-                                      label: const Text('Salin Rute Peta'),
-                                    ),
+                                        onPressed: () {
+                                          final mapsUri =
+                                              'https://www.google.com/maps/dir/?api=1&destination=${m.latitude},${m.longitude}';
+                                          Clipboard.setData(ClipboardData(text: '${m.name} (${m.address}) - $mapsUri'));
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                context.tr(
+                                                  'Tautan koordinat peta ${m.name} disalin.',
+                                                  'Map link for ${m.name} copied.',
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                        icon: const Icon(MoeslimIcons.lokasi, size: 16),
+                                        label: Text(context.tr('Salin Rute Peta', 'Copy Map Link')),
+                                      ),
                                     ],
                                   ),
                                 ],

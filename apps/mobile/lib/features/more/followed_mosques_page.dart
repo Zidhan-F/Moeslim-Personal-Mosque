@@ -4,6 +4,7 @@ import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:personal_core/personal_core.dart';
 
 import '../../core/format.dart';
+import '../../core/l10n.dart';
 import '../../core/providers.dart';
 import '../masjid/session.dart';
 
@@ -18,12 +19,19 @@ class FollowedMosquesPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final followed = ref.watch(_followedProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Masjid Diikuti'), centerTitle: true, automaticallyImplyLeading: !asTab),
+      appBar: AppBar(
+        title: Text(context.tr('Masjid Diikuti', 'Followed Mosques')),
+        centerTitle: true,
+        automaticallyImplyLeading: !asTab,
+      ),
       floatingActionButton: FloatingActionButton(
-        tooltip: 'Cari masjid',
+        tooltip: context.tr('Cari masjid', 'Search mosques'),
         child: const Icon(MoeslimIcons.pencarian),
         onPressed: () async {
-          await showSearch(context: context, delegate: _MosqueSearch(ref));
+          await showSearch(
+            context: context,
+            delegate: _MosqueSearch(ref, searchFieldLabel: context.tr('Nama masjid', 'Mosque name')),
+          );
           ref.invalidate(_followedProvider);
         },
       ),
@@ -31,11 +39,14 @@ class FollowedMosquesPage extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('$e')),
         data: (list) => list.isEmpty
-            ? const Center(
+            ? Center(
                 child: Padding(
-                  padding: EdgeInsets.all(32),
+                  padding: const EdgeInsets.all(32),
                   child: Text(
-                    'Ikuti masjid di sekitar Anda untuk melihat agenda kajian dan pengumuman publiknya, gratis tanpa akun. Ketuk ikon cari.',
+                    context.tr(
+                      'Ikuti masjid di sekitar Anda untuk melihat agenda kajian dan pengumuman publiknya, gratis tanpa akun. Ketuk ikon cari.',
+                      'Follow mosques near you to view public events and announcements, free with no account. Tap the search icon.',
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -47,9 +58,8 @@ class FollowedMosquesPage extends ConsumerWidget {
                       leading: const Icon(MoeslimIcons.masjid),
                       title: Text(m.name),
                       trailing: const Icon(Icons.chevron_right),
-                      onTap: () =>
-                          Navigator.of(context)
-                              .push(MaterialPageRoute(builder: (_) => FollowedMosqueDetailPage(mosque: m))),
+                      onTap: () => Navigator.of(context)
+                          .push(MaterialPageRoute(builder: (_) => FollowedMosqueDetailPage(mosque: m))),
                     ),
                 ],
               ),
@@ -60,7 +70,7 @@ class FollowedMosquesPage extends ConsumerWidget {
 
 class _MosqueSearch extends SearchDelegate<void> {
   final WidgetRef ref;
-  _MosqueSearch(this.ref) : super(searchFieldLabel: 'Nama masjid');
+  _MosqueSearch(this.ref, {required String searchFieldLabel}) : super(searchFieldLabel: searchFieldLabel);
 
   @override
   List<Widget> buildActions(BuildContext context) => [
@@ -151,7 +161,7 @@ class _FollowedMosqueDetailPageState extends ConsumerState<FollowedMosqueDetailP
         title: Text(widget.mosque.name),
         actions: [
           IconButton(
-            tooltip: 'Berhenti mengikuti',
+            tooltip: context.tr('Berhenti mengikuti', 'Unfollow'),
             icon: const Icon(Icons.heart_broken),
             onPressed: () async {
               await ref.read(favoriteMosqueRepoProvider).unfollow(widget.mosque.slug);
@@ -167,24 +177,33 @@ class _FollowedMosqueDetailPageState extends ConsumerState<FollowedMosqueDetailP
           children: [
             if (c != null)
               Text(
-                '${_offline ? 'Offline: ' : ''}terakhir sinkron ${shortDate(c.fetchedAt.toLocal())} ${hhmm(c.fetchedAt.toLocal())}',
+                context.tr(
+                  '${_offline ? 'Offline: ' : ''}terakhir sinkron ${context.shortDateText(c.fetchedAt.toLocal())} ${hhmm(c.fetchedAt.toLocal())}',
+                  '${_offline ? 'Offline: ' : ''}last synced ${context.shortDateText(c.fetchedAt.toLocal())} ${hhmm(c.fetchedAt.toLocal())}',
+                ),
                 style: const TextStyle(fontSize: 12),
               ),
             if (c == null && !_offline) const Center(child: CircularProgressIndicator()),
-            if (c == null && _offline) const Text('Belum ada data tersimpan dan perangkat sedang offline.'),
+            if (c == null && _offline)
+              Text(
+                context.tr(
+                  'Belum ada data tersimpan dan perangkat sedang offline.',
+                  'No cached data yet and your device is offline.',
+                ),
+              ),
             if (c != null) ...[
-              const ListTile(title: Text('Pengumuman')),
+              ListTile(title: Text(context.tr('Pengumuman', 'Announcements'))),
               for (final a in (c.data['announcements'] as List).cast<Map>())
                 Card(
                   child: ListTile(title: Text('${a['title']}'), subtitle: Text('${a['body']}')),
                 ),
-              const ListTile(title: Text('Agenda')),
+              ListTile(title: Text(context.tr('Agenda', 'Events'))),
               for (final e in (c.data['events'] as List).cast<Map>())
                 Card(
                   child: ListTile(
                     title: Text('${e['title']}'),
                     subtitle: Text(
-                      '${shortDate(DateTime.parse(e['starts_at'] as String).toLocal())}'
+                      '${context.shortDateText(DateTime.parse(e['starts_at'] as String).toLocal())}'
                       '${e['speaker'] != null ? ' • ${e['speaker']}' : ''}',
                     ),
                   ),

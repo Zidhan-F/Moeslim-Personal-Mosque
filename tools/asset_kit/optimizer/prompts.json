@@ -28,9 +28,21 @@
     "management",
     "dua",
     "prayerTime",
-    "phone"
+    "phone",
+    "target", "eye", "mute", "settings", "sun",
+    "star", "heart", "share", "database", "info"
   ],
   "subjects": {
+    "target": "Circular sage and ivory archery target with brass arrow",
+    "eye": "Sculpted ivory eye with sage iris and brass edge",
+    "mute": "Sage speaker with ivory diagonal mute slash",
+    "settings": "Sage ceramic eight-tooth gear with brass inner rim",
+    "sun": "Ivory sun with brass rays",
+    "star": "Thick five-pointed brass star with ivory bevel",
+    "heart": "Softly sculpted sage ceramic heart",
+    "share": "Three sage nodes connected by ivory rods, conventional share symbol",
+    "database": "Three stacked ivory storage cylinders with sage bands",
+    "info": "Ivory circular medallion with raised sage lowercase information i",
     "mosque": "Indonesian neighborhood mosque, ivory limestone, sage dome, walnut doors, brass finial, tropical foliage",
     "quran": "Closed embossed green Quran respectfully resting on carved walnut X-shaped rehal",
     "tasbih": "Olive wooden prayer beads with beige silk tassel",

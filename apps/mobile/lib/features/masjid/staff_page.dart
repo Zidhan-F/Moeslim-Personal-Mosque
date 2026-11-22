@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
+import 'package:shared_prayer/shared_prayer.dart';
 
 import '../../core/format.dart';
+import '../../core/l10n.dart';
 import 'agenda_page.dart' show DateBadge;
 import 'masjid_api.dart';
 import 'mosque_providers.dart';
@@ -17,6 +19,14 @@ const dutyLabels = {
   'operator': 'Operator',
   'lainnya': 'Lainnya',
 };
+const dutyLabelsEn = {
+  'imam': 'Imam',
+  'muadzin': 'Muezzin',
+  'khatib': 'Khatib',
+  'bilal': 'Bilal',
+  'operator': 'Operator',
+  'lainnya': 'Other',
+};
 const prayerLabels = {
   'fajr': 'Subuh',
   'dhuhr': 'Dzuhur',
@@ -27,6 +37,22 @@ const prayerLabels = {
   'tarawih': 'Tarawih',
   'ied': 'Id',
 };
+const prayerLabelsEn = {
+  'fajr': 'Fajr',
+  'dhuhr': 'Dhuhr',
+  'asr': 'Asr',
+  'maghrib': 'Maghrib',
+  'isha': 'Isha',
+  'jumat': 'Friday',
+  'tarawih': 'Tarawih',
+  'ied': 'Eid',
+};
+
+String dutyTypeLabel(String? duty, {AppLanguage lang = AppLanguage.id}) =>
+    (lang == AppLanguage.en ? dutyLabelsEn[duty] : dutyLabels[duty]) ?? (duty ?? '');
+
+String prayerSlotLabel(String? prayer, {AppLanguage lang = AppLanguage.id}) =>
+    (lang == AppLanguage.en ? prayerLabelsEn[prayer] : prayerLabels[prayer]) ?? (prayer ?? '');
 
 IconData dutyIcon(String? duty) => switch (duty) {
   'imam' => MoeslimIcons.imam,
@@ -35,8 +61,8 @@ IconData dutyIcon(String? duty) => switch (duty) {
   _ => MoeslimIcons.petugas,
 };
 
-String dutyLabel(String? duty, String? prayer) =>
-    '${dutyLabels[duty] ?? duty ?? ''}${prayer != null ? ' • ${prayerLabels[prayer] ?? prayer}' : ''}';
+String dutyLabel(String? duty, String? prayer, {AppLanguage lang = AppLanguage.id}) =>
+    '${dutyTypeLabel(duty, lang: lang)}${prayer != null ? ' • ${prayerSlotLabel(prayer, lang: lang)}' : ''}';
 
 /// Jadwal Petugas: filter tugas, navigasi minggu, daftar 7 hari, tambah/hapus penugasan.
 class StaffPage extends ConsumerStatefulWidget {
@@ -55,8 +81,9 @@ class _StaffPageState extends ConsumerState<StaffPage> {
   static DateTime _mondayOf(DateTime d) => DateUtils.dateOnly(d).subtract(Duration(days: d.weekday - 1));
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => mosqueScoped(context, (context) {
     final ctx = widget.ctx;
+    final lang = context.lang;
     final weekEnd = _weekStart.add(const Duration(days: 6));
     final key = (ctx.id, isoDate(_weekStart), isoDate(weekEnd));
     final staff = ref.watch(staffProvider(key));
@@ -70,11 +97,11 @@ class _StaffPageState extends ConsumerState<StaffPage> {
         children: [
           Row(
             children: [
-              for (final (v, l, i) in const [
+              for (final (v, l, i) in [
                 ('imam', 'Imam', MoeslimIcons.imam),
-                ('muadzin', 'Muadzin', MoeslimIcons.adzan),
+                ('muadzin', context.tr('Muadzin', 'Muezzin'), MoeslimIcons.adzan),
                 ('khatib', 'Khatib', Icons.record_voice_over_outlined),
-                (null, 'Semua', MoeslimIcons.grid),
+                (null, context.tr('Semua', 'All'), MoeslimIcons.grid),
               ])
                 Expanded(
                   child: Padding(
@@ -91,28 +118,34 @@ class _StaffPageState extends ConsumerState<StaffPage> {
             ],
           ),
           const SizedBox(height: 12),
-          const MosqueBanner(
-            title: 'Jadwal Petugas Masjid',
-            subtitle: 'Atur jadwal imam, muadzin, dan khatib secara mingguan.',
+          MosqueBanner(
+            title: context.tr('Jadwal Petugas Masjid', 'Mosque Duty Roster'),
+            subtitle: context.tr(
+              'Atur jadwal imam, muadzin, dan khatib secara mingguan.',
+              'Schedule imams, muezzins, and khatibs weekly.',
+            ),
           ),
           const SizedBox(height: 8),
           Row(
             children: [
               IconButton(
-                tooltip: 'Minggu sebelumnya',
+                tooltip: context.tr('Minggu sebelumnya', 'Previous week'),
                 icon: const Icon(Icons.chevron_left),
                 onPressed: () => setState(() => _weekStart = _weekStart.subtract(const Duration(days: 7))),
               ),
               Expanded(
                 child: Text(
-                  'Minggu, ${_weekStart.day} – ${shortDate(weekEnd)}',
+                  context.tr(
+                    'Minggu, ${_weekStart.day} – ${shortDate(weekEnd)}',
+                    'Week of ${context.shortDateText(_weekStart)} - ${context.shortDateText(weekEnd)}',
+                  ),
                   key: const Key('week-label'),
                   textAlign: TextAlign.center,
                   style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
                 ),
               ),
               IconButton(
-                tooltip: 'Minggu berikutnya',
+                tooltip: context.tr('Minggu berikutnya', 'Next week'),
                 icon: const Icon(Icons.chevron_right),
                 onPressed: () => setState(() => _weekStart = _weekStart.add(const Duration(days: 7))),
               ),
@@ -134,111 +167,122 @@ class _StaffPageState extends ConsumerState<StaffPage> {
                       isScrollControlled: true,
                       showDragHandle: true,
                       builder: (_) => PosterShareSheet(
-                        data: WaTextBuilder.forFridayStaff(ctx.name, friday, fridayRows),
+                        data: WaTextBuilder.forFridayStaff(ctx.name, friday, fridayRows, lang: lang),
                       ),
                     ),
                     icon: const Icon(Icons.share_outlined),
-                    label: const Text('Poster & WA Petugas Jumat'),
+                    label: Text(context.tr('Poster & WA Petugas Jumat', 'Friday Roster Poster & WA')),
                   ),
                   const SizedBox(height: 8),
                   for (var i = 0; i < 7; i++)
-                  Builder(
-                    builder: (_) {
-                      final day = _weekStart.add(Duration(days: i));
-                      final rows = list
-                          .where((a) => a['date'] == isoDate(day) && (_duty == null || a['duty_type'] == _duty))
-                          .toList();
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        child: Padding(
-                          padding: const EdgeInsets.all(10),
-                          child: Row(
-                            children: [
-                              DateBadge(day, highlighted: day == today),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: rows.isEmpty
-                                    ? const Text('Belum ada petugas', style: TextStyle(fontStyle: FontStyle.italic))
-                                    : Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          for (final a in rows)
-                                            InkWell(
-                                              onLongPress: canWrite ? () => _confirmDelete(a) : null,
-                                              child: Padding(
-                                                padding: const EdgeInsets.symmetric(vertical: 2),
-                                                child: Row(
-                                                  children: [
-                                                    Icon(
-                                                      dutyIcon(a['duty_type'] as String?),
-                                                      size: 16,
-                                                      color: BrandColors.emerald,
-                                                    ),
-                                                    const SizedBox(width: 6),
-                                                    SizedBox(
-                                                      width: 118,
-                                                      child: Text(
-                                                        dutyLabel(a['duty_type'] as String?, a['prayer'] as String?),
-                                                        style: const TextStyle(fontSize: 12.5),
+                    Builder(
+                      builder: (_) {
+                        final day = _weekStart.add(Duration(days: i));
+                        final rows = list
+                            .where((a) => a['date'] == isoDate(day) && (_duty == null || a['duty_type'] == _duty))
+                            .toList();
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: Padding(
+                            padding: const EdgeInsets.all(10),
+                            child: Row(
+                              children: [
+                                DateBadge(day, highlighted: day == today),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: rows.isEmpty
+                                      ? Text(
+                                          context.tr('Belum ada petugas', 'No roster assigned'),
+                                          style: const TextStyle(fontStyle: FontStyle.italic),
+                                        )
+                                      : Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            for (final a in rows)
+                                              InkWell(
+                                                onLongPress: canWrite ? () => _confirmDelete(context, a) : null,
+                                                child: Padding(
+                                                  padding: const EdgeInsets.symmetric(vertical: 2),
+                                                  child: Row(
+                                                    children: [
+                                                      Icon(
+                                                        dutyIcon(a['duty_type'] as String?),
+                                                        size: 16,
+                                                        color: BrandColors.emerald,
                                                       ),
-                                                    ),
-                                                    Expanded(
-                                                      child: Text(
-                                                        '${a['name']}',
-                                                        style: const TextStyle(
-                                                          fontWeight: FontWeight.w600,
-                                                          fontSize: 13,
+                                                      const SizedBox(width: 6),
+                                                      SizedBox(
+                                                        width: 118,
+                                                        child: Text(
+                                                          dutyLabel(
+                                                            a['duty_type'] as String?,
+                                                            a['prayer'] as String?,
+                                                            lang: lang,
+                                                          ),
+                                                          style: const TextStyle(fontSize: 12.5),
                                                         ),
                                                       ),
-                                                    ),
-                                                  ],
+                                                      Expanded(
+                                                        child: Text(
+                                                          '${a['name']}',
+                                                          style: const TextStyle(
+                                                            fontWeight: FontWeight.w600,
+                                                            fontSize: 13,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
                                                 ),
                                               ),
-                                            ),
-                                        ],
-                                      ),
-                              ),
-                              if (canWrite)
-                                IconButton(
-                                  key: Key('add-staff-${day.day}'),
-                                  tooltip: 'Tambah petugas',
-                                  icon: const Icon(MoeslimIcons.edit, color: BrandColors.emerald),
-                                  onPressed: () => _openForm(day),
+                                          ],
+                                        ),
                                 ),
-                            ],
+                                if (canWrite)
+                                  IconButton(
+                                    key: Key('add-staff-${day.day}'),
+                                    tooltip: context.tr('Tambah petugas', 'Assign duty'),
+                                    icon: const Icon(MoeslimIcons.edit, color: BrandColors.emerald),
+                                    onPressed: () => _openForm(day),
+                                  ),
+                              ],
+                            ),
                           ),
-                        ),
-                      );
-                    },
-                  ),
-                if (canWrite)
-                  const Text(
-                    'Tekan lama nama petugas untuk menghapus.',
-                    style: TextStyle(fontSize: 12),
-                    textAlign: TextAlign.center,
-                  ),
-              ],
-            );
+                        );
+                      },
+                    ),
+                  if (canWrite)
+                    Text(
+                      context.tr(
+                        'Tekan lama nama petugas untuk menghapus.',
+                        'Long press a name to remove an assignment.',
+                      ),
+                      style: const TextStyle(fontSize: 12),
+                      textAlign: TextAlign.center,
+                    ),
+                ],
+              );
             },
           ),
         ],
       ),
     );
     return Scaffold(
-      appBar: widget.embedded ? null : AppBar(title: const Text('Jadwal Petugas'), centerTitle: true),
+      appBar: widget.embedded ? null : AppBar(title: Text(context.tr('Jadwal Petugas', 'Duty Roster')), centerTitle: true),
       body: body,
     );
-  }
+  });
 
-  Future<void> _confirmDelete(Map<String, dynamic> a) async {
+  Future<void> _confirmDelete(BuildContext context, Map<String, dynamic> a) async {
+    final lang = context.lang;
     final ok = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Hapus penugasan?'),
-        content: Text('${a['name']}: ${dutyLabel(a['duty_type'] as String?, a['prayer'] as String?)}'),
+      builder: (dialogCtx) => AlertDialog(
+        title: Text(context.tr('Hapus penugasan?', 'Remove assignment?')),
+        content: Text('${a['name']}: ${dutyLabel(a['duty_type'] as String?, a['prayer'] as String?, lang: lang)}'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Hapus')),
+          TextButton(onPressed: () => Navigator.pop(dialogCtx, false), child: Text(context.tr('Batal', 'Cancel'))),
+          FilledButton(onPressed: () => Navigator.pop(dialogCtx, true), child: Text(context.tr('Hapus', 'Remove'))),
         ],
       ),
     );
@@ -247,7 +291,7 @@ class _StaffPageState extends ConsumerState<StaffPage> {
       await ref.read(masjidApiProvider).deleteStaffAssignment(widget.ctx.id, a['id'] as int);
       ref.invalidate(staffProvider);
     } on ApiException catch (e) {
-      if (mounted) showSnack(context, e.message);
+      if (context.mounted) showSnack(context, e.message);
     }
   }
 
@@ -319,7 +363,8 @@ class _StaffFormState extends ConsumerState<_StaffForm> {
   String? _error;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => mosqueScoped(context, (context) {
+    final lang = context.lang;
     final members = ref.watch(membersProvider(widget.ctx.id)).value;
     final active = ((members?['data'] as List?) ?? const []).cast<Map>().where((m) => m['status'] == 'active').toList();
     return Padding(
@@ -328,30 +373,40 @@ class _StaffFormState extends ConsumerState<_StaffForm> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Petugas ${longDate(widget.date)}', style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            context.tr('Petugas ${context.longDateText(widget.date)}', 'Roster for ${context.longDateText(widget.date)}'),
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
             initialValue: _duty,
-            decoration: const InputDecoration(labelText: 'Tugas'),
-            items: [for (final d in dutyLabels.entries) DropdownMenuItem(value: d.key, child: Text(d.value))],
+            decoration: InputDecoration(labelText: context.tr('Tugas', 'Duty')),
+            items: [
+              for (final d in dutyLabels.entries)
+                DropdownMenuItem(value: d.key, child: Text(dutyTypeLabel(d.key, lang: lang))),
+            ],
             onChanged: (v) => setState(() => _duty = v ?? _duty),
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String?>(
             initialValue: _prayer,
-            decoration: const InputDecoration(labelText: 'Waktu salat (opsional)'),
+            decoration: InputDecoration(labelText: context.tr('Waktu salat (opsional)', 'Prayer time (optional)')),
             items: [
-              const DropdownMenuItem(value: null, child: Text('Tidak ditentukan')),
-              for (final p in prayerLabels.entries) DropdownMenuItem(value: p.key, child: Text(p.value)),
+              DropdownMenuItem(value: null, child: Text(context.tr('Tidak ditentukan', 'Not specified'))),
+              for (final p in prayerLabels.entries)
+                DropdownMenuItem(value: p.key, child: Text(prayerSlotLabel(p.key, lang: lang))),
             ],
             onChanged: (v) => setState(() => _prayer = v),
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<int?>(
             initialValue: _userId,
-            decoration: const InputDecoration(labelText: 'Pengurus'),
+            decoration: InputDecoration(labelText: context.tr('Pengurus', 'Committee Member')),
             items: [
-              const DropdownMenuItem(value: null, child: Text('Petugas dari luar (isi nama)')),
+              DropdownMenuItem(
+                value: null,
+                child: Text(context.tr('Petugas dari luar (isi nama)', 'External person (enter name)')),
+              ),
               for (final m in active) DropdownMenuItem(value: m['user_id'] as int, child: Text('${m['name']}')),
             ],
             onChanged: (v) => setState(() => _userId = v),
@@ -361,7 +416,10 @@ class _StaffFormState extends ConsumerState<_StaffForm> {
             TextField(
               key: const Key('staff-name'),
               controller: _external,
-              decoration: const InputDecoration(labelText: 'Nama petugas', hintText: 'Contoh: Ust. Ahmad'),
+              decoration: InputDecoration(
+                labelText: context.tr('Nama petugas', 'Name'),
+                hintText: context.tr('Contoh: Ust. Ahmad', 'Example: Ust. Ahmad'),
+              ),
             ),
           ],
           if (_error != null)
@@ -389,10 +447,10 @@ class _StaffFormState extends ConsumerState<_StaffForm> {
                 );
               }
             },
-            child: const Text('Simpan'),
+            child: Text(context.tr('Simpan', 'Save')),
           ),
         ],
       ),
     );
-  }
+  });
 }

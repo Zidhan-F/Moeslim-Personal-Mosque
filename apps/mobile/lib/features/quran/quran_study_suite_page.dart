@@ -5,10 +5,223 @@ import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:personal_core/personal_core.dart';
 
+import '../../core/l10n.dart';
 import '../../core/providers.dart';
 import '../../ui/components.dart';
 import 'quran_source.dart';
 import 'surah_page.dart';
+
+const Map<String, ({String title, String timingAndVirtue})> _routineShortcutsEn = {
+  'al_kahfi': (
+    title: 'Surah Al-Kahf',
+    timingAndVirtue: 'Friday Night & Day Sunnah · A light shining between two Fridays (al-Hakim)',
+  ),
+  'al_mulk': (
+    title: 'Surah Al-Mulk (Tabarak)',
+    timingAndVirtue: 'Before Sleep Sunnah · Protector from the punishment of the grave (al-Tirmidhi)',
+  ),
+  'al_waqiah': (
+    title: 'Surah Al-Waqi\'ah',
+    timingAndVirtue: 'Reminder of the Last Day, gratitude & reliance on Allah for provision',
+  ),
+  'yasin': (
+    title: 'Surah Yasin',
+    timingAndVirtue: 'Affirmation of tawhid, prophethood & the resurrection of the Hereafter',
+  ),
+  'ar_rahman': (
+    title: 'Surah Ar-Rahman',
+    timingAndVirtue: 'Reflection on the countless blessings and favors of Allah',
+  ),
+  'ayat_kursi': (
+    title: 'Ayat al-Kursi (Al-Baqarah 2:255)',
+    timingAndVirtue: 'The greatest verse in the Qur\'an; recited morning, evening, after prayer & before sleep',
+  ),
+  'akhir_baqarah': (
+    title: 'Last 2 Verses of Al-Baqarah (2:285–286)',
+    timingAndVirtue: 'Whoever recites them at night, they will suffice them (al-Bukhari & Muslim)',
+  ),
+};
+
+const Map<int, String> _sajdahExcerptsEn = {
+  1: 'Indeed, those who are near your Lord are not prevented by arrogance from His worship, and to Him they prostrate.',
+  2: 'And to Allah prostrates whoever is within the heavens and the earth.',
+  3: 'They fear their Lord above them, and they do what they are commanded.',
+  4: 'And they fall upon their faces weeping, and the Qur\'an increases them in humble submission.',
+  5: 'When the verses of the Most Merciful were recited to them, they fell in prostration and weeping.',
+  6: 'Do you not see that to Allah prostrates whoever is in the heavens and whoever is on the earth.',
+  7: 'O you who have believed, bow and prostrate and worship your Lord.',
+  8: 'And when it is said to them, "Prostrate to the Most Merciful," they say, "And what is the Most Merciful?"',
+  9: 'Allah, there is no deity except Him, Lord of the Great Throne.',
+  10: 'Only those believe in Our verses who, when reminded by them, fall down in prostration.',
+  11: 'And David became certain that We had tried him, and he asked forgiveness of his Lord and fell down bowing.',
+  12: 'If they are arrogant, those who are near your Lord exalt Him by night and by day.',
+  13: 'So prostrate to Allah and worship Him.',
+  14: 'And when the Qur\'an is recited to them, they do not prostrate.',
+  15: 'No! Do not obey him. But prostrate and draw near to Allah.',
+};
+
+const Map<String, String> _vocabMeaningEn = {
+  'بسم': 'In the name of',
+  'الله': 'Allah (The One God)',
+  'الرحمن': 'The Entirely Merciful',
+  'الرحيم': 'The Especially Merciful',
+  'الحمد': 'All praise',
+  'لله': 'Belongs to Allah',
+  'رب': 'Lord / Sustainer',
+  'العالمين': 'All the worlds',
+  'مالك': 'Master / Sovereign',
+  'يوم': 'Day',
+  'الدين': 'Recompense / Religion',
+  'اياك': 'You alone',
+  'نعبد': 'We worship',
+  'نستعين': 'We seek help',
+  'اهدنا': 'Guide us',
+  'الصراط': 'The path',
+  'المستقيم': 'The straight',
+  'قل': 'Say',
+  'هو': 'He',
+  'احد': 'The One / Unique',
+  'الصمد': 'The Eternal Refuge',
+  'اعوذ': 'I seek refuge',
+  'الفلق': 'The daybreak',
+  'الناس': 'Mankind',
+  'شر': 'Evil / Harm',
+  'خلق': 'He created',
+  'الحي': 'The Ever-Living',
+  'القيوم': 'The Sustainer of all',
+  'السماوات': 'The heavens',
+  'الارض': 'The earth',
+  'علم': 'Knowledge',
+  'الصبر': 'Patience',
+  'الصلاة': 'Prayer (Salah)',
+  'القلوب': 'The hearts',
+  'يسرا': 'Ease',
+  'العسر': 'Hardship',
+};
+
+typedef _AsbabunNuzulEn = ({
+  String title,
+  String contextNarrative,
+  String source,
+  String hikmah,
+});
+
+const Map<(int, String), _AsbabunNuzulEn> _asbabunNuzulEn = {
+  (2, '144'): (
+    title: 'Changing the Qiblah toward Al-Masjid al-Haram',
+    contextNarrative:
+        'In Madinah, the Prophet (peace be upon him) prayed facing Jerusalem for 16 or 17 months while frequently turning his face toward the sky, hoping for the qiblah to turn toward the Ka\'bah (the qiblah of Prophet Ibrahim). Allah then revealed Al-Baqarah 2:144 commanding him to face Al-Masjid al-Haram.',
+    source: 'Sahih al-Bukhari no. 40 & Sahih Muslim no. 525 (Narrated by al-Bara\' ibn \'Azib)',
+    hikmah: 'The immediate obedience of the Companions who turned their prayer rows the moment revelation arrived.',
+  ),
+  (2, '186'): (
+    title: 'Allah\'s Nearness in Answering Supplications',
+    contextNarrative:
+        'A Companion asked the Prophet (peace be upon him): "O Messenger of Allah, is our Lord near so we should whisper our prayers, or far so we should call out loudly?" Allah then revealed: "And when My servants ask you concerning Me, indeed I am near..."',
+    source: 'Ibn Jarir al-Tabari & Ibn Abi Hatim · Lubab al-Nuqul by al-Suyuti',
+    hikmah: 'Supplicate with a gentle voice, humility, and certainty that Allah hears every call.',
+  ),
+  (18, '1–26'): (
+    title: 'Questions about the Youths of the Cave',
+    contextNarrative:
+        'The Quraysh sent al-Nadr ibn al-Harith and \'Uqbah ibn Abi Mu\'ayt to the scholars in Madinah, who suggested asking the Prophet three questions: the youths of the past (Ashab al-Kahf), the traveler who reached east and west (Dhul-Qarnayn), and the nature of the soul. After a pause before saying "Insha Allah", Surah Al-Kahf was revealed.',
+    source: 'Tafsir Ibn Kathir & Sirah Ibn Hisham',
+    hikmah: 'The etiquette of saying "Insha Allah" for future plans and the firm faith of the youths of the Cave.',
+  ),
+  (49, '6'): (
+    title: 'The Command of Tabayyun (Verifying News)',
+    contextNarrative:
+        'This verse was revealed regarding a zakat envoy who mistakenly assumed Banu al-Mustaliq intended to attack, when they had actually come out to welcome the Prophet\'s messenger. Khalid ibn al-Walid later checked at night and heard them calling the adhan and praying.',
+    source: 'Musnad Ahmad IV/279 · Lubab al-Nuqul by al-Suyuti',
+    hikmah: 'Always verify facts before acting so you never wrong others and fall into regret.',
+  ),
+  (80, '1–10'): (
+    title: 'Gentle Reminder Regarding Abdullah ibn Umm Maktum',
+    contextNarrative:
+        'While the Prophet (peace be upon him) was earnestly calling the Quraysh leaders to Islam, the blind Companion Abdullah ibn Umm Maktum came asking to be taught the Qur\'an. The opening of Surah \'Abasa was revealed, honoring sincere seekers of knowledge who come in awe of Allah.',
+    source: 'Jami\' al-Tirmidhi no. 3331 & Al-Muwatta\' of Imam Malik',
+    hikmah: 'Islam honors every sincere seeker of knowledge regardless of social rank or physical ability.',
+  ),
+  (93, '1–3'): (
+    title: 'Allah\'s Comfort in Surah Ad-Duha',
+    contextNarrative:
+        'When the Prophet (peace be upon him) fell ill and could not stand for night prayer for two or three nights while revelation paused briefly, some disbelievers taunted that his Lord had forsaken him. Allah revealed Surah Ad-Duha: "Your Lord has not taken leave of you, nor has He detested you."',
+    source: 'Sahih al-Bukhari no. 4950 & Sahih Muslim no. 1797 (Narrated by Jundub ibn Sufyan)',
+    hikmah: 'During quiet and trying seasons, Allah\'s care and mercy never abandon His servant.',
+  ),
+  (108, '1–3'): (
+    title: 'The Gift of Al-Kawthar',
+    contextNarrative:
+        'When the Prophet\'s young son passed away, al-\'As ibn Wa\'il mockingly called him "abtar" (cut off with no legacy). Allah revealed Surah Al-Kawthar, granting abundant good in both worlds and declaring that his detractor is the one truly cut off.',
+    source: 'Sahih Muslim no. 400 & Ibn Jarir al-Tabari',
+    hikmah: 'Respond to mockery with deeper gratitude, sincere prayer to Allah, and sacrifice.',
+  ),
+  (112, '1–4'): (
+    title: 'Pure Monotheism in Surah Al-Ikhlas',
+    contextNarrative:
+        'The polytheists asked the Prophet (peace be upon him): "O Muhammad, describe the lineage and attributes of your Lord to us!" Allah revealed Surah Al-Ikhlas: "Say, He is Allah, Who is One. Allah, the Eternal Refuge. He neither begets nor is born..."',
+    source: 'Jami\' al-Tirmidhi no. 3364 & Musnad Ahmad V/133 (Narrated by Ubayy ibn Ka\'b)',
+    hikmah: 'Surah Al-Ikhlas equals one third of the Qur\'an because it distills the pure attributes of Allah.',
+  ),
+};
+
+List<AnalyzedAyahWord> _analyzeWordsForLang(Ayah ayah, AppLanguage lang) {
+  if (lang != AppLanguage.en) return analyzeAyahWordByWord(ayah);
+
+  final rawWords = ayah.text
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((w) => w.isNotEmpty && !RegExp(r'^[۝۞۩]+$').hasMatch(w))
+      .toList();
+  final translationTokens = (ayah.translationFor(AppLanguage.en) ?? '')
+      .split(RegExp(r'[,.;]\s*|\s+'))
+      .where((t) => t.trim().isNotEmpty)
+      .toList();
+
+  final out = <AnalyzedAyahWord>[];
+  for (var i = 0; i < rawWords.length; i++) {
+    final w = rawWords[i];
+    final norm = normalizeArabicWord(w);
+    final match = coreQuranVocabulary
+        .where((e) => e.normalized == norm || (norm.length >= 3 && norm.contains(e.normalized)))
+        .firstOrNull;
+    if (match != null) {
+      out.add(
+        AnalyzedAyahWord(
+          position: i + 1,
+          arabicWord: w,
+          latin: match.latin,
+          meaning: _vocabMeaningEn[match.normalized] ?? match.meaning,
+          root: match.root,
+        ),
+      );
+    } else {
+      final approxMeaning = translationTokens.isEmpty
+          ? 'Word in verse ${ayah.number}'
+          : translationTokens[(i * translationTokens.length ~/ rawWords.length).clamp(0, translationTokens.length - 1)];
+      final rootChars = norm.replaceAll(RegExp(r'^ال|^و|^ف|^ب|^ل'), '').split('').take(3).join(' ');
+      out.add(
+        AnalyzedAyahWord(
+          position: i + 1,
+          arabicWord: w,
+          latin: 'Word ${i + 1}',
+          meaning: approxMeaning,
+          root: rootChars.isEmpty ? '-' : rootChars,
+        ),
+      );
+    }
+  }
+  return out;
+}
+
+String _surfaceThemeLabel(BuildContext context, TilawahSurfaceTheme st) {
+  if (!context.isEn) return st.label;
+  return switch (st) {
+    TilawahSurfaceTheme.standard => 'Standard Mushaf',
+    TilawahSurfaceTheme.sepiaPaper => 'Warm Sepia Paper',
+    TilawahSurfaceTheme.amoledBlack => 'Pure AMOLED Black',
+  };
+}
 
 class QuranStudySuitePage extends ConsumerStatefulWidget {
   final int initialTab;
@@ -30,7 +243,7 @@ class _QuranStudySuitePageState extends ConsumerState<QuranStudySuitePage> {
   late int _tab;
   late int _selectedSurah;
   late int _selectedAyah;
-  AnalyzedAyahWord? _selectedWord;
+  int? _selectedWordPosition;
 
   // Flashcard state
   int _cardIndex = 0;
@@ -55,12 +268,15 @@ class _QuranStudySuitePageState extends ConsumerState<QuranStudySuitePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pendalaman Al-Qur\'an & Arab'),
+        title: Text(context.tr('Pendalaman Al-Qur\'an & Arab', 'Qur\'an & Arabic Study')),
         centerTitle: true,
         actions: [
           IconButton(
             key: const Key('open-focus-tilawah-action'),
-            tooltip: 'Mode Fokus Tilawah (Layar Penuh & Sepia/AMOLED)',
+            tooltip: context.tr(
+              'Mode Fokus Tilawah (Layar Penuh & Sepia/AMOLED)',
+              'Focus Reading Mode (Fullscreen & Sepia/AMOLED)',
+            ),
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => FocusTilawahPage(initialSurah: _selectedSurah)),
             ),
@@ -73,7 +289,12 @@ class _QuranStudySuitePageState extends ConsumerState<QuranStudySuitePage> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: PillTabs(
-              labels: const ['Pintasan & Sajdah', 'Kata per Kata', 'Asbabun Nuzul', 'Kosakata'],
+              labels: [
+                context.tr('Pintasan & Sajdah', 'Shortcuts & Sajdah'),
+                context.tr('Kata per Kata', 'Word by Word'),
+                'Asbabun Nuzul',
+                context.tr('Kosakata', 'Vocabulary'),
+              ],
               index: _tab,
               onChanged: (i) => setState(() => _tab = i),
             ),
@@ -94,6 +315,7 @@ class _QuranStudySuitePageState extends ConsumerState<QuranStudySuitePage> {
   Widget _buildShortcutsAndSajdahTab(BuildContext context) {
     final t = Theme.of(context).textTheme;
     final scheme = Theme.of(context).colorScheme;
+    final isEn = context.isEn;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
@@ -102,22 +324,38 @@ class _QuranStudySuitePageState extends ConsumerState<QuranStudySuitePage> {
           child: ListTile(
             key: const Key('open-focus-tilawah-card'),
             leading: Icon(MoeslimIcons.quranTerbuka, color: scheme.primary),
-            title: const Text('Mode Fokus Tilawah (Sepia, AMOLED & Auto-Scroll)', style: TextStyle(fontWeight: FontWeight.w700)),
-            subtitle: const Text('Baca mushaf bebas gangguan dengan tema kertas sepia/AMOLED dan gulir otomatis.'),
+            title: Text(
+              context.tr(
+                'Mode Fokus Tilawah (Sepia, AMOLED & Auto-Scroll)',
+                'Focus Reading Mode (Sepia, AMOLED & Auto-Scroll)',
+              ),
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+            subtitle: Text(
+              context.tr(
+                'Baca mushaf bebas gangguan dengan tema kertas sepia/AMOLED dan gulir otomatis.',
+                'Distraction-free mushaf reading with sepia or AMOLED themes and auto-scroll.',
+              ),
+            ),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => FocusTilawahPage(initialSurah: _selectedSurah)),
             ),
           ),
         ),
-        const SectionHeader('Pintasan Surah & Ayat Rutin Harian / Jumat'),
+        SectionHeader(context.tr('Pintasan Surah & Ayat Rutin Harian / Jumat', 'Daily & Friday Surah Shortcuts')),
         for (final sc in routineQuranShortcuts)
           Card(
             child: ListTile(
               key: Key('shortcut-${sc.id}'),
               leading: OctagonNumber(sc.surah),
-              title: Text(sc.title, style: const TextStyle(fontWeight: FontWeight.w700)),
-              subtitle: Text(sc.timingAndVirtue),
+              title: Text(
+                isEn ? (_routineShortcutsEn[sc.id]?.title ?? sc.title) : sc.title,
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              subtitle: Text(
+                isEn ? (_routineShortcutsEn[sc.id]?.timingAndVirtue ?? sc.timingAndVirtue) : sc.timingAndVirtue,
+              ),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(
@@ -126,14 +364,17 @@ class _QuranStudySuitePageState extends ConsumerState<QuranStudySuitePage> {
               ),
             ),
           ),
-        const SectionHeader('Doa Sujud Tilawah & 15 Ayat Sajdah'),
+        SectionHeader(context.tr('Doa Sujud Tilawah & 15 Ayat Sajdah', 'Sujud Tilawah Supplication & 15 Sajdah Verses')),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('Bacaan Sujud Tilawah', style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                Text(
+                  context.tr('Bacaan Sujud Tilawah', 'Sujud Tilawah Supplication'),
+                  style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                ),
                 const SizedBox(height: 8),
                 Text(
                   'سَجَدَ وَجْهِيَ لِلَّذِي خَلَقَهُ وَصَوَّرَهُ وَشَقَّ سَمْعَهُ وَبَصَرَهُ بِحَوْلِهِ وَقُوَّتِهِ',
@@ -148,7 +389,10 @@ class _QuranStudySuitePageState extends ConsumerState<QuranStudySuitePage> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Artinya: "Wajahku bersujud kepada Dzat yang menciptakannya, membentuk rupanya, serta membuka pendengaran dan penglihatannya dengan daya dan kekuatan-Nya." (HR. Tirmidzi no. 580)',
+                  context.tr(
+                    'Artinya: "Wajahku bersujud kepada Dzat yang menciptakannya, membentuk rupanya, serta membuka pendengaran dan penglihatannya dengan daya dan kekuatan-Nya." (HR. Tirmidzi no. 580)',
+                    'Meaning: "My face prostrates to the One who created it, shaped it, and opened its hearing and sight by His might and power." (Narrated by al-Tirmidhi, no. 580)',
+                  ),
                   style: t.bodySmall,
                 ),
               ],
@@ -160,10 +404,17 @@ class _QuranStudySuitePageState extends ConsumerState<QuranStudySuitePage> {
             child: ListTile(
               leading: OctagonNumber(sv.number),
               title: Text(
-                'QS. ${surahs[sv.surah - 1].name} (${sv.surah}): Ayat ${sv.ayah}',
+                context.tr(
+                  'QS. ${surahs[sv.surah - 1].name} (${sv.surah}): Ayat ${sv.ayah}',
+                  'Surah ${surahs[sv.surah - 1].name} (${sv.surah}:${sv.ayah})',
+                ),
                 style: const TextStyle(fontWeight: FontWeight.w600),
               ),
-              subtitle: Text(sv.excerptMeaning, maxLines: 2, overflow: TextOverflow.ellipsis),
+              subtitle: Text(
+                isEn ? (_sajdahExcerptsEn[sv.number] ?? sv.excerptMeaning) : sv.excerptMeaning,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(
@@ -186,12 +437,22 @@ class _QuranStudySuitePageState extends ConsumerState<QuranStudySuitePage> {
 
     return surahAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Gagal memuat ayat: $e')),
+      error: (e, _) => Center(child: Text(context.tr('Gagal memuat ayat: $e', 'Failed to load verse: $e'))),
       data: (ayatList) {
         final ayah = (ayatList != null && safeAyahNum <= ayatList.length)
             ? ayatList[safeAyahNum - 1]
-            : const Ayah(1, 1, 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ', translation: 'Dengan nama Allah Yang Maha Pengasih, Maha Penyayang.');
-        final words = analyzeAyahWordByWord(ayah);
+            : const Ayah(
+                1,
+                1,
+                'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
+                translation: 'Dengan nama Allah Yang Maha Pengasih, Maha Penyayang.',
+                translationEn: 'In the name of Allah, the Entirely Merciful, the Especially Merciful.',
+              );
+        final words = _analyzeWordsForLang(ayah, context.lang);
+        final selectedWord = _selectedWordPosition == null
+            ? null
+            : words.where((w) => w.position == _selectedWordPosition).firstOrNull;
+        final fullTranslation = ayah.translationFor(context.lang);
 
         return ListView(
           padding: const EdgeInsets.all(16),
@@ -216,7 +477,7 @@ class _QuranStudySuitePageState extends ConsumerState<QuranStudySuitePage> {
                           setState(() {
                             _selectedSurah = v;
                             _selectedAyah = 1;
-                            _selectedWord = null;
+                            _selectedWordPosition = null;
                           });
                         },
                       ),
@@ -227,16 +488,16 @@ class _QuranStudySuitePageState extends ConsumerState<QuranStudySuitePage> {
                       child: DropdownButtonFormField<int>(
                         initialValue: safeAyahNum,
                         isDense: true,
-                        decoration: const InputDecoration(labelText: 'Ayat'),
+                        decoration: InputDecoration(labelText: context.tr('Ayat', 'Verse')),
                         items: [
                           for (var a = 1; a <= maxAyah; a++)
-                            DropdownMenuItem(value: a, child: Text('Ayat $a')),
+                            DropdownMenuItem(value: a, child: Text(context.tr('Ayat $a', 'Verse $a'))),
                         ],
                         onChanged: (v) {
                           if (v == null) return;
                           setState(() {
                             _selectedAyah = v;
-                            _selectedWord = null;
+                            _selectedWordPosition = null;
                           });
                         },
                       ),
@@ -247,7 +508,10 @@ class _QuranStudySuitePageState extends ConsumerState<QuranStudySuitePage> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Ketuk kata Arab di bawah untuk melihat arti per kata dan akar katanya:',
+              context.tr(
+                'Ketuk kata Arab di bawah untuk melihat arti per kata dan akar katanya:',
+                'Tap any Arabic word below to view its word-by-word meaning and root:',
+              ),
               style: t.bodySmall,
             ),
             const SizedBox(height: 8),
@@ -261,16 +525,16 @@ class _QuranStudySuitePageState extends ConsumerState<QuranStudySuitePage> {
                     InkWell(
                       key: Key('wbw-word-${w.position}'),
                       borderRadius: BorderRadius.circular(12),
-                      onTap: () => setState(() => _selectedWord = w),
+                      onTap: () => setState(() => _selectedWordPosition = w.position),
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
-                          color: _selectedWord?.position == w.position
+                          color: selectedWord?.position == w.position
                               ? scheme.primary.withValues(alpha: .16)
                               : scheme.surfaceContainerHighest.withValues(alpha: .4),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: _selectedWord?.position == w.position ? scheme.primary : scheme.outlineVariant,
+                            color: selectedWord?.position == w.position ? scheme.primary : scheme.outlineVariant,
                           ),
                         ),
                         child: Column(
@@ -289,7 +553,7 @@ class _QuranStudySuitePageState extends ConsumerState<QuranStudySuitePage> {
                 ],
               ),
             ),
-            if (_selectedWord != null) ...[
+            if (selectedWord != null) ...[
               const SizedBox(height: 12),
               Card(
                 key: const Key('wbw-selected-detail'),
@@ -302,25 +566,34 @@ class _QuranStudySuitePageState extends ConsumerState<QuranStudySuitePage> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Kata ke-${_selectedWord!.position}: ${_selectedWord!.latin}',
+                            context.tr(
+                              'Kata ke-${selectedWord.position}: ${selectedWord.latin}',
+                              'Word ${selectedWord.position}: ${selectedWord.latin}',
+                            ),
                             style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                           ),
                           Text(
-                            _selectedWord!.arabicWord,
+                            selectedWord.arabicWord,
                             textDirection: TextDirection.rtl,
                             style: quranTextStyle(fontSize: 26, color: scheme.primary),
                           ),
                         ],
                       ),
                       const SizedBox(height: 6),
-                      Text('Arti Kata: ${_selectedWord!.meaning}', style: t.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
-                      Text('Akar Kata (Tsulatsi): ${_selectedWord!.root}', style: t.bodySmall),
+                      Text(
+                        context.tr('Arti Kata: ${selectedWord.meaning}', 'Meaning: ${selectedWord.meaning}'),
+                        style: t.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      Text(
+                        context.tr('Akar Kata (Tsulatsi): ${selectedWord.root}', 'Root Letters: ${selectedWord.root}'),
+                        style: t.bodySmall,
+                      ),
                     ],
                   ),
                 ),
               ),
             ],
-            if ((ayah.translation ?? '').isNotEmpty) ...[
+            if ((fullTranslation ?? '').isNotEmpty) ...[
               const SizedBox(height: 12),
               Card(
                 child: Padding(
@@ -328,9 +601,15 @@ class _QuranStudySuitePageState extends ConsumerState<QuranStudySuitePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Terjemahan Utuh QS. ${surah.name}: $safeAyahNum', style: t.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+                      Text(
+                        context.tr(
+                          'Terjemahan Utuh QS. ${surah.name}: $safeAyahNum',
+                          'Full Translation of ${surah.name} (${surah.number}:$safeAyahNum)',
+                        ),
+                        style: t.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                      ),
                       const SizedBox(height: 6),
-                      Text(ayah.translation!, style: t.bodyMedium),
+                      Text(fullTranslation!, style: t.bodyMedium),
                     ],
                   ),
                 ),
@@ -345,12 +624,14 @@ class _QuranStudySuitePageState extends ConsumerState<QuranStudySuitePage> {
   Widget _buildAsbabunNuzulTab(BuildContext context) {
     final t = Theme.of(context).textTheme;
     final scheme = Theme.of(context).colorScheme;
+    final isEn = context.isEn;
 
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
       itemCount: asbabunNuzulCatalog.length,
       itemBuilder: (context, index) {
         final item = asbabunNuzulCatalog[index];
+        final en = isEn ? _asbabunNuzulEn[(item.surah, item.ayahRange)] : null;
         final sName = surahs[item.surah - 1].name;
         return Card(
           margin: const EdgeInsets.symmetric(vertical: 6),
@@ -360,17 +641,26 @@ class _QuranStudySuitePageState extends ConsumerState<QuranStudySuitePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'QS. $sName (${item.surah}): Ayat ${item.ayahRange}',
+                  context.tr(
+                    'QS. $sName (${item.surah}): Ayat ${item.ayahRange}',
+                    'Surah $sName (${item.surah}:${item.ayahRange})',
+                  ),
                   style: t.labelLarge?.copyWith(color: scheme.primary, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 4),
-                Text(item.title, style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                Text(en?.title ?? item.title, style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
                 const SizedBox(height: 8),
-                Text(item.contextNarrative, style: t.bodyMedium),
+                Text(en?.contextNarrative ?? item.contextNarrative, style: t.bodyMedium),
                 const SizedBox(height: 8),
-                Text('Hikmah: ${item.hikmah}', style: t.bodySmall?.copyWith(fontWeight: FontWeight.w600)),
+                Text(
+                  context.tr('Hikmah: ${item.hikmah}', 'Lesson: ${en?.hikmah ?? item.hikmah}'),
+                  style: t.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+                ),
                 const SizedBox(height: 4),
-                Text('Riwayat: ${item.source}', style: t.bodySmall),
+                Text(
+                  context.tr('Riwayat: ${item.source}', 'Source: ${en?.source ?? item.source}'),
+                  style: t.bodySmall,
+                ),
               ],
             ),
           ),
@@ -384,12 +674,16 @@ class _QuranStudySuitePageState extends ConsumerState<QuranStudySuitePage> {
     final isMastered = _masteredWords.contains(card.normalized);
     final t = Theme.of(context).textTheme;
     final scheme = Theme.of(context).colorScheme;
+    final cardMeaning = context.isEn ? (_vocabMeaningEn[card.normalized] ?? card.meaning) : card.meaning;
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         Text(
-          'Kosakata Dikuasai: ${_masteredWords.length} / ${coreQuranVocabulary.length} kata inti Al-Qur\'an',
+          context.tr(
+            'Kosakata Dikuasai: ${_masteredWords.length} / ${coreQuranVocabulary.length} kata inti Al-Qur\'an',
+            'Words Mastered: ${_masteredWords.length} / ${coreQuranVocabulary.length} core Qur\'an words',
+          ),
           key: const Key('vocab-mastered-count'),
           textAlign: TextAlign.center,
           style: t.titleSmall?.copyWith(color: scheme.primary, fontWeight: FontWeight.w700),
@@ -415,15 +709,18 @@ class _QuranStudySuitePageState extends ConsumerState<QuranStudySuitePage> {
                   if (_showCardBack) ...[
                     const Divider(),
                     Text(
-                      card.meaning,
+                      cardMeaning,
                       key: const Key('vocab-card-meaning'),
                       textAlign: TextAlign.center,
                       style: t.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
                     ),
                     const SizedBox(height: 6),
-                    Text('Akar Kata: ${card.root}', style: t.bodySmall),
+                    Text(context.tr('Akar Kata: ${card.root}', 'Root: ${card.root}'), style: t.bodySmall),
                   ] else
-                    Text('Ketuk kartu untuk melihat arti & akar kata', style: t.bodySmall),
+                    Text(
+                      context.tr('Ketuk kartu untuk melihat arti & akar kata', 'Tap card to reveal meaning & root'),
+                      style: t.bodySmall,
+                    ),
                 ],
               ),
             ),
@@ -441,7 +738,7 @@ class _QuranStudySuitePageState extends ConsumerState<QuranStudySuitePage> {
                 _showCardBack = false;
               }),
               icon: const Icon(Icons.chevron_left),
-              label: const Text('Sebelumnya'),
+              label: Text(context.tr('Sebelumnya', 'Previous')),
             ),
             FilledButton.icon(
               key: const Key('vocab-toggle-mastered'),
@@ -450,7 +747,11 @@ class _QuranStudySuitePageState extends ConsumerState<QuranStudySuitePage> {
                 setState(() => _masteredWords = next);
               },
               icon: Icon(isMastered ? MoeslimIcons.berhasil : Icons.check_circle_outline),
-              label: Text(isMastered ? 'Sudah Dikuasai' : 'Tandai Dikuasai'),
+              label: Text(
+                isMastered
+                    ? context.tr('Sudah Dikuasai', 'Mastered')
+                    : context.tr('Tandai Dikuasai', 'Mark Mastered'),
+              ),
             ),
             OutlinedButton.icon(
               key: const Key('vocab-next-card'),
@@ -459,7 +760,7 @@ class _QuranStudySuitePageState extends ConsumerState<QuranStudySuitePage> {
                 _showCardBack = false;
               }),
               icon: const Icon(Icons.chevron_right),
-              label: const Text('Berikutnya'),
+              label: Text(context.tr('Berikutnya', 'Next')),
             ),
           ],
         ),
@@ -534,11 +835,13 @@ class _FocusTilawahPageState extends ConsumerState<FocusTilawahPage> {
       appBar: AppBar(
         backgroundColor: bg,
         foregroundColor: fg,
-        title: Text('Fokus Tilawah: ${surah.name}'),
+        title: Text(context.tr('Fokus Tilawah: ${surah.name}', 'Focus Reading: ${surah.name}')),
         actions: [
           IconButton(
             key: const Key('focus-tilawah-autoscroll'),
-            tooltip: _autoScroll ? 'Jeda gulir otomatis' : 'Mulai gulir otomatis',
+            tooltip: _autoScroll
+                ? context.tr('Jeda gulir otomatis', 'Pause auto-scroll')
+                : context.tr('Mulai gulir otomatis', 'Start auto-scroll'),
             onPressed: _toggleAutoScroll,
             icon: Icon(_autoScroll ? Icons.pause_circle_filled : MoeslimIcons.play),
           ),
@@ -559,25 +862,25 @@ class _FocusTilawahPageState extends ConsumerState<FocusTilawahPage> {
                       child: ChoiceChip(
                         key: Key('focus-theme-${st.name}'),
                         materialTapTargetSize: MaterialTapTargetSize.padded,
-                        label: Text(st.label),
+                        label: Text(_surfaceThemeLabel(context, st)),
                         selected: _surface == st,
                         onSelected: (_) => setState(() => _surface = st),
                       ),
                     ),
                   IconButton(
-                    tooltip: 'Perkecil huruf Arab',
+                    tooltip: context.tr('Perkecil huruf Arab', 'Decrease Arabic font size'),
                     onPressed: () => setState(() => _fontSize = (_fontSize - 2).clamp(20, 44)),
                     icon: Icon(MoeslimIcons.minusLingkar, color: fg),
                   ),
                   IconButton(
                     key: const Key('focus-font-plus'),
-                    tooltip: 'Perbesar huruf Arab',
+                    tooltip: context.tr('Perbesar huruf Arab', 'Increase Arabic font size'),
                     onPressed: () => setState(() => _fontSize = (_fontSize + 2).clamp(20, 44)),
                     icon: Icon(MoeslimIcons.tambahLingkar, color: fg),
                   ),
                   TextButton(
                     onPressed: () => setState(() => _speedLevel = (_speedLevel % 3) + 1),
-                    child: Text('Gulir ${_speedLevel}x', style: TextStyle(color: fg)),
+                    child: Text(context.tr('Gulir ${_speedLevel}x', 'Scroll ${_speedLevel}x'), style: TextStyle(color: fg)),
                   ),
                 ],
               ),
@@ -591,7 +894,10 @@ class _FocusTilawahPageState extends ConsumerState<FocusTilawahPage> {
                 if (ayat == null || ayat.isEmpty) {
                   return Center(
                     child: Text(
-                      'Teks surah belum tersedia di perangkat.',
+                      context.tr(
+                        'Teks surah belum tersedia di perangkat.',
+                        'Surah text is not yet available on this device.',
+                      ),
                       style: TextStyle(color: fg),
                     ),
                   );
@@ -603,6 +909,7 @@ class _FocusTilawahPageState extends ConsumerState<FocusTilawahPage> {
                   separatorBuilder: (_, _) => Divider(color: subFg.withValues(alpha: .25), height: 28),
                   itemBuilder: (context, index) {
                     final a = ayat[index];
+                    final translation = a.translationFor(context.lang);
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -612,10 +919,10 @@ class _FocusTilawahPageState extends ConsumerState<FocusTilawahPage> {
                           textDirection: TextDirection.rtl,
                           style: quranTextStyle(fontSize: _fontSize, color: fg),
                         ),
-                        if ((a.translation ?? '').isNotEmpty) ...[
+                        if ((translation ?? '').isNotEmpty) ...[
                           const SizedBox(height: 8),
                           Text(
-                            '${a.number}. ${a.translation!}',
+                            '${a.number}. ${translation!}',
                             style: TextStyle(color: subFg, fontSize: 14, height: 1.5),
                           ),
                         ],

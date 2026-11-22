@@ -1,7 +1,10 @@
 /// Inti Moeslim Personal: konten, model, dan penyimpanan lokal offline-first.
 library;
 
+export 'package:shared_prayer/shared_prayer.dart' show AppLanguage;
+
 export 'src/content/asmaul_husna.dart';
+export 'src/content/l10n_core.dart';
 export 'src/content/astronomy_qibla_fiqih.dart';
 export 'src/content/audio.dart';
 export 'src/content/audio_production.dart';

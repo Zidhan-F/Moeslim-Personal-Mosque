@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
+import 'package:shared_prayer/shared_prayer.dart';
 
 import '../../core/format.dart';
+import '../../core/l10n.dart';
 import '../../ui/components.dart';
 import 'finance_pages.dart' show monthLabel;
 import 'masjid_api.dart';
@@ -18,10 +20,21 @@ const eventCategories = {
   'pendidikan': 'Pendidikan',
   'lainnya': 'Lainnya',
 };
-String categoryLabel(String? c) => eventCategories[c] ?? (c ?? '-');
+const eventCategoriesEn = {
+  'kajian': 'Lecture',
+  'jumat': 'Friday',
+  'ramadan': 'Ramadan',
+  'sosial': 'Social',
+  'pendidikan': 'Education',
+  'lainnya': 'Other',
+};
+String categoryLabel(String? c, {AppLanguage lang = AppLanguage.id}) =>
+    (lang == AppLanguage.en ? eventCategoriesEn[c] : eventCategories[c]) ?? (c ?? '-');
 
-const _dayShort = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Ahd'];
-const _monthShort = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+const _dayShortId = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Ahd'];
+const _dayShortEn = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const _monthShortId = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+const _monthShortEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 /// Lencana tanggal (hari / tanggal / bulan) untuk daftar agenda & petugas.
 class DateBadge extends StatelessWidget {
@@ -30,8 +43,10 @@ class DateBadge extends StatelessWidget {
   const DateBadge(this.date, {super.key, this.highlighted = false});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => mosqueScoped(context, (context) {
     final scheme = Theme.of(context).colorScheme;
+    final days = context.isEn ? _dayShortEn : _dayShortId;
+    final months = context.isEn ? _monthShortEn : _monthShortId;
     return Container(
       width: 48,
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -44,14 +59,14 @@ class DateBadge extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(_dayShort[date.weekday - 1], style: const TextStyle(fontSize: 11)),
+            Text(days[date.weekday - 1], style: const TextStyle(fontSize: 11)),
             Text('${date.day}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-            Text(_monthShort[date.month - 1], style: const TextStyle(fontSize: 11)),
+            Text(months[date.month - 1], style: const TextStyle(fontSize: 11)),
           ],
         ),
       ),
     );
-  }
+  });
 }
 
 /// Agenda / Kegiatan: tab Kalender (grid bulan bertitik) dan Daftar, tombol Tambah Kegiatan.
@@ -70,7 +85,7 @@ class _AgendaPageState extends ConsumerState<AgendaPage> {
   DateTime? _selected;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => mosqueScoped(context, (context) {
     final ctx = widget.ctx;
     final events = ref.watch(eventsProvider(ctx.id));
     final body = RefreshIndicator(
@@ -78,7 +93,11 @@ class _AgendaPageState extends ConsumerState<AgendaPage> {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
         children: [
-          PillTabs(labels: const ['Kalender', 'Daftar'], index: _tab, onChanged: (i) => setState(() => _tab = i)),
+          PillTabs(
+            labels: [context.tr('Kalender', 'Calendar'), context.tr('Daftar', 'List')],
+            index: _tab,
+            onChanged: (i) => setState(() => _tab = i),
+          ),
           const SizedBox(height: 12),
           AsyncBody(
             value: events,
@@ -86,7 +105,7 @@ class _AgendaPageState extends ConsumerState<AgendaPage> {
             data: (list) {
               final parsed = [for (final e in list) (DateTime.parse(e['starts_at'] as String).toLocal(), e)]
                 ..sort((a, b) => a.$1.compareTo(b.$1));
-              if (_tab == 1) return _list(parsed);
+              if (_tab == 1) return _list(context, parsed);
               final shown = _selected == null
                   ? parsed
                         .where((p) => !p.$1.isBefore(DateTime.now().subtract(const Duration(hours: 12))))
@@ -109,13 +128,20 @@ class _AgendaPageState extends ConsumerState<AgendaPage> {
                       ),
                     ),
                   ),
-                  SectionHeader(_selected == null ? 'Agenda Terdekat' : 'Agenda ${shortDate(_selected!)}'),
+                  SectionHeader(
+                    _selected == null
+                        ? context.tr('Agenda Terdekat', 'Upcoming Events')
+                        : context.tr(
+                            'Agenda ${context.shortDateText(_selected!)}',
+                            'Events on ${context.shortDateText(_selected!)}',
+                          ),
+                  ),
                   if (shown.isEmpty)
-                    const EmptyState(
+                    EmptyState(
                       MoeslimIcons.kalender,
-                      'Tidak ada agenda',
+                      context.tr('Tidak ada agenda', 'No events'),
                       art: BrandEmptyArt.tidakAdaHasil,
-                      message: 'Coba filter atau minggu lain.',
+                      message: context.tr('Coba filter atau minggu lain.', 'Try another filter or week.'),
                     ),
                   for (final p in shown) _EventCard(ctx: ctx, event: p.$2, start: p.$1),
                 ],
@@ -130,24 +156,29 @@ class _AgendaPageState extends ConsumerState<AgendaPage> {
             heroTag: null,
             key: const Key('add-event'),
             icon: const Icon(MoeslimIcons.tambah),
-            label: const Text('Tambah Kegiatan'),
+            label: Text(context.tr('Tambah Kegiatan', 'Add Event')),
             onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => EventFormPage(ctx: ctx))),
           )
         : null;
     return Scaffold(
-      appBar: widget.embedded ? null : AppBar(title: const Text('Agenda / Kegiatan'), centerTitle: true),
+      appBar: widget.embedded
+          ? null
+          : AppBar(title: Text(context.tr('Agenda / Kegiatan', 'Schedule / Events')), centerTitle: true),
       floatingActionButton: fab,
       body: body,
     );
-  }
+  });
 
-  Widget _list(List<(DateTime, Map<String, dynamic>)> parsed) {
+  Widget _list(BuildContext context, List<(DateTime, Map<String, dynamic>)> parsed) {
     if (parsed.isEmpty) {
-      return const EmptyState(
+      return EmptyState(
         MoeslimIcons.kegiatan,
-        'Belum ada agenda aktif',
+        context.tr('Belum ada agenda aktif', 'No active events yet'),
         art: BrandEmptyArt.agenda,
-        message: 'Tambahkan kajian, pengajian, atau kegiatan masjid.',
+        message: context.tr(
+          'Tambahkan kajian, pengajian, atau kegiatan masjid.',
+          'Add lectures, study circles, or mosque activities.',
+        ),
       );
     }
     return Column(
@@ -176,25 +207,26 @@ class _MonthGrid extends StatelessWidget {
     final first = DateTime(month.year, month.month);
     final start = first.subtract(Duration(days: first.weekday - 1));
     final today = DateUtils.dateOnly(DateTime.now());
+    final days = context.isEn ? _dayShortEn : _dayShortId;
     return Column(
       children: [
         Row(
           children: [
             IconButton(
-              tooltip: 'Bulan sebelumnya',
+              tooltip: context.tr('Bulan sebelumnya', 'Previous month'),
               icon: const Icon(Icons.chevron_left),
               onPressed: () => onMonth(DateTime(month.year, month.month - 1)),
             ),
             Expanded(
               child: Text(
-                monthLabel(month),
+                monthLabel(month, lang: context.lang),
                 key: const Key('calendar-month'),
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
               ),
             ),
             IconButton(
-              tooltip: 'Bulan berikutnya',
+              tooltip: context.tr('Bulan berikutnya', 'Next month'),
               icon: const Icon(Icons.chevron_right),
               onPressed: () => onMonth(DateTime(month.year, month.month + 1)),
             ),
@@ -202,7 +234,7 @@ class _MonthGrid extends StatelessWidget {
         ),
         Row(
           children: [
-            for (final d in _dayShort)
+            for (final d in days)
               Expanded(
                 child: Center(
                   child: Text(d, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
@@ -278,6 +310,7 @@ class _EventCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final e = event;
+    final lang = context.lang;
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: ListTile(
@@ -299,24 +332,26 @@ class _EventCard extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                StatusBadge(categoryLabel(e['category'] as String?)),
+                StatusBadge(categoryLabel(e['category'] as String?, lang: lang)),
                 const SizedBox(height: 4),
                 Icon(
                   e['visibility'] == 'public' ? MoeslimIcons.web : MoeslimIcons.kunci,
                   size: 16,
-                  semanticLabel: e['visibility'] == 'public' ? 'Publik' : 'Internal',
+                  semanticLabel: e['visibility'] == 'public'
+                      ? context.tr('Publik', 'Public')
+                      : context.tr('Internal', 'Internal'),
                 ),
               ],
             ),
             IconButton(
               key: Key('share-event-${e['id']}'),
-              tooltip: 'Bagikan Poster & WA',
+              tooltip: context.tr('Bagikan Poster & WA', 'Share Poster & WhatsApp'),
               icon: const Icon(Icons.share_outlined, size: 20),
               onPressed: () => showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
                 showDragHandle: true,
-                builder: (_) => PosterShareSheet(data: WaTextBuilder.forEvent(ctx.name, e)),
+                builder: (_) => PosterShareSheet(data: WaTextBuilder.forEvent(ctx.name, e, lang: lang)),
               ),
             ),
           ],
@@ -377,22 +412,32 @@ class _EventFormPageState extends ConsumerState<EventFormPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => mosqueScoped(context, (context) {
+    final lang = context.lang;
     return Scaffold(
-      appBar: AppBar(title: const Text('Tambah Kegiatan'), centerTitle: true),
+      appBar: AppBar(title: Text(context.tr('Tambah Kegiatan', 'Add Event')), centerTitle: true),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           TextField(
             key: const Key('event-title'),
             controller: _title,
-            decoration: const InputDecoration(labelText: 'Nama kegiatan *', prefixIcon: Icon(MoeslimIcons.kegiatan)),
+            decoration: InputDecoration(
+              labelText: context.tr('Nama kegiatan *', 'Event title *'),
+              prefixIcon: const Icon(MoeslimIcons.kegiatan),
+            ),
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
             initialValue: _category,
-            decoration: const InputDecoration(labelText: 'Kategori', prefixIcon: Icon(MoeslimIcons.kategori)),
-            items: [for (final c in eventCategories.entries) DropdownMenuItem(value: c.key, child: Text(c.value))],
+            decoration: InputDecoration(
+              labelText: context.tr('Kategori', 'Category'),
+              prefixIcon: const Icon(MoeslimIcons.kategori),
+            ),
+            items: [
+              for (final c in eventCategories.entries)
+                DropdownMenuItem(value: c.key, child: Text(categoryLabel(c.key, lang: lang))),
+            ],
             onChanged: (v) => setState(() => _category = v ?? _category),
           ),
           const SizedBox(height: 12),
@@ -410,8 +455,11 @@ class _EventFormPageState extends ConsumerState<EventFormPage> {
                     if (d != null) setState(() => _date = d);
                   },
                   child: InputDecorator(
-                    decoration: const InputDecoration(labelText: 'Tanggal', prefixIcon: Icon(MoeslimIcons.kalender)),
-                    child: Text(shortDate(_date)),
+                    decoration: InputDecoration(
+                      labelText: context.tr('Tanggal', 'Date'),
+                      prefixIcon: const Icon(MoeslimIcons.kalender),
+                    ),
+                    child: Text(context.shortDateText(_date)),
                   ),
                 ),
               ),
@@ -423,7 +471,10 @@ class _EventFormPageState extends ConsumerState<EventFormPage> {
                     if (t != null) setState(() => _time = t);
                   },
                   child: InputDecorator(
-                    decoration: const InputDecoration(labelText: 'Jam', prefixIcon: Icon(MoeslimIcons.jam)),
+                    decoration: InputDecoration(
+                      labelText: context.tr('Jam', 'Time'),
+                      prefixIcon: const Icon(MoeslimIcons.jam),
+                    ),
                     child: Text('${_time.hour.toString().padLeft(2, '0')}:${_time.minute.toString().padLeft(2, '0')}'),
                   ),
                 ),
@@ -433,35 +484,35 @@ class _EventFormPageState extends ConsumerState<EventFormPage> {
           const SizedBox(height: 12),
           TextField(
             controller: _location,
-            decoration: const InputDecoration(
-              labelText: 'Lokasi',
-              hintText: 'Contoh: Aula Masjid',
-              prefixIcon: Icon(MoeslimIcons.lokasi),
+            decoration: InputDecoration(
+              labelText: context.tr('Lokasi', 'Location'),
+              hintText: context.tr('Contoh: Aula Masjid', 'Example: Main Hall'),
+              prefixIcon: const Icon(MoeslimIcons.lokasi),
             ),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _speaker,
-            decoration: const InputDecoration(
-              labelText: 'Pemateri / penanggung jawab',
-              prefixIcon: Icon(MoeslimIcons.profil),
+            decoration: InputDecoration(
+              labelText: context.tr('Pemateri / penanggung jawab', 'Speaker / person in charge'),
+              prefixIcon: const Icon(MoeslimIcons.profil),
             ),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _desc,
             maxLines: 3,
-            decoration: const InputDecoration(labelText: 'Deskripsi', alignLabelWithHint: true),
+            decoration: InputDecoration(labelText: context.tr('Deskripsi', 'Description'), alignLabelWithHint: true),
           ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Publik (tampil untuk jamaah)'),
+            title: Text(context.tr('Publik (tampil untuk jamaah)', 'Public (visible to congregation)')),
             value: _public,
             onChanged: (v) => setState(() => _public = v),
           ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Tayangkan di TV Display'),
+            title: Text(context.tr('Tayangkan di TV Display', 'Show on TV Display')),
             value: _public && _display,
             onChanged: _public ? (v) => setState(() => _display = v) : null,
           ),
@@ -475,10 +526,10 @@ class _EventFormPageState extends ConsumerState<EventFormPage> {
             style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(54), shape: const StadiumBorder()),
             onPressed: _busy ? null : _save,
             icon: const Icon(MoeslimIcons.check),
-            label: const Text('Simpan Kegiatan'),
+            label: Text(context.tr('Simpan Kegiatan', 'Save Event')),
           ),
         ],
       ),
     );
-  }
+  });
 }

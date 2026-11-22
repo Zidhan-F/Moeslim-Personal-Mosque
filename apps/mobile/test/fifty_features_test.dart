@@ -58,7 +58,7 @@ void main() {
     );
 
     // 4. Hadith catalog
-    expect(hadithCatalog.length, 20);
+    expect(hadithCatalog.length, 50);
     expect(dailyHadithFor(DateTime(2026, 11, 22)).title, isNotEmpty);
 
     // 5. Zakat & Faraid (Normal, Aul, Radd)
@@ -181,7 +181,7 @@ void main() {
     // 4. Kitab Hadits Pilihan
     await _openPage(tester, const HadithPage());
     expect(find.text('Kitab Hadits Pilihan'), findsOneWidget);
-    expect(find.text('Menampilkan 20 hadits shahih'), findsOneWidget);
+    expect(find.text('Menampilkan ${hadithCatalog.length} hadits shahih'), findsOneWidget);
 
     // 5. Kalkulator Zakat, Fidyah & Waris (Faraid)
     await _openPage(tester, const ZakatFaraidPage());

@@ -9,6 +9,7 @@ import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:personal_core/personal_core.dart';
 import 'package:shared_prayer/shared_prayer.dart';
 
+import '../../core/l10n.dart';
 import '../../core/location_service.dart';
 
 enum CompassAccuracy { high, medium, low, unavailable }
@@ -45,19 +46,44 @@ final headingProvider = StreamProvider<double?>((ref) {
   return events.map((e) => e.heading);
 });
 
-/// Format derajat gaya Indonesia: 295,0°.
-String degreeId(double v) => '${v.toStringAsFixed(1).replaceAll('.', ',')}°';
+/// Format derajat gaya Indonesia (`295,0°`) atau Inggris (`295.0°`).
+String degreeId(double v, {AppLanguage lang = AppLanguage.id}) =>
+    lang == AppLanguage.en ? '${v.toStringAsFixed(1)}°' : '${v.toStringAsFixed(1).replaceAll('.', ',')}°';
 
-/// Format deklinasi magnetik bertanda: +0,8° atau -1,2°.
-String signedDegreeId(double v) {
+/// Format deklinasi magnetik bertanda: `+0,8°` / `+0.8°` atau `-1,2°` / `-1.2°`.
+String signedDegreeId(double v, {AppLanguage lang = AppLanguage.id}) {
   final sign = v >= 0 ? '+' : '-';
-  return '$sign${v.abs().toStringAsFixed(1).replaceAll('.', ',')}°';
+  final absStr = v.abs().toStringAsFixed(1);
+  return lang == AppLanguage.en ? '$sign$absStr°' : '$sign${absStr.replaceAll('.', ',')}°';
 }
 
 /// Format koordinat geografis presisi (5 angka desimal ≈ 1,1 meter).
-String coordinateId(double value, {required bool isLatitude}) {
+String coordinateId(double value, {required bool isLatitude, AppLanguage lang = AppLanguage.id}) {
+  if (lang == AppLanguage.en) {
+    final hemi = isLatitude ? (value >= 0 ? 'N' : 'S') : (value >= 0 ? 'E' : 'W');
+    return '${value.abs().toStringAsFixed(5)}° $hemi';
+  }
   final hemi = isLatitude ? (value >= 0 ? 'LU' : 'LS') : (value >= 0 ? 'BT' : 'BB');
   return '${value.abs().toStringAsFixed(5).replaceAll('.', ',')}° $hemi';
+}
+
+String _locationLabelFor(Coordinates coords, AppLanguage lang) {
+  final raw = formatGpsLocationLabel(coords);
+  if (lang != AppLanguage.en) return raw;
+  if (raw == 'Lokasi GPS') return 'GPS Location';
+  if (raw.startsWith('Sekitar ')) return 'Near ${raw.substring(8)}';
+  return raw;
+}
+
+String _localizeGpsError(BuildContext context, String raw) {
+  if (!context.isEn) return raw;
+  if (raw.contains('Sinyal GPS belum terkunci')) {
+    return 'GPS signal is not locked yet. Move to a more open area and try again.';
+  }
+  if (raw.contains('Gagal membaca lokasi GPS')) {
+    return 'Failed to read GPS location. Make sure GPS is enabled and signal is sufficient.';
+  }
+  return raw;
 }
 
 class QiblaPage extends ConsumerStatefulWidget {
@@ -125,14 +151,20 @@ class _QiblaPageState extends ConsumerState<QiblaPage> with WidgetsBindingObserv
 
   void _calibrate(BuildContext context) => showDialog<void>(
     context: context,
-    builder: (_) => AlertDialog(
+    builder: (dialogContext) => AlertDialog(
       icon: const Icon(Icons.screen_rotation_alt),
-      title: const Text('Kalibrasi Kompas'),
-      content: const Text(
-        'Putar ponsel membentuk angka 8 beberapa kali di udara. Jauhkan dari benda logam, magnet, casing bermagnet, '
-        'atau perangkat elektronik. Setelah itu letakkan ponsel mendatar.',
+      title: Text(dialogContext.tr('Kalibrasi Kompas', 'Compass Calibration')),
+      content: Text(
+        dialogContext.tr(
+          'Putar ponsel membentuk angka 8 beberapa kali di udara. Jauhkan dari benda logam, magnet, casing bermagnet, '
+              'atau perangkat elektronik. Setelah itu letakkan ponsel mendatar.',
+          'Move your phone in a figure-8 motion in the air several times. Keep away from metal objects, magnets, '
+              'magnetic cases, or electronic devices. Then hold your phone flat.',
+        ),
       ),
-      actions: [FilledButton(onPressed: () => Navigator.pop(context), child: const Text('Selesai'))],
+      actions: [
+        FilledButton(onPressed: () => Navigator.pop(dialogContext), child: Text(dialogContext.tr('Selesai', 'Done'))),
+      ],
     ),
   );
 
@@ -154,69 +186,80 @@ class _QiblaPageState extends ConsumerState<QiblaPage> with WidgetsBindingObserv
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Arah Kiblat'), centerTitle: true),
+      appBar: AppBar(title: Text(context.tr('Arah Kiblat', 'Qibla Direction')), centerTitle: true),
       body: switch (gpsState) {
-        GpsChecking() => const _GpsProgressView(
-          key: Key('qibla-gps-checking'),
-          title: 'Memeriksa Status GPS...',
-          subtitle: 'Memastikan layanan GPS perangkat aktif sebelum menghitung arah kiblat.',
+        GpsChecking() => _GpsProgressView(
+          key: const Key('qibla-gps-checking'),
+          title: context.tr('Memeriksa Status GPS...', 'Checking GPS Status...'),
+          subtitle: context.tr(
+            'Memastikan layanan GPS perangkat aktif sebelum menghitung arah kiblat.',
+            'Verifying that device GPS service is enabled before calculating Qibla direction.',
+          ),
         ),
         GpsServiceDisabled() => _GpsGateView(
           key: const Key('qibla-gps-disabled'),
           icon: Icons.location_off_rounded,
-          title: 'GPS Perangkat Tidak Aktif',
-          message:
-              'Arah kiblat harus dihitung dari koordinat GPS aktif agar tepat dan presisi, tidak menggunakan perkiraan kota.',
+          title: context.tr('GPS Perangkat Tidak Aktif', 'Device GPS Is Off'),
+          message: context.tr(
+            'Arah kiblat harus dihitung dari koordinat GPS aktif agar tepat dan presisi, tidak menggunakan perkiraan kota.',
+            'Qibla direction must be calculated from active GPS coordinates for precision, not a rough city estimate.',
+          ),
           primaryKey: const Key('enable-gps'),
-          primaryLabel: 'Aktifkan GPS',
+          primaryLabel: context.tr('Aktifkan GPS', 'Enable GPS'),
           primaryIcon: MoeslimIcons.lokasi,
           onPrimary: () => ref.read(gpsControllerProvider.notifier).openLocationSettings(),
           secondaryKey: const Key('recheck-gps'),
-          secondaryLabel: 'Cek Ulang Status GPS',
+          secondaryLabel: context.tr('Cek Ulang Status GPS', 'Recheck GPS Status'),
           onSecondary: () => ref.read(gpsControllerProvider.notifier).ensureActive(),
         ),
         GpsPermissionDenied() => _GpsGateView(
           key: const Key('qibla-permission-denied'),
           icon: MoeslimIcons.lokasi,
-          title: 'Izin Lokasi GPS Diperlukan',
-          message:
-              'Izinkan akses lokasi presisi agar Moeslim PM dapat membaca koordinat GPS perangkat untuk menentukan arah kiblat.',
+          title: context.tr('Izin Lokasi GPS Diperlukan', 'GPS Location Permission Required'),
+          message: context.tr(
+            'Izinkan akses lokasi presisi agar Moeslim PM dapat membaca koordinat GPS perangkat untuk menentukan arah kiblat.',
+            'Allow precise location access so Moeslim PM can read your GPS coordinates to determine Qibla direction.',
+          ),
           primaryKey: const Key('request-location-permission'),
-          primaryLabel: 'Izinkan Lokasi GPS',
+          primaryLabel: context.tr('Izinkan Lokasi GPS', 'Allow GPS Location'),
           primaryIcon: MoeslimIcons.lokasi,
           onPrimary: () => ref.read(gpsControllerProvider.notifier).requestPermissionAndStart(),
           secondaryKey: const Key('recheck-gps'),
-          secondaryLabel: 'Cek Ulang Status GPS',
+          secondaryLabel: context.tr('Cek Ulang Status GPS', 'Recheck GPS Status'),
           onSecondary: () => ref.read(gpsControllerProvider.notifier).ensureActive(),
         ),
         GpsPermissionDeniedForever() => _GpsGateView(
           key: const Key('qibla-permission-forever'),
           icon: Icons.gpp_maybe_outlined,
-          title: 'Izin Lokasi Ditolak Permanen',
-          message:
-              'Buka pengaturan aplikasi lalu aktifkan izin Lokasi (Lokasi Presisi) untuk Moeslim PM agar arah kiblat dapat digunakan.',
+          title: context.tr('Izin Lokasi Ditolak Permanen', 'Location Permission Permanently Denied'),
+          message: context.tr(
+            'Buka pengaturan aplikasi lalu aktifkan izin Lokasi (Lokasi Presisi) untuk Moeslim PM agar arah kiblat dapat digunakan.',
+            'Open app settings and enable Location (Precise Location) permission for Moeslim PM to use the Qibla compass.',
+          ),
           primaryKey: const Key('open-app-settings'),
-          primaryLabel: 'Buka Pengaturan Aplikasi',
+          primaryLabel: context.tr('Buka Pengaturan Aplikasi', 'Open App Settings'),
           primaryIcon: MoeslimIcons.pengaturan,
           onPrimary: () => ref.read(gpsControllerProvider.notifier).openAppSettings(),
           secondaryKey: const Key('recheck-gps'),
-          secondaryLabel: 'Cek Ulang Status GPS',
+          secondaryLabel: context.tr('Cek Ulang Status GPS', 'Recheck GPS Status'),
           onSecondary: () => ref.read(gpsControllerProvider.notifier).ensureActive(),
         ),
         GpsAcquiring() => _GpsProgressView(
           key: const Key('qibla-gps-acquiring'),
-          title: 'Mengunci Sinyal GPS Presisi...',
-          subtitle:
-              'GPS aktif. Menunggu koordinat satelit perangkat Anda. Pindah ke dekat jendela atau area terbuka jika perlu.',
+          title: context.tr('Mengunci Sinyal GPS Presisi...', 'Locking Precise GPS Signal...'),
+          subtitle: context.tr(
+            'GPS aktif. Menunggu koordinat satelit perangkat Anda. Pindah ke dekat jendela atau area terbuka jika perlu.',
+            'GPS is on. Waiting for satellite coordinates. Move near a window or open area if needed.',
+          ),
           onRetry: () => ref.read(gpsControllerProvider.notifier).ensureActive(),
         ),
         GpsError(:final message) => _GpsGateView(
           key: const Key('qibla-gps-error'),
           icon: MoeslimIcons.peringatan,
-          title: 'Gagal Membaca Lokasi GPS',
-          message: message,
+          title: context.tr('Gagal Membaca Lokasi GPS', 'Failed to Read GPS Location'),
+          message: _localizeGpsError(context, message),
           primaryKey: const Key('retry-gps'),
-          primaryLabel: 'Coba Lagi',
+          primaryLabel: context.tr('Coba Lagi', 'Try Again'),
           primaryIcon: MoeslimIcons.refresh,
           onPrimary: () => ref.read(gpsControllerProvider.notifier).ensureActive(),
         ),
@@ -226,6 +269,7 @@ class _QiblaPageState extends ConsumerState<QiblaPage> with WidgetsBindingObserv
   }
 
   Widget _buildCompassBody(BuildContext context, GpsReady gps, CompassReading? reading) {
+    final lang = context.lang;
     final pos = gps.position;
     final bearing = qiblaBearing(pos.coordinates);
     final distance = distanceToKaabaKm(pos.coordinates);
@@ -237,7 +281,7 @@ class _QiblaPageState extends ConsumerState<QiblaPage> with WidgetsBindingObserv
     final scheme = Theme.of(context).colorScheme;
     final dark = Theme.of(context).brightness == Brightness.dark;
     final goldInk = dark ? BrandColors.gold : BrandColors.goldText;
-    final locationLabel = formatGpsLocationLabel(pos.coordinates);
+    final locationLabel = _locationLabelFor(pos.coordinates, lang);
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -251,10 +295,7 @@ class _QiblaPageState extends ConsumerState<QiblaPage> with WidgetsBindingObserv
                 Container(
                   width: 36,
                   height: 36,
-                  decoration: BoxDecoration(
-                    color: scheme.primary.withValues(alpha: .14),
-                    shape: BoxShape.circle,
-                  ),
+                  decoration: BoxDecoration(color: scheme.primary.withValues(alpha: .14), shape: BoxShape.circle),
                   child: Icon(MoeslimIcons.lokasi, size: 18, color: scheme.primary),
                 ),
                 const SizedBox(width: 12),
@@ -263,13 +304,14 @@ class _QiblaPageState extends ConsumerState<QiblaPage> with WidgetsBindingObserv
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'GPS Aktif • $locationLabel',
+                        context.tr('GPS Aktif • $locationLabel', 'GPS Active • $locationLabel'),
                         style: t.titleSmall?.copyWith(fontWeight: FontWeight.w700, color: scheme.primary),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${coordinateId(pos.latitude, isLatitude: true)}, '
-                        '${coordinateId(pos.longitude, isLatitude: false)} • Akurasi ±${pos.accuracyMeters.round()} m',
+                        '${coordinateId(pos.latitude, isLatitude: true, lang: lang)}, '
+                        '${coordinateId(pos.longitude, isLatitude: false, lang: lang)} • '
+                        '${context.tr('Akurasi', 'Accuracy')} ±${pos.accuracyMeters.round()} m',
                         style: t.bodySmall,
                       ),
                     ],
@@ -277,7 +319,7 @@ class _QiblaPageState extends ConsumerState<QiblaPage> with WidgetsBindingObserv
                 ),
                 IconButton(
                   key: const Key('refresh-gps'),
-                  tooltip: 'Perbarui posisi GPS',
+                  tooltip: context.tr('Perbarui posisi GPS', 'Refresh GPS position'),
                   onPressed: () => ref.read(gpsControllerProvider.notifier).ensureActive(),
                   icon: Icon(MoeslimIcons.refresh, color: scheme.primary),
                 ),
@@ -286,51 +328,47 @@ class _QiblaPageState extends ConsumerState<QiblaPage> with WidgetsBindingObserv
           ),
         ),
         if (pos.isMocked)
-          const _WarningBanner(
-            key: Key('qibla-mock-warning'),
+          _WarningBanner(
+            key: const Key('qibla-mock-warning'),
             icon: MoeslimIcons.peringatan,
-            text: 'Lokasi tiruan (Mock GPS) terdeteksi. Matikan aplikasi lokasi palsu agar arah kiblat benar.',
+            text: context.tr(
+              'Lokasi tiruan (Mock GPS) terdeteksi. Matikan aplikasi lokasi palsu agar arah kiblat benar.',
+              'Mock GPS location detected. Disable fake location apps for an accurate Qibla direction.',
+            ),
           ),
         if (pos.isLowAccuracy)
           _WarningBanner(
             key: const Key('qibla-gps-weak'),
             icon: MoeslimIcons.peringatan,
-            text:
-                'Sinyal GPS masih lemah (±${pos.accuracyMeters.round()} m). Pindah ke area lebih terbuka agar koordinat makin presisi.',
+            text: context.tr(
+              'Sinyal GPS masih lemah (±${pos.accuracyMeters.round()} m). Pindah ke area lebih terbuka agar koordinat makin presisi.',
+              'GPS signal is still weak (±${pos.accuracyMeters.round()} m). Move to a more open area for higher accuracy.',
+            ),
           ),
         if (reading?.needsCalibration == true)
-          const _WarningBanner(
-            key: Key('qibla-compass-low'),
+          _WarningBanner(
+            key: const Key('qibla-compass-low'),
             icon: Icons.screen_rotation_alt,
-            text:
-                'Akurasi sensor kompas rendah atau terganggu medan magnet. Kalibrasi ponsel membentuk angka 8 dan jauhkan dari logam.',
+            text: context.tr(
+              'Akurasi sensor kompas rendah atau terganggu medan magnet. Kalibrasi ponsel membentuk angka 8 dan jauhkan dari logam.',
+              'Compass sensor accuracy is low or affected by magnetic interference. Calibrate in a figure-8 motion and move away from metal.',
+            ),
           ),
         const SizedBox(height: 8),
         Center(
-          child: _AlignmentBanner(
-            delta: delta,
-            aligned: aligned,
-            hasSensor: trueHeading != null,
-          ),
+          child: _AlignmentBanner(delta: delta, aligned: aligned, hasSensor: trueHeading != null),
         ),
         const SizedBox(height: 8),
         Center(
           child: Column(
             children: [
-              Icon(
-                Icons.arrow_drop_down_rounded,
-                size: 28,
-                color: aligned ? scheme.primary : goldInk,
-              ),
+              Icon(Icons.arrow_drop_down_rounded, size: 28, color: aligned ? scheme.primary : goldInk),
               AnimatedContainer(
                 duration: const Duration(milliseconds: 220),
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: aligned ? scheme.primary : Colors.transparent,
-                    width: 3,
-                  ),
+                  border: Border.all(color: aligned ? scheme.primary : Colors.transparent, width: 3),
                 ),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
@@ -340,7 +378,10 @@ class _QiblaPageState extends ConsumerState<QiblaPage> with WidgetsBindingObserv
                     return SizedBox.square(
                       dimension: dialSize,
                       child: Semantics(
-                        label: 'Kompas kiblat GPS, ${degreeId(bearing)} dari utara sejati',
+                        label: context.tr(
+                          'Kompas kiblat GPS, ${degreeId(bearing, lang: lang)} dari utara sejati',
+                          'GPS Qibla compass, ${degreeId(bearing, lang: lang)} from true north',
+                        ),
                         child: Stack(
                           children: [
                             // Dial asset kit berputar mengikuti arah perangkat (utara dial = utara sejati).
@@ -353,7 +394,11 @@ class _QiblaPageState extends ConsumerState<QiblaPage> with WidgetsBindingObserv
                             // Huruf mata angin (Inter, tetap tegak) di dalam cincin dial.
                             Positioned.fill(
                               child: CustomPaint(
-                                painter: CompassPainter(qibla: bearing, heading: trueHeading == null ? null : renderHeading),
+                                painter: CompassPainter(
+                                  qibla: bearing,
+                                  heading: trueHeading == null ? null : renderHeading,
+                                  lang: lang,
+                                ),
                               ),
                             ),
                             // Jarum asset kit menunjuk arah kiblat sejati.
@@ -390,10 +435,13 @@ class _QiblaPageState extends ConsumerState<QiblaPage> with WidgetsBindingObserv
           ),
         ),
         if (trueHeading == null)
-          const Padding(
-            padding: EdgeInsets.only(top: 6),
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
             child: Text(
-              'Sensor kompas tidak tersedia. Gunakan sudut kiblat GPS di bawah bersama kompas fisik.',
+              context.tr(
+                'Sensor kompas tidak tersedia. Gunakan sudut kiblat GPS di bawah bersama kompas fisik.',
+                'Compass sensor is unavailable. Use the GPS Qibla bearing below with a physical compass.',
+              ),
               textAlign: TextAlign.center,
             ),
           ),
@@ -412,13 +460,19 @@ class _QiblaPageState extends ConsumerState<QiblaPage> with WidgetsBindingObserv
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Arah Kiblat (GPS)'),
+                          Text(context.tr('Arah Kiblat (GPS)', 'Qibla Direction (GPS)')),
                           Text(
-                            degreeId(bearing),
+                            degreeId(bearing, lang: lang),
                             key: const Key('qibla-bearing'),
                             style: t.headlineMedium?.copyWith(fontWeight: FontWeight.w800, color: scheme.primary),
                           ),
-                          Text('dari utara sejati • ± ${distance.toStringAsFixed(0)} km', style: t.bodySmall),
+                          Text(
+                            context.tr(
+                              'dari utara sejati • ± ${distance.toStringAsFixed(0)} km',
+                              'from true north • ± ${distance.toStringAsFixed(0)} km',
+                            ),
+                            style: t.bodySmall,
+                          ),
                         ],
                       ),
                     ),
@@ -432,7 +486,10 @@ class _QiblaPageState extends ConsumerState<QiblaPage> with WidgetsBindingObserv
                         children: [
                           Icon(MoeslimIcons.lokasi, size: 16, color: goldInk),
                           const SizedBox(width: 4),
-                          Text("Ke Ka'bah\n(Makkah)", style: TextStyle(color: goldInk, fontSize: 12)),
+                          Text(
+                            context.tr("Ke Ka'bah\n(Makkah)", 'To Kaaba\n(Makkah)'),
+                            style: TextStyle(color: goldInk, fontSize: 12),
+                          ),
                         ],
                       ),
                     ),
@@ -440,14 +497,20 @@ class _QiblaPageState extends ConsumerState<QiblaPage> with WidgetsBindingObserv
                 ),
                 const Divider(height: 20),
                 Text(
-                  'Deklinasi magnetik: ${signedDegreeId(gps.declinationDegrees)} (koreksi utara sejati WGS84)',
+                  context.tr(
+                    'Deklinasi magnetik: ${signedDegreeId(gps.declinationDegrees, lang: lang)} (koreksi utara sejati WGS84)',
+                    'Magnetic declination: ${signedDegreeId(gps.declinationDegrees, lang: lang)} (WGS84 true north correction)',
+                  ),
                   key: const Key('qibla-declination'),
                   style: t.bodySmall,
                 ),
                 if (reading != null && reading.magneticHeading != null) ...[
                   const SizedBox(height: 4),
                   Text(
-                    'Arah ponsel saat ini: ${degreeId(trueHeading!)} • Sensor: ${_accuracyLabel(reading.level)}',
+                    context.tr(
+                      'Arah ponsel saat ini: ${degreeId(trueHeading!, lang: lang)} • Sensor: ${_accuracyLabel(context, reading.level)}',
+                      'Current heading: ${degreeId(trueHeading, lang: lang)} • Sensor: ${_accuracyLabel(context, reading.level)}',
+                    ),
                     style: t.bodySmall,
                   ),
                 ],
@@ -458,9 +521,15 @@ class _QiblaPageState extends ConsumerState<QiblaPage> with WidgetsBindingObserv
         Card(
           child: ListTile(
             leading: Icon(MoeslimIcons.kiblat, color: scheme.primary),
-            title: const Text('Kalibrasi Kompas', style: TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: const Text(
-              'Putar ponsel membentuk angka 8 untuk mengkalibrasi akurasi kompas. Letakkan ponsel mendatar dan jauh dari benda logam.',
+            title: Text(
+              context.tr('Kalibrasi Kompas', 'Compass Calibration'),
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(
+              context.tr(
+                'Putar ponsel membentuk angka 8 untuk mengkalibrasi akurasi kompas. Letakkan ponsel mendatar dan jauh dari benda logam.',
+                'Move your phone in a figure-8 motion to calibrate compass accuracy. Hold your phone flat and away from metal objects.',
+              ),
             ),
             trailing: const BrandArt(BrandIllustration.calibrate, width: 72),
             isThreeLine: true,
@@ -472,17 +541,17 @@ class _QiblaPageState extends ConsumerState<QiblaPage> with WidgetsBindingObserv
           style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52), shape: const StadiumBorder()),
           onPressed: () => _calibrate(context),
           icon: const Icon(Icons.screen_rotation_alt),
-          label: const Text('Kalibrasi Sekarang'),
+          label: Text(context.tr('Kalibrasi Sekarang', 'Calibrate Now')),
         ),
       ],
     );
   }
 
-  static String _accuracyLabel(CompassAccuracy level) => switch (level) {
-    CompassAccuracy.high => 'Tinggi',
-    CompassAccuracy.medium => 'Sedang',
-    CompassAccuracy.low => 'Rendah (perlu kalibrasi)',
-    CompassAccuracy.unavailable => 'Tidak tersedia',
+  static String _accuracyLabel(BuildContext context, CompassAccuracy level) => switch (level) {
+    CompassAccuracy.high => context.tr('Tinggi', 'High'),
+    CompassAccuracy.medium => context.tr('Sedang', 'Medium'),
+    CompassAccuracy.low => context.tr('Rendah (perlu kalibrasi)', 'Low (calibration needed)'),
+    CompassAccuracy.unavailable => context.tr('Tidak tersedia', 'Unavailable'),
   };
 }
 
@@ -496,6 +565,7 @@ class _AlignmentBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final lang = context.lang;
     if (!hasSensor || delta == null) {
       return const SizedBox.shrink();
     }
@@ -503,18 +573,15 @@ class _AlignmentBanner extends StatelessWidget {
       return Container(
         key: const Key('qibla-aligned'),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: BrandColors.emerald,
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: const Row(
+        decoration: BoxDecoration(color: BrandColors.emerald, borderRadius: BorderRadius.circular(24)),
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(MoeslimIcons.berhasil, size: 18, color: Colors.white),
-            SizedBox(width: 8),
+            const Icon(MoeslimIcons.berhasil, size: 18, color: Colors.white),
+            const SizedBox(width: 8),
             Text(
-              'Tepat Menghadap Kiblat',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+              context.tr('Tepat Menghadap Kiblat', 'Facing Qibla'),
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
             ),
           ],
         ),
@@ -522,6 +589,7 @@ class _AlignmentBanner extends StatelessWidget {
     }
 
     final turnRight = delta! > 0;
+    final deg = degreeId(delta!.abs(), lang: lang);
     return Container(
       key: const Key('qibla-direction-hint'),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -532,14 +600,12 @@ class _AlignmentBanner extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            turnRight ? Icons.turn_right_rounded : Icons.turn_left_rounded,
-            size: 18,
-            color: scheme.primary,
-          ),
+          Icon(turnRight ? Icons.turn_right_rounded : Icons.turn_left_rounded, size: 18, color: scheme.primary),
           const SizedBox(width: 6),
           Text(
-            '${turnRight ? 'Putar kanan' : 'Putar kiri'} ${degreeId(delta!.abs())}',
+            turnRight
+                ? context.tr('Putar kanan $deg', 'Turn right $deg')
+                : context.tr('Putar kiri $deg', 'Turn left $deg'),
             style: TextStyle(color: scheme.onSurface, fontWeight: FontWeight.w600),
           ),
         ],
@@ -610,7 +676,7 @@ class _GpsProgressView extends StatelessWidget {
                   OutlinedButton.icon(
                     onPressed: onRetry,
                     icon: const Icon(MoeslimIcons.refresh),
-                    label: const Text('Coba Ulang'),
+                    label: Text(context.tr('Coba Ulang', 'Retry')),
                   ),
                 ],
               ],
@@ -664,10 +730,7 @@ class _GpsGateView extends StatelessWidget {
                 Container(
                   width: 72,
                   height: 72,
-                  decoration: BoxDecoration(
-                    color: scheme.primary.withValues(alpha: .12),
-                    shape: BoxShape.circle,
-                  ),
+                  decoration: BoxDecoration(color: scheme.primary.withValues(alpha: .12), shape: BoxShape.circle),
                   child: Icon(icon, size: 36, color: scheme.primary),
                 ),
                 const SizedBox(height: 18),
@@ -679,10 +742,7 @@ class _GpsGateView extends StatelessWidget {
                   width: double.infinity,
                   child: FilledButton.icon(
                     key: primaryKey,
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size.fromHeight(52),
-                      shape: const StadiumBorder(),
-                    ),
+                    style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52), shape: const StadiumBorder()),
                     onPressed: onPrimary,
                     icon: Icon(primaryIcon),
                     label: Text(primaryLabel),
@@ -713,19 +773,22 @@ class _GpsGateView extends StatelessWidget {
   }
 }
 
-/// Huruf mata angin U/T/S/B di atas dial kompas asset kit (440×440, cincin dalam r=170).
+/// Huruf mata angin U/T/S/B (atau N/E/S/W) di atas dial kompas asset kit (440×440, cincin dalam r=170).
 /// Posisi huruf berputar mengikuti [heading], hurufnya tetap tegak agar mudah dibaca.
 class CompassPainter extends CustomPainter {
   final double qibla;
   final double? heading;
-  const CompassPainter({required this.qibla, this.heading});
+  final AppLanguage lang;
+  const CompassPainter({required this.qibla, this.heading, this.lang = AppLanguage.id});
 
   @override
   void paint(Canvas canvas, Size size) {
     final c = size.center(Offset.zero);
     final scale = size.shortestSide / 440;
     final rot = -(heading ?? 0) * math.pi / 180;
-    const labels = {'U': 0.0, 'T': 90.0, 'S': 180.0, 'B': 270.0};
+    final labels = lang == AppLanguage.en
+        ? const {'N': 0.0, 'E': 90.0, 'S': 180.0, 'W': 270.0}
+        : const {'U': 0.0, 'T': 90.0, 'S': 180.0, 'B': 270.0};
     for (final e in labels.entries) {
       final a = rot + (e.value - 90) * math.pi / 180;
       final tp = TextPainter(
@@ -734,7 +797,7 @@ class CompassPainter extends CustomPainter {
           style: TextStyle(
             fontFamily: 'Inter',
             package: 'moeslim_brand',
-            color: const Color(0xFFF2D88B), // gold_light asset kit; ≥ 7:1 di atas dial hijau tua
+            color: BrandColors.deep,
             fontWeight: FontWeight.w700,
             fontSize: 29 * scale,
           ),
@@ -746,5 +809,5 @@ class CompassPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(CompassPainter old) => old.qibla != qibla || old.heading != heading;
+  bool shouldRepaint(CompassPainter old) => old.qibla != qibla || old.heading != heading || old.lang != lang;
 }

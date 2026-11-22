@@ -1,3 +1,7 @@
+import 'package:shared_prayer/shared_prayer.dart';
+
+import 'l10n_core.dart';
+
 /// Kalkulator Zakat (Maal, Penghasilan, Perdagangan, Fitrah), Fidyah, dan Waris Islam (Faraid termasuk Aul & Radd).
 class ZakatMaalEvaluation {
   final double grossAssets;
@@ -7,6 +11,7 @@ class ZakatMaalEvaluation {
   final bool isObligatory;
   final double zakatAmount;
   final String explanation;
+  final String? explanationEn;
 
   const ZakatMaalEvaluation({
     required this.grossAssets,
@@ -16,7 +21,11 @@ class ZakatMaalEvaluation {
     required this.isObligatory,
     required this.zakatAmount,
     required this.explanation,
+    this.explanationEn,
   });
+
+  String explanationFor(AppLanguage lang) =>
+      lang == AppLanguage.en && (explanationEn?.isNotEmpty ?? false) ? explanationEn! : explanation;
 }
 
 ZakatMaalEvaluation calculateZakatMaal({
@@ -25,6 +34,7 @@ ZakatMaalEvaluation calculateZakatMaal({
   required double tradeInventory,
   required double shortTermDebt,
   required double goldPricePerGram,
+  AppLanguage lang = AppLanguage.id,
 }) {
   final safeGoldPrice = goldPricePerGram <= 0 ? 1500000.0 : goldPricePerGram;
   final nisab = 85.0 * safeGoldPrice;
@@ -35,9 +45,12 @@ ZakatMaalEvaluation calculateZakatMaal({
   final net = (gross - debt) < 0 ? 0.0 : (gross - debt);
   final obligatory = net >= nisab;
   final zakat = obligatory ? net * 0.025 : 0.0;
-  final explanation = obligatory
+  final explanationId = obligatory
       ? 'Harta bersih telah mencapai nisab setara 85 gram emas dan wajib dizakati sebesar 2,5% setelah mencapai haul (1 tahun Hijriah).'
       : 'Harta bersih belum mencapai batas nisab 85 gram emas. Belum wajib zakat maal, namun dianjurkan bersedekah sunnah.';
+  final explanationEn = obligatory
+      ? 'Net zakatable wealth has reached the Nisab threshold of 85 grams of gold; 2.5% Zakat is due once held for one lunar year (Hawl).'
+      : 'Net wealth is below the 85-gram gold Nisab threshold. Zakat al-Mal is not obligatory, though voluntary charity (sadaqah) is encouraged.';
   return ZakatMaalEvaluation(
     grossAssets: gross,
     deductibleDebt: debt,
@@ -45,7 +58,8 @@ ZakatMaalEvaluation calculateZakatMaal({
     nisabValue: nisab,
     isObligatory: obligatory,
     zakatAmount: zakat,
-    explanation: explanation,
+    explanation: tr(lang, explanationId, explanationEn),
+    explanationEn: explanationEn,
   );
 }
 
@@ -53,6 +67,7 @@ ZakatMaalEvaluation calculateZakatProfesiMonthly({
   required double monthlyIncome,
   required double monthlyNeedsOrDebt,
   required double goldPricePerGram,
+  AppLanguage lang = AppLanguage.id,
 }) {
   final safeGoldPrice = goldPricePerGram <= 0 ? 1500000.0 : goldPricePerGram;
   final annualNisab = 85.0 * safeGoldPrice;
@@ -62,9 +77,12 @@ ZakatMaalEvaluation calculateZakatProfesiMonthly({
   final net = (gross - deduction) < 0 ? 0.0 : (gross - deduction);
   final obligatory = net >= monthlyNisab;
   final zakat = obligatory ? net * 0.025 : 0.0;
-  final explanation = obligatory
+  final explanationId = obligatory
       ? 'Penghasilan bersih bulanan mencapai nisab bulanan (1/12 dari 85 gram emas). Zakat penghasilan sebesar 2,5% dapat ditunaikan langsung setiap bulan.'
       : 'Penghasilan bersih bulanan belum mencapai nisab bulanan (1/12 dari 85 gram emas).';
+  final explanationEn = obligatory
+      ? 'Net monthly income reaches the monthly Nisab threshold (1/12 of 85 grams of gold). Income Zakat of 2.5% may be paid each month.'
+      : 'Net monthly income is below the monthly Nisab threshold (1/12 of 85 grams of gold).';
   return ZakatMaalEvaluation(
     grossAssets: gross,
     deductibleDebt: deduction,
@@ -72,7 +90,8 @@ ZakatMaalEvaluation calculateZakatProfesiMonthly({
     nisabValue: monthlyNisab,
     isObligatory: obligatory,
     zakatAmount: zakat,
-    explanation: explanation,
+    explanation: tr(lang, explanationId, explanationEn),
+    explanationEn: explanationEn,
   );
 }
 
@@ -146,24 +165,37 @@ class FaraidInput {
 
 class FaraidHeirShare {
   final String heirName;
+  final String? heirNameEn;
   final int count;
   final String portionLabel;
+  final String? portionLabelEn;
   final double totalShareRatio;
   final double totalAmount;
   final double perPersonAmount;
   final String legalReason;
+  final String? legalReasonEn;
   final bool isBlocked;
 
   const FaraidHeirShare({
     required this.heirName,
+    this.heirNameEn,
     required this.count,
     required this.portionLabel,
+    this.portionLabelEn,
     required this.totalShareRatio,
     required this.totalAmount,
     required this.perPersonAmount,
     required this.legalReason,
+    this.legalReasonEn,
     this.isBlocked = false,
   });
+
+  String heirNameFor(AppLanguage lang) =>
+      lang == AppLanguage.en && (heirNameEn?.isNotEmpty ?? false) ? heirNameEn! : heirName;
+  String portionLabelFor(AppLanguage lang) =>
+      lang == AppLanguage.en && (portionLabelEn?.isNotEmpty ?? false) ? portionLabelEn! : portionLabel;
+  String legalReasonFor(AppLanguage lang) =>
+      lang == AppLanguage.en && (legalReasonEn?.isNotEmpty ?? false) ? legalReasonEn! : legalReason;
 }
 
 class FaraidResult {
@@ -173,7 +205,9 @@ class FaraidResult {
   final double appliedBequest;
   final double netInheritableEstate;
   final String caseType;
+  final String? caseTypeEn;
   final String caseExplanation;
+  final String? caseExplanationEn;
   final List<FaraidHeirShare> shares;
 
   const FaraidResult({
@@ -183,12 +217,24 @@ class FaraidResult {
     required this.appliedBequest,
     required this.netInheritableEstate,
     required this.caseType,
+    this.caseTypeEn,
     required this.caseExplanation,
+    this.caseExplanationEn,
     required this.shares,
   });
+
+  String caseTypeFor(AppLanguage lang) =>
+      lang == AppLanguage.en && (caseTypeEn?.isNotEmpty ?? false) ? caseTypeEn! : caseType;
+  String caseExplanationFor(AppLanguage lang) =>
+      lang == AppLanguage.en && (caseExplanationEn?.isNotEmpty ?? false)
+          ? caseExplanationEn!
+          : caseExplanation;
 }
 
-FaraidResult computeFaraid(FaraidInput input) {
+FaraidResult computeFaraid(
+  FaraidInput input, {
+  AppLanguage lang = AppLanguage.id,
+}) {
   final gross = input.grossEstate < 0 ? 0.0 : input.grossEstate;
   final funeralDebt = (input.funeralCost < 0 ? 0.0 : input.funeralCost) + (input.debt < 0 ? 0.0 : input.debt);
   final afterDebt = (gross - funeralDebt) < 0 ? 0.0 : (gross - funeralDebt);
@@ -206,314 +252,439 @@ FaraidResult computeFaraid(FaraidInput input) {
   final hasMaleDescendant = sons > 0;
   final siblingsCount = brothers + sisters;
 
+  FaraidHeirShare makeShare({
+    required String nameId,
+    required String nameEn,
+    required int count,
+    required String portionId,
+    required String portionEn,
+    required double ratio,
+    required double total,
+    required double perPerson,
+    required String reasonId,
+    required String reasonEn,
+    bool isBlocked = false,
+  }) =>
+      FaraidHeirShare(
+        heirName: tr(lang, nameId, nameEn),
+        heirNameEn: nameEn,
+        count: count,
+        portionLabel: tr(lang, portionId, portionEn),
+        portionLabelEn: portionEn,
+        totalShareRatio: ratio,
+        totalAmount: total,
+        perPersonAmount: perPerson,
+        legalReason: tr(lang, reasonId, reasonEn),
+        legalReasonEn: reasonEn,
+        isBlocked: isBlocked,
+      );
+
   // Base ratio out of 24 (LCM of 2, 3, 4, 6, 8 = 24)
   var spouseNum = 0; // out of 24
-  var spouseLabel = '';
-  var spouseReason = '';
+  var spouseLabelId = '';
+  var spouseLabelEn = '';
+  var spouseReasonId = '';
+  var spouseReasonEn = '';
   if (input.hasHusband) {
     spouseNum = hasDescendant ? 6 : 12; // 1/4 or 1/2
-    spouseLabel = hasDescendant ? '1/4 (Ashabul Furudh)' : '1/2 (Ashabul Furudh)';
-    spouseReason = hasDescendant
+    spouseLabelId = hasDescendant ? '1/4 (Ashabul Furudh)' : '1/2 (Ashabul Furudh)';
+    spouseLabelEn = hasDescendant ? '1/4 (Fixed Share)' : '1/2 (Fixed Share)';
+    spouseReasonId = hasDescendant
         ? 'Suami mendapat 1/4 karena pewaris memiliki anak/keturunan (QS. An-Nisa: 12).'
         : 'Suami mendapat 1/2 karena pewaris tidak memiliki anak/keturunan (QS. An-Nisa: 12).';
+    spouseReasonEn = hasDescendant
+        ? 'Husband receives 1/4 because the deceased left surviving children (Quran 4:12).'
+        : 'Husband receives 1/2 because the deceased left no surviving children (Quran 4:12).';
   } else if (wives > 0) {
     spouseNum = hasDescendant ? 3 : 6; // 1/8 or 1/4
-    spouseLabel = hasDescendant ? '1/8 (Ashabul Furudh)' : '1/4 (Ashabul Furudh)';
-    spouseReason = hasDescendant
+    spouseLabelId = hasDescendant ? '1/8 (Ashabul Furudh)' : '1/4 (Ashabul Furudh)';
+    spouseLabelEn = hasDescendant ? '1/8 (Fixed Share)' : '1/4 (Fixed Share)';
+    spouseReasonId = hasDescendant
         ? 'Istri mendapat 1/8 (dibagi rata bila lebih dari satu) karena pewaris memiliki keturunan (QS. An-Nisa: 12).'
         : 'Istri mendapat 1/4 karena pewaris tidak memiliki keturunan (QS. An-Nisa: 12).';
+    spouseReasonEn = hasDescendant
+        ? 'Wife receives 1/8 (shared equally if more than one) because the deceased left children (Quran 4:12).'
+        : 'Wife receives 1/4 because the deceased left no children (Quran 4:12).';
   }
 
   var motherNum = 0;
-  var motherLabel = '';
-  var motherReason = '';
+  var motherLabelId = '';
+  var motherLabelEn = '';
+  var motherReasonId = '';
+  var motherReasonEn = '';
   if (input.hasMother) {
     if (hasDescendant || siblingsCount >= 2) {
       motherNum = 4; // 1/6
-      motherLabel = '1/6 (Ashabul Furudh)';
-      motherReason = 'Ibu mendapat 1/6 karena pewaris memiliki keturunan atau >= 2 saudara (QS. An-Nisa: 11).';
+      motherLabelId = '1/6 (Ashabul Furudh)';
+      motherLabelEn = '1/6 (Fixed Share)';
+      motherReasonId = 'Ibu mendapat 1/6 karena pewaris memiliki keturunan atau >= 2 saudara (QS. An-Nisa: 11).';
+      motherReasonEn = 'Mother receives 1/6 because the deceased left children or 2 or more siblings (Quran 4:11).';
     } else {
       motherNum = 8; // 1/3
-      motherLabel = '1/3 (Ashabul Furudh)';
-      motherReason = 'Ibu mendapat 1/3 karena pewaris tidak memiliki keturunan dan saudara kurang dari dua (QS. An-Nisa: 11).';
+      motherLabelId = '1/3 (Ashabul Furudh)';
+      motherLabelEn = '1/3 (Fixed Share)';
+      motherReasonId = 'Ibu mendapat 1/3 karena pewaris tidak memiliki keturunan dan saudara kurang dari dua (QS. An-Nisa: 11).';
+      motherReasonEn = 'Mother receives 1/3 because the deceased left no children and fewer than two siblings (Quran 4:11).';
     }
   }
 
   var fatherFixedNum = 0;
   var fatherIsAshabah = false;
-  var fatherLabel = '';
-  var fatherReason = '';
+  var fatherLabelId = '';
+  var fatherLabelEn = '';
+  var fatherReasonId = '';
+  var fatherReasonEn = '';
   if (input.hasFather) {
     if (hasMaleDescendant) {
       fatherFixedNum = 4; // 1/6
-      fatherLabel = '1/6 (Ashabul Furudh)';
-      fatherReason = 'Ayah mendapat bagian pasti 1/6 karena ada anak laki-laki (QS. An-Nisa: 11).';
+      fatherLabelId = '1/6 (Ashabul Furudh)';
+      fatherLabelEn = '1/6 (Fixed Share)';
+      fatherReasonId = 'Ayah mendapat bagian pasti 1/6 karena ada anak laki-laki (QS. An-Nisa: 11).';
+      fatherReasonEn = 'Father receives a fixed 1/6 share because there is a surviving son (Quran 4:11).';
     } else if (daughters > 0) {
       fatherFixedNum = 4; // 1/6 + Ashabah
       fatherIsAshabah = true;
-      fatherLabel = '1/6 + Ashabah';
-      fatherReason = 'Ayah mendapat 1/6 ditambah sisa harta (Ashabah) karena hanya ada anak perempuan tanpa anak laki-laki.';
+      fatherLabelId = '1/6 + Ashabah';
+      fatherLabelEn = '1/6 + Residue (\'Asabah)';
+      fatherReasonId = 'Ayah mendapat 1/6 ditambah sisa harta (Ashabah) karena hanya ada anak perempuan tanpa anak laki-laki.';
+      fatherReasonEn = 'Father receives 1/6 plus any remaining estate (\'Asabah) because there are only daughters and no son.';
     } else {
       fatherIsAshabah = true;
-      fatherLabel = 'Ashabah Binafsih';
-      fatherReason = 'Ayah menjadi Ashabah (mengambil seluruh sisa setelah Ashabul Furudh) karena pewaris tidak memiliki keturunan.';
+      fatherLabelId = 'Ashabah Binafsih';
+      fatherLabelEn = 'Residuary Heir (\'Asabah)';
+      fatherReasonId = 'Ayah menjadi Ashabah (mengambil seluruh sisa setelah Ashabul Furudh) karena pewaris tidak memiliki keturunan.';
+      fatherReasonEn = 'Father inherits the entire residue after fixed shares because the deceased left no children.';
     }
   }
 
   var daughtersFixedNum = 0;
   var childrenAreAshabah = false;
-  var daughtersLabel = '';
-  var daughtersReason = '';
+  var daughtersLabelId = '';
+  var daughtersLabelEn = '';
+  var daughtersReasonId = '';
+  var daughtersReasonEn = '';
   if (sons > 0) {
     childrenAreAshabah = true;
   } else if (daughters == 1) {
     daughtersFixedNum = 12; // 1/2
-    daughtersLabel = '1/2 (Ashabul Furudh)';
-    daughtersReason = 'Anak perempuan tunggal tanpa anak laki-laki mendapat 1/2 harta (QS. An-Nisa: 11).';
+    daughtersLabelId = '1/2 (Ashabul Furudh)';
+    daughtersLabelEn = '1/2 (Fixed Share)';
+    daughtersReasonId = 'Anak perempuan tunggal tanpa anak laki-laki mendapat 1/2 harta (QS. An-Nisa: 11).';
+    daughtersReasonEn = 'An only daughter with no surviving son receives 1/2 of the estate (Quran 4:11).';
   } else if (daughters >= 2) {
     daughtersFixedNum = 16; // 2/3
-    daughtersLabel = '2/3 (Ashabul Furudh)';
-    daughtersReason = 'Dua atau lebih anak perempuan tanpa anak laki-laki mendapat 2/3 dibagi rata (QS. An-Nisa: 11).';
+    daughtersLabelId = '2/3 (Ashabul Furudh)';
+    daughtersLabelEn = '2/3 (Fixed Share)';
+    daughtersReasonId = 'Dua atau lebih anak perempuan tanpa anak laki-laki mendapat 2/3 dibagi rata (QS. An-Nisa: 11).';
+    daughtersReasonEn = 'Two or more daughters with no surviving son share 2/3 equally (Quran 4:11).';
   }
 
   final siblingsBlocked = hasMaleDescendant || input.hasFather;
   var sistersFixedNum = 0;
   var siblingsAreAshabah = false;
-  var sistersLabel = '';
-  var sistersReason = '';
+  var sistersLabelId = '';
+  var sistersLabelEn = '';
+  var sistersReasonId = '';
+  var sistersReasonEn = '';
   if (!siblingsBlocked && (brothers > 0 || sisters > 0)) {
     if (brothers > 0) {
       siblingsAreAshabah = true;
     } else if (daughters > 0) {
       // Ashabah ma'al ghair
       siblingsAreAshabah = true;
-      sistersLabel = 'Ashabah Ma\'al Ghair';
-      sistersReason = 'Saudara perempuan kandung menjadi Ashabah Ma\'al Ghair bersama anak perempuan.';
+      sistersLabelId = 'Ashabah Ma\'al Ghair';
+      sistersLabelEn = 'Residuary with Daughter (\'Asabah Ma\'al Ghayr)';
+      sistersReasonId = 'Saudara perempuan kandung menjadi Ashabah Ma\'al Ghair bersama anak perempuan.';
+      sistersReasonEn = 'Full sisters inherit the residue alongside surviving daughters.';
     } else if (sisters == 1) {
       sistersFixedNum = 12; // 1/2
-      sistersLabel = '1/2 (Ashabul Furudh)';
-      sistersReason = 'Saudara perempuan kandung tunggal (kalalah tanpa anak & ayah) mendapat 1/2 (QS. An-Nisa: 176).';
+      sistersLabelId = '1/2 (Ashabul Furudh)';
+      sistersLabelEn = '1/2 (Fixed Share)';
+      sistersReasonId = 'Saudara perempuan kandung tunggal (kalalah tanpa anak & ayah) mendapat 1/2 (QS. An-Nisa: 176).';
+      sistersReasonEn = 'A sole full sister in a kalalah case (no children or father) receives 1/2 (Quran 4:176).';
     } else if (sisters >= 2) {
       sistersFixedNum = 16; // 2/3
-      sistersLabel = '2/3 (Ashabul Furudh)';
-      sistersReason = 'Dua atau lebih saudara perempuan kandung (kalalah) mendapat 2/3 dibagi rata (QS. An-Nisa: 176).';
+      sistersLabelId = '2/3 (Ashabul Furudh)';
+      sistersLabelEn = '2/3 (Fixed Share)';
+      sistersReasonId = 'Dua atau lebih saudara perempuan kandung (kalalah) mendapat 2/3 dibagi rata (QS. An-Nisa: 176).';
+      sistersReasonEn = 'Two or more full sisters in a kalalah case share 2/3 equally (Quran 4:176).';
     }
   }
 
   final totalFixedNum = spouseNum + motherNum + fatherFixedNum + daughtersFixedNum + sistersFixedNum;
   final hasAnyAshabah = childrenAreAshabah || fatherIsAshabah || siblingsAreAshabah;
 
-  var caseType = 'Normal / Seimbang';
-  var caseExplanation = 'Pembagian mengikuti porsi Ashabul Furudh dan Ashabah secara proporsional.';
+  var caseTypeId = 'Normal / Seimbang';
+  var caseTypeEn = 'Standard / Balanced';
+  var caseExplanationId = 'Pembagian mengikuti porsi Ashabul Furudh dan Ashabah secara proporsional.';
+  var caseExplanationEn = 'Distribution follows fixed Quranic shares (Ashab al-Furud) and residuary heirs (\'Asabah).';
 
   final shares = <FaraidHeirShare>[];
 
   if (totalFixedNum == 0 && !hasAnyAshabah) {
+    const noHeirTypeId = 'Belum Ada Ahli Waris';
+    const noHeirTypeEn = 'No Heirs Selected';
+    const noHeirExpId = 'Pilih minimal satu ahli waris yang masih hidup untuk menghitung pembagian Faraid.';
+    const noHeirExpEn = 'Select at least one surviving heir to calculate Islamic inheritance shares.';
     return FaraidResult(
       grossEstate: gross,
       funeralAndDebt: funeralDebt,
       maxAllowedBequest: maxWasiat,
       appliedBequest: wasiat,
       netInheritableEstate: net,
-      caseType: 'Belum Ada Ahli Waris',
-      caseExplanation: 'Pilih minimal satu ahli waris yang masih hidup untuk menghitung pembagian Faraid.',
+      caseType: tr(lang, noHeirTypeId, noHeirTypeEn),
+      caseTypeEn: noHeirTypeEn,
+      caseExplanation: tr(lang, noHeirExpId, noHeirExpEn),
+      caseExplanationEn: noHeirExpEn,
       shares: const [],
     );
   }
 
   if (totalFixedNum > 24) {
     // KASUS AUL: Total bagian pasti melebihi 24/24, sehingga penyebut dinaikkan ke totalFixedNum.
-    caseType = 'Kasus \'Aul ($totalFixedNum/24)';
-    caseExplanation =
+    caseTypeId = 'Kasus \'Aul ($totalFixedNum/24)';
+    caseTypeEn = '\'Awl Case ($totalFixedNum/24)';
+    caseExplanationId =
         'Total bagian pasti Ashabul Furudh melebihi 100% (24/$totalFixedNum), sehingga diterapkan \'Aul: setiap ahli waris mengalami penyesuaian penyebut secara proporsional.';
+    caseExplanationEn =
+        'Total fixed shares exceed 100% ($totalFixedNum/24), so \'Awl applies: each heir\'s share is scaled down proportionally by raising the denominator to $totalFixedNum.';
     final denom = totalFixedNum.toDouble();
 
     if (input.hasHusband) {
       final ratio = spouseNum / denom;
-      shares.add(FaraidHeirShare(
-        heirName: 'Suami',
+      shares.add(makeShare(
+        nameId: 'Suami',
+        nameEn: 'Husband',
         count: 1,
-        portionLabel: '$spouseNum/$totalFixedNum (\'Aul dari $spouseLabel)',
-        totalShareRatio: ratio,
-        totalAmount: net * ratio,
-        perPersonAmount: net * ratio,
-        legalReason: spouseReason,
+        portionId: '$spouseNum/$totalFixedNum (\'Aul dari $spouseLabelId)',
+        portionEn: '$spouseNum/$totalFixedNum (\'Awl from $spouseLabelEn)',
+        ratio: ratio,
+        total: net * ratio,
+        perPerson: net * ratio,
+        reasonId: spouseReasonId,
+        reasonEn: spouseReasonEn,
       ));
     } else if (wives > 0) {
       final ratio = spouseNum / denom;
-      shares.add(FaraidHeirShare(
-        heirName: 'Istri',
+      shares.add(makeShare(
+        nameId: 'Istri',
+        nameEn: 'Wife',
         count: wives,
-        portionLabel: '$spouseNum/$totalFixedNum (\'Aul dari $spouseLabel)',
-        totalShareRatio: ratio,
-        totalAmount: net * ratio,
-        perPersonAmount: (net * ratio) / wives,
-        legalReason: spouseReason,
+        portionId: '$spouseNum/$totalFixedNum (\'Aul dari $spouseLabelId)',
+        portionEn: '$spouseNum/$totalFixedNum (\'Awl from $spouseLabelEn)',
+        ratio: ratio,
+        total: net * ratio,
+        perPerson: (net * ratio) / wives,
+        reasonId: spouseReasonId,
+        reasonEn: spouseReasonEn,
       ));
     }
     if (input.hasMother) {
       final ratio = motherNum / denom;
-      shares.add(FaraidHeirShare(
-        heirName: 'Ibu',
+      shares.add(makeShare(
+        nameId: 'Ibu',
+        nameEn: 'Mother',
         count: 1,
-        portionLabel: '$motherNum/$totalFixedNum (\'Aul dari $motherLabel)',
-        totalShareRatio: ratio,
-        totalAmount: net * ratio,
-        perPersonAmount: net * ratio,
-        legalReason: motherReason,
+        portionId: '$motherNum/$totalFixedNum (\'Aul dari $motherLabelId)',
+        portionEn: '$motherNum/$totalFixedNum (\'Awl from $motherLabelEn)',
+        ratio: ratio,
+        total: net * ratio,
+        perPerson: net * ratio,
+        reasonId: motherReasonId,
+        reasonEn: motherReasonEn,
       ));
     }
     if (input.hasFather && fatherFixedNum > 0) {
       final ratio = fatherFixedNum / denom;
-      shares.add(FaraidHeirShare(
-        heirName: 'Ayah',
+      shares.add(makeShare(
+        nameId: 'Ayah',
+        nameEn: 'Father',
         count: 1,
-        portionLabel: '$fatherFixedNum/$totalFixedNum (\'Aul dari 1/6)',
-        totalShareRatio: ratio,
-        totalAmount: net * ratio,
-        perPersonAmount: net * ratio,
-        legalReason: fatherReason,
+        portionId: '$fatherFixedNum/$totalFixedNum (\'Aul dari 1/6)',
+        portionEn: '$fatherFixedNum/$totalFixedNum (\'Awl from 1/6)',
+        ratio: ratio,
+        total: net * ratio,
+        perPerson: net * ratio,
+        reasonId: fatherReasonId,
+        reasonEn: fatherReasonEn,
       ));
     }
     if (daughtersFixedNum > 0) {
       final ratio = daughtersFixedNum / denom;
-      shares.add(FaraidHeirShare(
-        heirName: 'Anak Perempuan',
+      shares.add(makeShare(
+        nameId: 'Anak Perempuan',
+        nameEn: 'Daughter',
         count: daughters,
-        portionLabel: '$daughtersFixedNum/$totalFixedNum (\'Aul dari $daughtersLabel)',
-        totalShareRatio: ratio,
-        totalAmount: net * ratio,
-        perPersonAmount: (net * ratio) / daughters,
-        legalReason: daughtersReason,
+        portionId: '$daughtersFixedNum/$totalFixedNum (\'Aul dari $daughtersLabelId)',
+        portionEn: '$daughtersFixedNum/$totalFixedNum (\'Awl from $daughtersLabelEn)',
+        ratio: ratio,
+        total: net * ratio,
+        perPerson: (net * ratio) / daughters,
+        reasonId: daughtersReasonId,
+        reasonEn: daughtersReasonEn,
       ));
     }
     if (sistersFixedNum > 0) {
       final ratio = sistersFixedNum / denom;
-      shares.add(FaraidHeirShare(
-        heirName: 'Saudara Perempuan Kandung',
+      shares.add(makeShare(
+        nameId: 'Saudara Perempuan Kandung',
+        nameEn: 'Full Sister',
         count: sisters,
-        portionLabel: '$sistersFixedNum/$totalFixedNum (\'Aul dari $sistersLabel)',
-        totalShareRatio: ratio,
-        totalAmount: net * ratio,
-        perPersonAmount: (net * ratio) / sisters,
-        legalReason: sistersReason,
+        portionId: '$sistersFixedNum/$totalFixedNum (\'Aul dari $sistersLabelId)',
+        portionEn: '$sistersFixedNum/$totalFixedNum (\'Awl from $sistersLabelEn)',
+        ratio: ratio,
+        total: net * ratio,
+        perPerson: (net * ratio) / sisters,
+        reasonId: sistersReasonId,
+        reasonEn: sistersReasonEn,
       ));
     }
   } else if (!hasAnyAshabah && totalFixedNum < 24) {
     // KASUS RADD: Tidak ada Ashabah dan masih ada sisa harta (dikembalikan ke Ashabul Furudh non-pasangan).
     final nonSpouseFixed = motherNum + fatherFixedNum + daughtersFixedNum + sistersFixedNum;
     if (nonSpouseFixed > 0) {
-      caseType = 'Kasus Radd';
-      caseExplanation =
+      caseTypeId = 'Kasus Radd';
+      caseTypeEn = 'Radd Case (Surplus Return)';
+      caseExplanationId =
           'Terdapat sisa harta setelah bagian Ashabul Furudh dan tidak ada Ashabah. Sisa harta dikembalikan (Radd) secara proporsional kepada ahli waris nasab selain suami/istri.';
+      caseExplanationEn =
+          'Surplus estate remains after fixed shares with no residuary heir (\'Asabah). The remainder is returned proportionally (Radd) to bloodline fixed-share heirs excluding spouses.';
     } else {
-      caseType = 'Hanya Pasangan (Sisa ke Baitul Maal / Kerabat)';
-      caseExplanation =
+      caseTypeId = 'Hanya Pasangan (Sisa ke Baitul Maal / Kerabat)';
+      caseTypeEn = 'Spouse Only (Remainder to Public Treasury / Distant Kin)';
+      caseExplanationId =
           'Suami/istri mengambil bagian Ashabul Furudh-nya, sedangkan sisa harta diserahkan kepada kerabat Dzawil Arham atau kemaslahatan umat.';
+      caseExplanationEn =
+          'The spouse takes their fixed Quranic share, while the remaining estate goes to distant relatives (Dhawil Arham) or public welfare (Bayt al-Mal).';
     }
 
     final spouseRatio = spouseNum / 24.0;
     final remainderRatio = 1.0 - spouseRatio;
 
     if (input.hasHusband) {
-      shares.add(FaraidHeirShare(
-        heirName: 'Suami',
+      shares.add(makeShare(
+        nameId: 'Suami',
+        nameEn: 'Husband',
         count: 1,
-        portionLabel: spouseLabel,
-        totalShareRatio: spouseRatio,
-        totalAmount: net * spouseRatio,
-        perPersonAmount: net * spouseRatio,
-        legalReason: spouseReason,
+        portionId: spouseLabelId,
+        portionEn: spouseLabelEn,
+        ratio: spouseRatio,
+        total: net * spouseRatio,
+        perPerson: net * spouseRatio,
+        reasonId: spouseReasonId,
+        reasonEn: spouseReasonEn,
       ));
     } else if (wives > 0) {
-      shares.add(FaraidHeirShare(
-        heirName: 'Istri',
+      shares.add(makeShare(
+        nameId: 'Istri',
+        nameEn: 'Wife',
         count: wives,
-        portionLabel: spouseLabel,
-        totalShareRatio: spouseRatio,
-        totalAmount: net * spouseRatio,
-        perPersonAmount: (net * spouseRatio) / wives,
-        legalReason: spouseReason,
+        portionId: spouseLabelId,
+        portionEn: spouseLabelEn,
+        ratio: spouseRatio,
+        total: net * spouseRatio,
+        perPerson: (net * spouseRatio) / wives,
+        reasonId: spouseReasonId,
+        reasonEn: spouseReasonEn,
       ));
     }
 
     if (nonSpouseFixed > 0) {
       if (input.hasMother) {
         final ratio = remainderRatio * (motherNum / nonSpouseFixed);
-        shares.add(FaraidHeirShare(
-          heirName: 'Ibu',
+        shares.add(makeShare(
+          nameId: 'Ibu',
+          nameEn: 'Mother',
           count: 1,
-          portionLabel: '$motherLabel + Radd',
-          totalShareRatio: ratio,
-          totalAmount: net * ratio,
-          perPersonAmount: net * ratio,
-          legalReason: '$motherReason Ditambah pengembalian sisa harta (Radd).',
+          portionId: '$motherLabelId + Radd',
+          portionEn: '$motherLabelEn + Radd',
+          ratio: ratio,
+          total: net * ratio,
+          perPerson: net * ratio,
+          reasonId: '$motherReasonId Ditambah pengembalian sisa harta (Radd).',
+          reasonEn: '$motherReasonEn Plus proportional surplus return (Radd).',
         ));
       }
       if (daughtersFixedNum > 0) {
         final ratio = remainderRatio * (daughtersFixedNum / nonSpouseFixed);
-        shares.add(FaraidHeirShare(
-          heirName: 'Anak Perempuan',
+        shares.add(makeShare(
+          nameId: 'Anak Perempuan',
+          nameEn: 'Daughter',
           count: daughters,
-          portionLabel: '$daughtersLabel + Radd',
-          totalShareRatio: ratio,
-          totalAmount: net * ratio,
-          perPersonAmount: (net * ratio) / daughters,
-          legalReason: '$daughtersReason Ditambah pengembalian sisa harta (Radd).',
+          portionId: '$daughtersLabelId + Radd',
+          portionEn: '$daughtersLabelEn + Radd',
+          ratio: ratio,
+          total: net * ratio,
+          perPerson: (net * ratio) / daughters,
+          reasonId: '$daughtersReasonId Ditambah pengembalian sisa harta (Radd).',
+          reasonEn: '$daughtersReasonEn Plus proportional surplus return (Radd).',
         ));
       }
       if (sistersFixedNum > 0) {
         final ratio = remainderRatio * (sistersFixedNum / nonSpouseFixed);
-        shares.add(FaraidHeirShare(
-          heirName: 'Saudara Perempuan Kandung',
+        shares.add(makeShare(
+          nameId: 'Saudara Perempuan Kandung',
+          nameEn: 'Full Sister',
           count: sisters,
-          portionLabel: '$sistersLabel + Radd',
-          totalShareRatio: ratio,
-          totalAmount: net * ratio,
-          perPersonAmount: (net * ratio) / sisters,
-          legalReason: '$sistersReason Ditambah pengembalian sisa harta (Radd).',
+          portionId: '$sistersLabelId + Radd',
+          portionEn: '$sistersLabelEn + Radd',
+          ratio: ratio,
+          total: net * ratio,
+          perPerson: (net * ratio) / sisters,
+          reasonId: '$sistersReasonId Ditambah pengembalian sisa harta (Radd).',
+          reasonEn: '$sistersReasonEn Plus proportional surplus return (Radd).',
         ));
       }
     }
   } else {
     // NORMAL + ASHABAH
     if (hasAnyAshabah) {
-      caseType = 'Ashabul Furudh & Ashabah';
+      caseTypeId = 'Ashabul Furudh & Ashabah';
+      caseTypeEn = 'Fixed Shares & Residuary Heirs';
     }
     if (input.hasHusband) {
       final ratio = spouseNum / 24.0;
-      shares.add(FaraidHeirShare(
-        heirName: 'Suami',
+      shares.add(makeShare(
+        nameId: 'Suami',
+        nameEn: 'Husband',
         count: 1,
-        portionLabel: spouseLabel,
-        totalShareRatio: ratio,
-        totalAmount: net * ratio,
-        perPersonAmount: net * ratio,
-        legalReason: spouseReason,
+        portionId: spouseLabelId,
+        portionEn: spouseLabelEn,
+        ratio: ratio,
+        total: net * ratio,
+        perPerson: net * ratio,
+        reasonId: spouseReasonId,
+        reasonEn: spouseReasonEn,
       ));
     } else if (wives > 0) {
       final ratio = spouseNum / 24.0;
-      shares.add(FaraidHeirShare(
-        heirName: 'Istri',
+      shares.add(makeShare(
+        nameId: 'Istri',
+        nameEn: 'Wife',
         count: wives,
-        portionLabel: spouseLabel,
-        totalShareRatio: ratio,
-        totalAmount: net * ratio,
-        perPersonAmount: (net * ratio) / wives,
-        legalReason: spouseReason,
+        portionId: spouseLabelId,
+        portionEn: spouseLabelEn,
+        ratio: ratio,
+        total: net * ratio,
+        perPerson: (net * ratio) / wives,
+        reasonId: spouseReasonId,
+        reasonEn: spouseReasonEn,
       ));
     }
 
     if (input.hasMother) {
       final ratio = motherNum / 24.0;
-      shares.add(FaraidHeirShare(
-        heirName: 'Ibu',
+      shares.add(makeShare(
+        nameId: 'Ibu',
+        nameEn: 'Mother',
         count: 1,
-        portionLabel: motherLabel,
-        totalShareRatio: ratio,
-        totalAmount: net * ratio,
-        perPersonAmount: net * ratio,
-        legalReason: motherReason,
+        portionId: motherLabelId,
+        portionEn: motherLabelEn,
+        ratio: ratio,
+        total: net * ratio,
+        perPerson: net * ratio,
+        reasonId: motherReasonId,
+        reasonEn: motherReasonEn,
       ));
     }
 
@@ -523,14 +694,17 @@ FaraidResult computeFaraid(FaraidInput input) {
       final fixedRatio = fatherFixedNum / 24.0;
       final ashabahRatio = (fatherIsAshabah && !childrenAreAshabah) ? remainderRatio : 0.0;
       final ratio = fixedRatio + ashabahRatio;
-      shares.add(FaraidHeirShare(
-        heirName: 'Ayah',
+      shares.add(makeShare(
+        nameId: 'Ayah',
+        nameEn: 'Father',
         count: 1,
-        portionLabel: fatherLabel,
-        totalShareRatio: ratio,
-        totalAmount: net * ratio,
-        perPersonAmount: net * ratio,
-        legalReason: fatherReason,
+        portionId: fatherLabelId,
+        portionEn: fatherLabelEn,
+        ratio: ratio,
+        total: net * ratio,
+        perPerson: net * ratio,
+        reasonId: fatherReasonId,
+        reasonEn: fatherReasonEn,
       ));
     }
 
@@ -538,40 +712,51 @@ FaraidResult computeFaraid(FaraidInput input) {
       final totalUnits = (sons * 2) + daughters;
       if (sons > 0) {
         final sonRatio = remainderRatio * ((sons * 2) / totalUnits);
-        shares.add(FaraidHeirShare(
-          heirName: 'Anak Laki-laki',
+        shares.add(makeShare(
+          nameId: 'Anak Laki-laki',
+          nameEn: 'Son',
           count: sons,
-          portionLabel: daughters > 0 ? 'Ashabah (2:1)' : 'Ashabah Binafsih',
-          totalShareRatio: sonRatio,
-          totalAmount: net * sonRatio,
-          perPersonAmount: (net * sonRatio) / sons,
-          legalReason: daughters > 0
+          portionId: daughters > 0 ? 'Ashabah (2:1)' : 'Ashabah Binafsih',
+          portionEn: daughters > 0 ? 'Residuary (2:1)' : 'Sole Residuary (\'Asabah)',
+          ratio: sonRatio,
+          total: net * sonRatio,
+          perPerson: (net * sonRatio) / sons,
+          reasonId: daughters > 0
               ? 'Anak laki-laki menjadi Ashabah bersama anak perempuan dengan perbandingan 2:1 (QS. An-Nisa: 11).'
               : 'Anak laki-laki mewarisi seluruh sisa harta (Ashabah Binafsih).',
+          reasonEn: daughters > 0
+              ? 'Sons inherit the residue alongside daughters at a 2:1 ratio (Quran 4:11).'
+              : 'Sons inherit the entire remaining estate as primary residuary heirs.',
         ));
       }
       if (daughters > 0) {
         final daughterRatio = remainderRatio * (daughters / totalUnits);
-        shares.add(FaraidHeirShare(
-          heirName: 'Anak Perempuan',
+        shares.add(makeShare(
+          nameId: 'Anak Perempuan',
+          nameEn: 'Daughter',
           count: daughters,
-          portionLabel: 'Ashabah bil Ghair (1:2)',
-          totalShareRatio: daughterRatio,
-          totalAmount: net * daughterRatio,
-          perPersonAmount: (net * daughterRatio) / daughters,
-          legalReason: 'Anak perempuan menjadi Ashabah bil Ghair bersama anak laki-laki dengan porsi 1 bagian (QS. An-Nisa: 11).',
+          portionId: 'Ashabah bil Ghair (1:2)',
+          portionEn: 'Residuary with Son (1:2)',
+          ratio: daughterRatio,
+          total: net * daughterRatio,
+          perPerson: (net * daughterRatio) / daughters,
+          reasonId: 'Anak perempuan menjadi Ashabah bil Ghair bersama anak laki-laki dengan porsi 1 bagian (QS. An-Nisa: 11).',
+          reasonEn: 'Daughters inherit residually alongside sons at a 1:2 share ratio (Quran 4:11).',
         ));
       }
     } else if (daughtersFixedNum > 0) {
       final ratio = daughtersFixedNum / 24.0;
-      shares.add(FaraidHeirShare(
-        heirName: 'Anak Perempuan',
+      shares.add(makeShare(
+        nameId: 'Anak Perempuan',
+        nameEn: 'Daughter',
         count: daughters,
-        portionLabel: daughtersLabel,
-        totalShareRatio: ratio,
-        totalAmount: net * ratio,
-        perPersonAmount: (net * ratio) / daughters,
-        legalReason: daughtersReason,
+        portionId: daughtersLabelId,
+        portionEn: daughtersLabelEn,
+        ratio: ratio,
+        total: net * ratio,
+        perPerson: (net * ratio) / daughters,
+        reasonId: daughtersReasonId,
+        reasonEn: daughtersReasonEn,
       ));
     }
 
@@ -579,68 +764,86 @@ FaraidResult computeFaraid(FaraidInput input) {
       final totalUnits = (brothers * 2) + sisters;
       if (brothers > 0) {
         final broRatio = remainderRatio * ((brothers * 2) / totalUnits);
-        shares.add(FaraidHeirShare(
-          heirName: 'Saudara Laki-laki Kandung',
+        shares.add(makeShare(
+          nameId: 'Saudara Laki-laki Kandung',
+          nameEn: 'Full Brother',
           count: brothers,
-          portionLabel: sisters > 0 ? 'Ashabah (2:1)' : 'Ashabah Binafsih',
-          totalShareRatio: broRatio,
-          totalAmount: net * broRatio,
-          perPersonAmount: (net * broRatio) / brothers,
-          legalReason: 'Saudara laki-laki kandung mewarisi sisa harta secara Ashabah karena tidak ada ayah dan anak laki-laki (QS. An-Nisa: 176).',
+          portionId: sisters > 0 ? 'Ashabah (2:1)' : 'Ashabah Binafsih',
+          portionEn: sisters > 0 ? 'Residuary (2:1)' : 'Residuary Heir (\'Asabah)',
+          ratio: broRatio,
+          total: net * broRatio,
+          perPerson: (net * broRatio) / brothers,
+          reasonId: 'Saudara laki-laki kandung mewarisi sisa harta secara Ashabah karena tidak ada ayah dan anak laki-laki (QS. An-Nisa: 176).',
+          reasonEn: 'Full brothers inherit the residue because there is no surviving father or son (Quran 4:176).',
         ));
       }
       if (sisters > 0) {
         final sisRatio = remainderRatio * (sisters / totalUnits);
-        shares.add(FaraidHeirShare(
-          heirName: 'Saudara Perempuan Kandung',
+        shares.add(makeShare(
+          nameId: 'Saudara Perempuan Kandung',
+          nameEn: 'Full Sister',
           count: sisters,
-          portionLabel: brothers > 0 ? 'Ashabah bil Ghair (1:2)' : sistersLabel,
-          totalShareRatio: sisRatio,
-          totalAmount: net * sisRatio,
-          perPersonAmount: (net * sisRatio) / sisters,
-          legalReason: brothers > 0
+          portionId: brothers > 0 ? 'Ashabah bil Ghair (1:2)' : sistersLabelId,
+          portionEn: brothers > 0 ? 'Residuary with Brother (1:2)' : sistersLabelEn,
+          ratio: sisRatio,
+          total: net * sisRatio,
+          perPerson: (net * sisRatio) / sisters,
+          reasonId: brothers > 0
               ? 'Saudara perempuan kandung menjadi Ashabah bil Ghair bersama saudara laki-laki kandung (2:1).'
-              : sistersReason,
+              : sistersReasonId,
+          reasonEn: brothers > 0
+              ? 'Full sisters inherit residually alongside full brothers at a 1:2 share ratio.'
+              : sistersReasonEn,
         ));
       }
     } else if (sistersFixedNum > 0) {
       final ratio = sistersFixedNum / 24.0;
-      shares.add(FaraidHeirShare(
-        heirName: 'Saudara Perempuan Kandung',
+      shares.add(makeShare(
+        nameId: 'Saudara Perempuan Kandung',
+        nameEn: 'Full Sister',
         count: sisters,
-        portionLabel: sistersLabel,
-        totalShareRatio: ratio,
-        totalAmount: net * ratio,
-        perPersonAmount: (net * ratio) / sisters,
-        legalReason: sistersReason,
+        portionId: sistersLabelId,
+        portionEn: sistersLabelEn,
+        ratio: ratio,
+        total: net * ratio,
+        perPerson: (net * ratio) / sisters,
+        reasonId: sistersReasonId,
+        reasonEn: sistersReasonEn,
       ));
     }
   }
 
   // Append blocked (Mahjub) heirs for transparent fiqh education
   if (siblingsBlocked && (brothers > 0 || sisters > 0)) {
-    final blocker = hasMaleDescendant ? 'Anak Laki-laki' : 'Ayah';
+    final blockerId = hasMaleDescendant ? 'Anak Laki-laki' : 'Ayah';
+    final blockerEn = hasMaleDescendant ? 'a surviving Son' : 'the Father';
     if (brothers > 0) {
-      shares.add(FaraidHeirShare(
-        heirName: 'Saudara Laki-laki Kandung',
+      shares.add(makeShare(
+        nameId: 'Saudara Laki-laki Kandung',
+        nameEn: 'Full Brother',
         count: brothers,
-        portionLabel: 'Mahjub (Terhalang)',
-        totalShareRatio: 0,
-        totalAmount: 0,
-        perPersonAmount: 0,
-        legalReason: 'Terhalang (Mahjub Hirman) oleh keberadaan $blocker.',
+        portionId: 'Mahjub (Terhalang)',
+        portionEn: 'Blocked (Mahjub)',
+        ratio: 0,
+        total: 0,
+        perPerson: 0,
+        reasonId: 'Terhalang (Mahjub Hirman) oleh keberadaan $blockerId.',
+        reasonEn: 'Excluded (Mahjub) by the presence of $blockerEn.',
         isBlocked: true,
       ));
     }
     if (sisters > 0) {
-      shares.add(FaraidHeirShare(
-        heirName: 'Saudara Perempuan Kandung',
+      shares.add(makeShare(
+        nameId: 'Saudara Perempuan Kandung',
+        nameEn: 'Full Sister',
         count: sisters,
-        portionLabel: 'Mahjub (Terhalang)',
-        totalShareRatio: 0,
-        totalAmount: 0,
-        perPersonAmount: 0,
-        legalReason: 'Terhalang (Mahjub Hirman) oleh keberadaan $blocker.',
+        portionId: 'Mahjub (Terhalang)',
+        portionEn: 'Blocked (Mahjub)',
+        ratio: 0,
+        total: 0,
+        perPerson: 0,
+        reasonId: 'Terhalang (Mahjub Hirman) oleh keberadaan $blockerId.',
+        reasonEn: 'Excluded (Mahjub) by the presence of $blockerEn.',
         isBlocked: true,
       ));
     }
@@ -652,8 +855,10 @@ FaraidResult computeFaraid(FaraidInput input) {
     maxAllowedBequest: maxWasiat,
     appliedBequest: wasiat,
     netInheritableEstate: net,
-    caseType: caseType,
-    caseExplanation: caseExplanation,
+    caseType: tr(lang, caseTypeId, caseTypeEn),
+    caseTypeEn: caseTypeEn,
+    caseExplanation: tr(lang, caseExplanationId, caseExplanationEn),
+    caseExplanationEn: caseExplanationEn,
     shares: shares,
   );
 }

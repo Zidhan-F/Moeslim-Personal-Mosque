@@ -28,12 +28,24 @@ class MoeslimPrayerWidgetProvider : AppWidgetProvider() {
         ) {
             val prefs = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
             val rawJson = prefs.getString("flutter.home_widget_payload", null)
+            val rawSettings = prefs.getString("flutter.settings", null)
+            var isEn = false
+            if (!rawSettings.isNullOrBlank()) {
+                try {
+                    isEn = JSONObject(rawSettings).optString("language", "id").equals("en", ignoreCase = true)
+                } catch (_: Exception) {
+                }
+            }
 
-            var nextPrayer = "Subuh"
+            var nextPrayer = if (isEn) "Fajr" else "Subuh"
             var nextTime = "04:38"
             var location = "Jakarta"
-            var hijri = "1447 H"
-            var quote = "Ingatlah, hanya dengan mengingat Allah hati menjadi tenteram. (QS. Ar-Ra'd: 28)"
+            var hijri = if (isEn) "1447 AH" else "1447 H"
+            var quote = if (isEn) {
+                "Unquestionably, by the remembrance of Allah hearts are assured. (QS. Ar-Ra'd: 28)"
+            } else {
+                "Ingatlah, hanya dengan mengingat Allah hati menjadi tenteram. (QS. Ar-Ra'd: 28)"
+            }
 
             if (!rawJson.isNullOrBlank()) {
                 try {

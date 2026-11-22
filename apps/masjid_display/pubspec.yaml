@@ -9,6 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  display_ui:
+    path: ../../packages/display_ui
   flutter_riverpod: ^3.5.0
   http: ^1.6.0
   material_ui: ^1.1.0

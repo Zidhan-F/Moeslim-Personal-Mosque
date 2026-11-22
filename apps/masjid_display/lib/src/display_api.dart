@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:shared_prayer/shared_prayer.dart';
 
 class DisplayApiException implements Exception {
   final int status;
@@ -36,33 +37,41 @@ class DisplayApi {
   final String baseUrl;
   DisplayApi(this.client, {this.baseUrl = defaultBaseUrl});
 
-  Future<({String token, String mosqueName})> pair(String code) async {
+  Future<({String token, String mosqueName})> pair(String code, {AppLanguage lang = AppLanguage.id}) async {
     final res = await _guard(
       () => client.post(
         Uri.parse('$baseUrl/display/pair'),
         headers: {'Accept': 'application/json', 'Content-Type': 'application/json'},
         body: jsonEncode({'code': code, 'device_name': 'Moeslim Display'}),
       ),
+      lang: lang,
     );
     final body = _tryJson(res.body);
     if (res.statusCode != 201 || body == null) {
-      throw DisplayApiException(res.statusCode, (body?['message'] as String?) ?? 'Pairing gagal (${res.statusCode}).');
+      final fallback = lang == AppLanguage.en
+          ? 'Pairing failed (${res.statusCode}).'
+          : 'Pairing gagal (${res.statusCode}).';
+      throw DisplayApiException(res.statusCode, (body?['message'] as String?) ?? fallback);
     }
     return (token: body['token'] as String, mosqueName: (body['mosque'] as Map)['name'] as String);
   }
 
-  Future<ContentResponse> content(String token, {String? etag}) async {
+  Future<ContentResponse> content(String token, {String? etag, AppLanguage lang = AppLanguage.id}) async {
     final res = await _guard(
       () => client.get(
         Uri.parse('$baseUrl/display/content'),
         headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token', 'If-None-Match': ?etag},
       ),
+      lang: lang,
     );
     final serverTime = DateTime.tryParse(res.headers['x-server-time'] ?? '');
     if (res.statusCode == 304) return ContentResponse(null, etag, serverTime: serverTime);
     final body = _tryJson(res.body);
     if (res.statusCode != 200 || body == null) {
-      throw DisplayApiException(res.statusCode, 'Gagal mengambil konten (${res.statusCode}).');
+      final fallback = lang == AppLanguage.en
+          ? 'Failed to load content (${res.statusCode}).'
+          : 'Gagal mengambil konten (${res.statusCode}).';
+      throw DisplayApiException(res.statusCode, fallback);
     }
     return ContentResponse(
       body,
@@ -71,11 +80,11 @@ class DisplayApi {
     );
   }
 
-  Future<http.Response> _guard(Future<http.Response> Function() call) async {
+  Future<http.Response> _guard(Future<http.Response> Function() call, {AppLanguage lang = AppLanguage.id}) async {
     try {
       return await call().timeout(const Duration(seconds: 15));
     } catch (_) {
-      throw const DisplayApiException(0, 'Tidak ada koneksi.');
+      throw DisplayApiException(0, lang == AppLanguage.en ? 'No internet connection.' : 'Tidak ada koneksi.');
     }
   }
 }

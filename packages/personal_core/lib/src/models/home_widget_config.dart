@@ -1,16 +1,41 @@
+import 'package:shared_prayer/shared_prayer.dart';
+
 import '../storage/key_value_store.dart';
 
 enum HomeWidgetStyle {
-  compactPrayer('Ringkas (Salat Berikutnya)', 'Menampilkan waktu salat berikutnya, hitung mundur, dan lokasi.'),
-  prayerAndQuote('Salat & Doa/Ayat Harian', 'Menampilkan jadwal salat berikutnya beserta kutipan ayat atau doa harian.'),
-  fullFiveTimes('5 Waktu Salat Lengkap', 'Menampilkan barisan Subuh, Dzuhur, Ashar, Maghrib, dan Isya hari ini.');
+  compactPrayer(
+    'Ringkas (Salat Berikutnya)',
+    'Menampilkan waktu salat berikutnya, hitung mundur, dan lokasi.',
+    'Compact (Next Prayer)',
+    'Displays the next prayer time, countdown, and location.',
+  ),
+  prayerAndQuote(
+    'Salat & Doa/Ayat Harian',
+    'Menampilkan jadwal salat berikutnya beserta kutipan ayat atau doa harian.',
+    'Prayer & Daily Verse/Dua',
+    'Displays the next prayer time along with a daily Quran verse or supplication.',
+  ),
+  fullFiveTimes(
+    '5 Waktu Salat Lengkap',
+    'Menampilkan barisan Subuh, Dzuhur, Ashar, Maghrib, dan Isya hari ini.',
+    'Full Five Daily Prayers',
+    'Displays today\'s Fajr, Dhuhr, Asr, Maghrib, and Isha prayer times.',
+  );
 
   final String label;
   final String description;
-  const HomeWidgetStyle(this.label, this.description);
+  final String labelEn;
+  final String descriptionEn;
+  const HomeWidgetStyle(this.label, this.description, this.labelEn, this.descriptionEn);
+
+  String labelFor(AppLanguage lang) => lang == AppLanguage.en ? labelEn : label;
+  String descriptionFor(AppLanguage lang) => lang == AppLanguage.en ? descriptionEn : description;
 }
 
 class HomeWidgetConfig {
+  static const defaultQuoteId = 'Ingatlah, hanya dengan mengingat Allah hati menjadi tenteram. (QS. Ar-Ra\'d: 28)';
+  static const defaultQuoteEn = 'Verily, in the remembrance of Allah do hearts find rest. (Quran 13:28)';
+
   final HomeWidgetStyle style;
   final bool showHijriDate;
   final bool showLocation;
@@ -30,8 +55,30 @@ class HomeWidgetConfig {
     this.lastSyncedNextTime = '04:38',
     this.lastSyncedLocation = 'Jakarta',
     this.lastSyncedHijri = '1447 H',
-    this.lastSyncedQuote = 'Ingatlah, hanya dengan mengingat Allah hati menjadi tenteram. (QS. Ar-Ra\'d: 28)',
+    this.lastSyncedQuote = defaultQuoteId,
   });
+
+  static String defaultQuoteFor(AppLanguage lang) =>
+      lang == AppLanguage.en ? defaultQuoteEn : defaultQuoteId;
+
+  String quoteFor(AppLanguage lang) {
+    if (lang == AppLanguage.en && lastSyncedQuote == defaultQuoteId) {
+      return defaultQuoteEn;
+    }
+    if (lang == AppLanguage.id && lastSyncedQuote == defaultQuoteEn) {
+      return defaultQuoteId;
+    }
+    return lastSyncedQuote;
+  }
+
+  String nextPrayerFor(AppLanguage lang) {
+    for (final p in Prayer.values) {
+      if (lastSyncedNextPrayer == p.label || lastSyncedNextPrayer == p.labelEn) {
+        return p.labelFor(lang);
+      }
+    }
+    return lastSyncedNextPrayer;
+  }
 
   HomeWidgetConfig copyWith({
     HomeWidgetStyle? style,

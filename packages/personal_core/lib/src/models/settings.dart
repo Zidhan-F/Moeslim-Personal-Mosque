@@ -9,16 +9,23 @@ class AdzanMuadzin {
   final String id;
   final String name;
   final String origin;
+  final String originEn;
   final String style;
+  final String styleEn;
   final String assetPath;
 
   const AdzanMuadzin({
     required this.id,
     required this.name,
     required this.origin,
+    required this.originEn,
     required this.style,
+    required this.styleEn,
     required this.assetPath,
   });
+
+  String originFor(AppLanguage lang) => lang == AppLanguage.en ? originEn : origin;
+  String styleFor(AppLanguage lang) => lang == AppLanguage.en ? styleEn : style;
 }
 
 /// Katalog muadzin pilihan yang tersedia di aplikasi (termasuk aset audio adzan offline).
@@ -27,28 +34,36 @@ const adzanMuadzins = <AdzanMuadzin>[
     id: 'makkah',
     name: 'Syaikh Ali Ahmad Mulla',
     origin: 'Masjidil Haram, Makkah',
+    originEn: 'Al-Masjid al-Haram, Makkah',
     style: 'Maqam Hijaz klasik Makkah',
+    styleEn: 'Classic Makkah Hijaz maqam',
     assetPath: 'assets/audio/adzan/makkah.mp3',
   ),
   AdzanMuadzin(
     id: 'madinah',
     name: 'Syaikh Essam Bukhari',
     origin: 'Masjid Nabawi, Madinah',
+    originEn: 'Al-Masjid an-Nabawi, Madinah',
     style: 'Maqam Bayati syahdu Madinah',
+    styleEn: 'Serene Madinah Bayati maqam',
     assetPath: 'assets/audio/adzan/madinah.mp3',
   ),
   AdzanMuadzin(
     id: 'al_aqsa',
     name: 'Muadzin Al-Quds',
     origin: 'Masjidil Aqsa, Yerusalem',
+    originEn: 'Al-Aqsa Mosque, Jerusalem',
     style: 'Maqam Rast khas Al-Quds',
+    styleEn: 'Distinctive Al-Quds Rast maqam',
     assetPath: 'assets/audio/adzan/al_aqsa.mp3',
   ),
   AdzanMuadzin(
     id: 'mishary',
     name: 'Syaikh Mishary Rashid Alafasy',
     origin: 'Masjid Al-Kabir, Kuwait',
+    originEn: 'Grand Mosque, Kuwait',
     style: 'Maqam Nahawand lembut & khusyuk',
+    styleEn: 'Gentle and contemplative Nahawand maqam',
     assetPath: 'assets/audio/adzan/mishary.mp3',
   ),
 ];
@@ -120,6 +135,7 @@ class PersonalSettings {
   final String? displayName;
   final bool onboardingDone;
   final int tilawahTargetPages;
+  final AppLanguage language;
 
   const PersonalSettings({
     required this.location,
@@ -138,6 +154,7 @@ class PersonalSettings {
     this.displayName,
     this.onboardingDone = false,
     this.tilawahTargetPages = 20,
+    this.language = AppLanguage.id,
   });
 
   static final PersonalSettings defaults =
@@ -196,6 +213,7 @@ class PersonalSettings {
     String? displayName,
     bool? onboardingDone,
     int? tilawahTargetPages,
+    AppLanguage? language,
   }) =>
       PersonalSettings(
         location: location ?? this.location,
@@ -214,6 +232,7 @@ class PersonalSettings {
         displayName: displayName ?? this.displayName,
         onboardingDone: onboardingDone ?? this.onboardingDone,
         tilawahTargetPages: tilawahTargetPages ?? this.tilawahTargetPages,
+        language: language ?? this.language,
       );
 
   Map<String, Object> toJson() => {
@@ -233,6 +252,7 @@ class PersonalSettings {
         if (displayName != null) 'displayName': displayName!,
         'onboardingDone': onboardingDone,
         'tilawahTargetPages': tilawahTargetPages,
+        'language': language.code,
       };
 
   factory PersonalSettings.fromJson(Map<String, dynamic> j) {
@@ -268,6 +288,7 @@ class PersonalSettings {
       displayName: j['displayName'] as String?,
       onboardingDone: j['onboardingDone'] as bool? ?? false,
       tilawahTargetPages: (j['tilawahTargetPages'] as num?)?.toInt() ?? 20,
+      language: AppLanguage.fromCode(j['language'] as String?),
     );
   }
 }

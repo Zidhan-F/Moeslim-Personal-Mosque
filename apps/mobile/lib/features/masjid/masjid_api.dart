@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:http/http.dart' as http;
+import 'package:shared_prayer/shared_prayer.dart';
 
 class ApiException implements Exception {
   final int status;
@@ -25,8 +26,11 @@ class MasjidApi {
   final http.Client _client;
   final String baseUrl;
   String? token;
+  AppLanguage lang;
 
-  MasjidApi(this._client, {this.baseUrl = defaultBaseUrl, this.token});
+  MasjidApi(this._client, {this.baseUrl = defaultBaseUrl, this.token, this.lang = AppLanguage.id});
+
+  String _tr(String id, String en) => lang == AppLanguage.en ? en : id;
 
   static String newIdempotencyKey() {
     final r = Random.secure();
@@ -46,6 +50,7 @@ class MasjidApi {
         'Accept': 'application/json',
         if (body != null) 'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
+        if (baseUrl.contains('ngrok')) 'ngrok-skip-browser-warning': '1',
         ...?headers,
       });
     if (body != null) req.body = jsonEncode(body);
@@ -54,7 +59,13 @@ class MasjidApi {
     try {
       res = await http.Response.fromStream(await _client.send(req).timeout(const Duration(seconds: 20)));
     } catch (_) {
-      throw const ApiException(0, 'Tidak dapat terhubung ke server. Periksa koneksi internet.');
+      throw ApiException(
+        0,
+        _tr(
+          'Tidak dapat terhubung ke server. Periksa koneksi internet.',
+          'Unable to connect to the server. Please check your internet connection.',
+        ),
+      );
     }
     dynamic decoded;
     try {
@@ -63,14 +74,17 @@ class MasjidApi {
       decoded = null; // mis. halaman HTML dari proxy
     }
     if (res.statusCode >= 200 && res.statusCode < 300) {
-      if (res.body.isNotEmpty && decoded == null) throw ApiException(res.statusCode, 'Respons server tidak valid.');
+      if (res.body.isNotEmpty && decoded == null) {
+        throw ApiException(res.statusCode, _tr('Respons server tidak valid.', 'Invalid server response.'));
+      }
       return decoded;
     }
 
     final map = decoded is Map<String, dynamic> ? decoded : <String, dynamic>{};
     throw ApiException(
       res.statusCode,
-      (map['message'] as String?) ?? 'Terjadi kesalahan (${res.statusCode}).',
+      (map['message'] as String?) ??
+          _tr('Terjadi kesalahan (${res.statusCode}).', 'An error occurred (${res.statusCode}).'),
       code: map['code'] as String?,
       errors: (map['errors'] as Map<String, dynamic>?) ?? const {},
     );
@@ -201,8 +215,28 @@ class MasjidApi {
       _send('POST', '/mosques/$id/inventory/$itemId/maintenance', body: data);
 
   Future<Map<String, dynamic>> displays(String id) async => _map(await _send('GET', '/mosques/$id/displays'));
+
+  /// Konten TV Display untuk pratinjau desain (sama dengan yang diterima perangkat TV).
+  Future<Map<String, dynamic>> displayPreview(String id) async =>
+      _map((await _send('GET', '/mosques/$id/displays/preview'))['data']);
   Future<Map<String, dynamic>> createPairingCode(String id, String name) async =>
       _map((await _send('POST', '/mosques/$id/displays/pairing-codes', body: {'name': name}))['data']);
+  Future<Map<String, dynamic>> approveDisplaySession(
+    String id, {
+    String? sessionId,
+    String? code,
+    String? name,
+  }) async => _map(
+    (await _send(
+      'POST',
+      '/mosques/$id/displays/approve-session',
+      body: {
+        if (sessionId != null && sessionId.isNotEmpty) 'session_id': sessionId,
+        if (code != null && code.isNotEmpty) 'code': code,
+        if (name != null && name.isNotEmpty) 'name': name,
+      },
+    ))['data'],
+  );
   Future<void> revokeDisplay(String id, int deviceId) => _send('POST', '/mosques/$id/displays/$deviceId/revoke');
   Future<void> updateDisplay(String id, int deviceId, Map<String, dynamic> data) =>
       _send('PATCH', '/mosques/$id/displays/$deviceId', body: data);
@@ -229,7 +263,11 @@ class MasjidApi {
       return _map(decoded['data']);
     }
     final map = decoded is Map<String, dynamic> ? decoded : const <String, dynamic>{};
-    throw ApiException(res.statusCode, (map['message'] as String?) ?? 'Gagal mengunggah QRIS (${res.statusCode}).');
+    throw ApiException(
+      res.statusCode,
+      (map['message'] as String?) ??
+          _tr('Gagal mengunggah QRIS (${res.statusCode}).', 'Failed to upload QRIS (${res.statusCode}).'),
+    );
   }
 
   Future<List<Map<String, dynamic>>> announcements(String id) async =>
@@ -270,7 +308,12 @@ class MasjidApi {
     final uri = Uri.parse('$baseUrl/mosques/$id/finance/export').replace(queryParameters: {'from': from, 'to': to});
     final req = http.Request('GET', uri)..headers.addAll({'Authorization': 'Bearer $token'});
     final res = await http.Response.fromStream(await _client.send(req));
-    if (res.statusCode != 200) throw ApiException(res.statusCode, 'Gagal mengekspor laporan (${res.statusCode}).');
+    if (res.statusCode != 200) {
+      throw ApiException(
+        res.statusCode,
+        _tr('Gagal mengekspor laporan (${res.statusCode}).', 'Failed to export report (${res.statusCode}).'),
+      );
+    }
     return utf8.decode(res.bodyBytes);
   }
 

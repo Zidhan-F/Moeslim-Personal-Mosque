@@ -200,37 +200,88 @@ class FakeDeclinationService implements DeclinationService {
 
 class FakeAdzanAlarmBackend implements AdzanAlarmBackend {
   final _completed = StreamController<void>.broadcast();
+  final _nativeAlarm = StreamController<Prayer?>.broadcast();
   List<ScheduledAdzanAlarm> syncedAlarms = const [];
   final List<AdzanMuadzin> playedMuadzins = [];
   final List<Prayer?> playedPrayers = [];
   int stopCalls = 0;
+  int requestPermissionCalls = 0;
+  int openNotificationSettingsCalls = 0;
+  bool notificationsGranted;
+  Prayer? activeNativeAlarm;
+
+  FakeAdzanAlarmBackend({this.notificationsGranted = true});
 
   @override
   Stream<void> get onCompleted => _completed.stream;
+
+  @override
+  Stream<Prayer?> get onNativeAlarmChanged => _nativeAlarm.stream;
 
   void completePlayback() {
     if (!_completed.isClosed) _completed.add(null);
   }
 
+  void emitNativeAlarm(Prayer? prayer) {
+    activeNativeAlarm = prayer;
+    if (!_nativeAlarm.isClosed) _nativeAlarm.add(prayer);
+  }
+
+  AppThemeMode? lastThemeMode;
+  AppLanguage? lastLanguage;
+
   @override
   Future<void> syncAlarms(List<ScheduledAdzanAlarm> alarms, PersonalSettings settings) async {
     syncedAlarms = List.unmodifiable(alarms);
+    lastThemeMode = settings.themeMode;
+    lastLanguage = settings.language;
   }
 
   @override
-  Future<void> playAdzan(AdzanMuadzin muadzin, {Prayer? prayer}) async {
+  Future<void> playAdzan(
+    AdzanMuadzin muadzin, {
+    Prayer? prayer,
+    String? localTime,
+    String? locationName,
+    AppThemeMode themeMode = AppThemeMode.system,
+    AppLanguage language = AppLanguage.id,
+  }) async {
     playedMuadzins.add(muadzin);
     playedPrayers.add(prayer);
+    lastThemeMode = themeMode;
+    lastLanguage = language;
+    if (prayer != null) activeNativeAlarm = prayer;
   }
 
   @override
   Future<void> stopAdzan() async {
     stopCalls++;
+    activeNativeAlarm = null;
+  }
+
+  @override
+  Future<Prayer?> getActiveNativeAlarm() async => activeNativeAlarm;
+
+  @override
+  Future<AdzanNotificationStatus> checkNotificationStatus() async =>
+      AdzanNotificationStatus(granted: notificationsGranted);
+
+  @override
+  Future<AdzanNotificationStatus> requestNotificationPermission() async {
+    requestPermissionCalls++;
+    notificationsGranted = true;
+    return AdzanNotificationStatus(granted: notificationsGranted);
+  }
+
+  @override
+  Future<void> openNotificationSettings() async {
+    openNotificationSettingsCalls++;
   }
 
   @override
   Future<void> dispose() async {
     await _completed.close();
+    await _nativeAlarm.close();
   }
 }
 

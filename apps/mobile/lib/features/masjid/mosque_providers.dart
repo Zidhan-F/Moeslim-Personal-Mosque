@@ -1,9 +1,25 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
+import 'package:shared_prayer/shared_prayer.dart';
 
+import '../../core/l10n.dart';
 import '../../ui/components.dart';
 import 'session.dart';
+
+/// Bahasa aktif untuk modul Mosque: selalu mengikuti [AppLangScope] bila tersedia
+/// (seperti di `MoeslimApp`), dan default ke Bahasa Indonesia bila dibuka mandiri.
+AppLanguage mosqueLang(BuildContext context) =>
+    context.dependOnInheritedWidgetOfExactType<AppLangScope>()?.language ?? AppLanguage.id;
+
+/// Menjamin [AppLangScope] tersedia agar `context.tr(...)` selalu konsisten walau
+/// halaman atau sheet dibuka langsung di `MaterialApp(home: ...)` pada pengujian.
+Widget mosqueScoped(BuildContext context, Widget Function(BuildContext context) builder) {
+  if (context.dependOnInheritedWidgetOfExactType<AppLangScope>() != null) {
+    return builder(context);
+  }
+  return AppLangScope(language: AppLanguage.id, child: Builder(builder: builder));
+}
 
 String isoDate(DateTime d) => '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
@@ -90,6 +106,19 @@ const roleDescriptions = {
   'pengurus': 'Kegiatan, petugas, inventaris',
   'operator': 'Konten & layar TV masjid',
 };
+const roleLabelsEn = {'admin': 'Admin', 'bendahara': 'Treasurer', 'pengurus': 'Committee', 'operator': 'TV Operator'};
+const roleDescriptionsEn = {
+  'admin': 'All features, including committee & subscription',
+  'bendahara': 'Finance & reports',
+  'pengurus': 'Events, duty roster, inventory',
+  'operator': 'Mosque TV content & screens',
+};
+
+String roleLabel(String? role, {AppLanguage lang = AppLanguage.id}) =>
+    (lang == AppLanguage.en ? roleLabelsEn[role] : roleLabels[role]) ?? (role ?? '');
+
+String roleDescription(String? role, {AppLanguage lang = AppLanguage.id}) =>
+    (lang == AppLanguage.en ? roleDescriptionsEn[role] : roleDescriptions[role]) ?? '';
 const roleIcons = {
   'admin': MoeslimIcons.admin,
   'bendahara': MoeslimIcons.keuangan,
@@ -249,23 +278,26 @@ class AsyncBody<T> extends StatelessWidget {
   const AsyncBody({super.key, required this.value, required this.data, required this.onRetry});
 
   @override
-  Widget build(BuildContext context) => value.when(
-    skipLoadingOnRefresh: true,
-    loading: () => const Padding(
-      padding: EdgeInsets.all(32),
-      child: Center(child: CircularProgressIndicator()),
-    ),
-    error: (e, _) => BrandEmptyState(
-      art: BrandEmptyArt.tanpaInternet,
-      title: 'Data belum dapat dimuat',
-      message: '$e',
-      action: TextButton.icon(
-        onPressed: onRetry,
-        icon: const Icon(MoeslimIcons.refresh),
-        label: const Text('Coba lagi'),
+  Widget build(BuildContext context) => mosqueScoped(
+    context,
+    (context) => value.when(
+      skipLoadingOnRefresh: true,
+      loading: () => const Padding(
+        padding: EdgeInsets.all(32),
+        child: Center(child: CircularProgressIndicator()),
       ),
+      error: (e, _) => BrandEmptyState(
+        art: BrandEmptyArt.tanpaInternet,
+        title: context.tr('Data belum dapat dimuat', 'Unable to load data'),
+        message: '$e',
+        action: TextButton.icon(
+          onPressed: onRetry,
+          icon: const Icon(MoeslimIcons.refresh),
+          label: Text(context.tr('Coba lagi', 'Try again')),
+        ),
+      ),
+      data: data,
     ),
-    data: data,
   );
 }
 

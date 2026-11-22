@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:moeslim_display/src/schedule.dart';
+import 'package:display_ui/display_ui.dart';
 import 'package:shared_prayer/shared_prayer.dart';
 
 Map<String, dynamic> mosque({Map<String, int>? iqamah}) => {

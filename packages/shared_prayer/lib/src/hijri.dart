@@ -1,9 +1,16 @@
+import 'language.dart';
+
 /// Tanggal Hijriah berbasis kalender tabular (aritmetika) dengan dukungan
 /// koreksi lokal (`offsetDays`) karena penetapan resmi bisa berbeda ±1–2 hari.
 class HijriDate {
   static const monthNames = [
     'Muharram', 'Safar', 'Rabiul Awal', 'Rabiul Akhir', 'Jumadil Awal', 'Jumadil Akhir',
     'Rajab', "Sya'ban", 'Ramadan', 'Syawal', "Dzulqa'dah", 'Dzulhijjah',
+  ];
+
+  static const monthNamesEn = [
+    'Muharram', 'Safar', "Rabi' al-Awwal", "Rabi' al-Thani", 'Jumada al-Ula', 'Jumada al-Akhirah',
+    'Rajab', "Sha'ban", 'Ramadan', 'Shawwal', "Dhu al-Qa'dah", 'Dhu al-Hijjah',
   ];
 
   static const _epoch = 1948439.5; // 16 Juli 622 M (Julian), epoch sipil.
@@ -18,6 +25,11 @@ class HijriDate {
   }
 
   String get monthName => monthNames[month - 1];
+
+  String monthNameFor(AppLanguage lang) => lang == AppLanguage.en ? monthNamesEn[month - 1] : monthNames[month - 1];
+
+  String format(AppLanguage lang) =>
+      lang == AppLanguage.en ? '$day ${monthNamesEn[month - 1]} $year AH' : '$day $monthName $year H';
 
   static double _toJd(int y, int m, int d) =>
       d + (29.5 * (m - 1)).ceil() + (y - 1) * 354 + ((3 + 11 * y) / 30).floor() + _epoch - 1;

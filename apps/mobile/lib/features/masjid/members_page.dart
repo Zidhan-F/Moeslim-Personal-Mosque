@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 
+import '../../core/l10n.dart';
 import '../../ui/components.dart';
 import 'masjid_api.dart';
 import 'mosque_providers.dart';
@@ -47,21 +48,21 @@ class _MembersPageState extends ConsumerState<MembersPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => mosqueScoped(context, (context) {
     final data = ref.watch(membersProvider(widget.ctx.id));
     final d = data.value;
     final count = d == null ? '' : ' (${d['active_count']}/${d['limit']})';
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pengurus & Role'),
+        title: Text(context.tr('Pengurus & Role', 'Committee & Roles')),
         centerTitle: true,
         actions: [
           if (_canManage)
             IconButton(
               key: const Key('invite-member'),
-              tooltip: 'Undang pengurus',
+              tooltip: context.tr('Undang pengurus', 'Invite member'),
               icon: const Icon(MoeslimIcons.daftarAkun),
-              onPressed: _invite,
+              onPressed: () => _invite(context),
             ),
         ],
       ),
@@ -71,32 +72,48 @@ class _MembersPageState extends ConsumerState<MembersPage> {
           padding: const EdgeInsets.all(16),
           children: [
             PillTabs(
-              labels: ['Pengurus$count', 'Pengaturan Role'],
+              labels: [
+                '${context.tr('Pengurus', 'Committee')}$count',
+                context.tr('Pengaturan Role', 'Role Settings'),
+              ],
               index: _tab,
               onChanged: (i) => setState(() => _tab = i),
             ),
             const SizedBox(height: 12),
             if (_tab == 0) ...[
-              const MosqueBanner(
-                title: 'Manajemen Pengurus',
-                subtitle: 'Atur daftar pengurus, peran, dan hak akses aplikasi operasional masjid.',
+              MosqueBanner(
+                title: context.tr('Manajemen Pengurus', 'Committee Management'),
+                subtitle: context.tr(
+                  'Atur daftar pengurus, peran, dan hak akses aplikasi operasional masjid.',
+                  'Manage committee members, roles, and access permissions for mosque operations.',
+                ),
               ),
-              AsyncBody(value: data, onRetry: () => ref.invalidate(membersProvider(widget.ctx.id)), data: _members),
+              AsyncBody(
+                value: data,
+                onRetry: () => ref.invalidate(membersProvider(widget.ctx.id)),
+                data: (d) => _members(context, d),
+              ),
             ] else
-              _roles(),
+              _roles(context),
           ],
         ),
       ),
     );
-  }
+  });
 
-  Widget _members(Map<String, dynamic> d) {
+  Widget _members(BuildContext context, Map<String, dynamic> d) {
+    final lang = context.lang;
     final members = (d['data'] as List).cast<Map>();
     final invites = (d['invitations'] as List? ?? const []).cast<Map>();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SectionHeader('Daftar Pengurus (${d['active_count']}/${d['limit']})'),
+        SectionHeader(
+          context.tr(
+            'Daftar Pengurus (${d['active_count']}/${d['limit']})',
+            'Committee List (${d['active_count']}/${d['limit']})',
+          ),
+        ),
         Card(
           margin: EdgeInsets.zero,
           child: Column(
@@ -115,8 +132,8 @@ class _MembersPageState extends ConsumerState<MembersPage> {
                   ),
                   subtitle: Text(
                     [
-                      if (m['is_owner'] == true) 'Pemilik',
-                      if (m['status'] != 'active') 'Nonaktif',
+                      if (m['is_owner'] == true) context.tr('Pemilik', 'Owner'),
+                      if (m['status'] != 'active') context.tr('Nonaktif', 'Inactive'),
                       ?m['email'] as String?,
                     ].join(' • '),
                   ),
@@ -124,36 +141,48 @@ class _MembersPageState extends ConsumerState<MembersPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       StatusBadge(
-                        roleLabels[m['role']] ?? '${m['role']}',
+                        roleLabel(m['role'] as String?, lang: lang),
                         icon: roleIcons[m['role']],
                         color: _roleColors[m['role']] ?? BrandColors.emerald,
                       ),
                       if (_canManage)
                         PopupMenuButton<String>(
                           key: Key('member-menu-${m['id']}'),
-                          tooltip: 'Kelola',
+                          tooltip: context.tr('Kelola', 'Manage'),
                           onSelected: (v) => switch (v) {
                             'deactivate' => _run(
                               () => ref.read(masjidApiProvider).deactivateMember(widget.ctx.id, m['id'] as int),
-                              'Pengurus dinonaktifkan',
+                              context.tr('Pengurus dinonaktifkan', 'Member deactivated'),
                             ),
                             'reactivate' => _run(
                               () => ref.read(masjidApiProvider).reactivateMember(widget.ctx.id, m['id'] as int),
-                              'Pengurus diaktifkan',
+                              context.tr('Pengurus diaktifkan', 'Member reactivated'),
                             ),
                             _ => _run(
                               () => ref.read(masjidApiProvider).updateMemberRole(widget.ctx.id, m['id'] as int, v),
-                              'Peran diperbarui',
+                              context.tr('Peran diperbarui', 'Role updated'),
                             ),
                           },
                           itemBuilder: (_) => [
                             for (final r in roleLabels.entries)
-                              if (r.key != m['role']) PopupMenuItem(value: r.key, child: Text('Jadikan ${r.value}')),
+                              if (r.key != m['role'])
+                                PopupMenuItem(
+                                  value: r.key,
+                                  child: Text(
+                                    context.tr(
+                                      'Jadikan ${roleLabel(r.key, lang: lang)}',
+                                      'Make ${roleLabel(r.key, lang: lang)}',
+                                    ),
+                                  ),
+                                ),
                             const PopupMenuDivider(),
                             if (m['status'] == 'active')
-                              const PopupMenuItem(value: 'deactivate', child: Text('Nonaktifkan'))
+                              PopupMenuItem(value: 'deactivate', child: Text(context.tr('Nonaktifkan', 'Deactivate')))
                             else
-                              const PopupMenuItem(value: 'reactivate', child: Text('Aktifkan kembali')),
+                              PopupMenuItem(
+                                value: 'reactivate',
+                                child: Text(context.tr('Aktifkan kembali', 'Reactivate')),
+                              ),
                           ],
                         ),
                     ],
@@ -163,7 +192,7 @@ class _MembersPageState extends ConsumerState<MembersPage> {
           ),
         ),
         if (invites.isNotEmpty) ...[
-          const SectionHeader('Undangan Menunggu'),
+          SectionHeader(context.tr('Undangan Menunggu', 'Pending Invitations')),
           Card(
             margin: EdgeInsets.zero,
             child: Column(
@@ -172,69 +201,84 @@ class _MembersPageState extends ConsumerState<MembersPage> {
                   ListTile(
                     leading: const Icon(MoeslimIcons.surat),
                     title: Text('${i['email']}'),
-                    trailing: StatusBadge(roleLabels[i['role']] ?? '${i['role']}', color: MosqueColors.info),
+                    trailing: StatusBadge(roleLabel(i['role'] as String?, lang: lang), color: MosqueColors.info),
                   ),
               ],
             ),
           ),
         ],
         const SizedBox(height: 8),
-        const Text(
-          'Maksimal 5 akun pengurus aktif per masjid. Mengganti pengurus dibatasi 3 kali per 30 hari.',
-          style: TextStyle(fontSize: 12),
+        Text(
+          context.tr(
+            'Maksimal 5 akun pengurus aktif per masjid. Mengganti pengurus dibatasi 3 kali per 30 hari.',
+            'Maximum 5 active committee accounts per mosque. Member swaps are limited to 3 times per 30 days.',
+          ),
+          style: const TextStyle(fontSize: 12),
         ),
       ],
     );
   }
 
-  Widget _roles() => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      const SectionHeader('Ringkasan Hak Akses (Permission)'),
-      GridView.count(
-        crossAxisCount: 2,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        mainAxisSpacing: 10,
-        crossAxisSpacing: 10,
-        childAspectRatio: 1.35,
-        children: [
-          for (final r in roleLabels.keys)
-            Card(
-              key: Key('role-$r'),
-              margin: EdgeInsets.zero,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(roleIcons[r], color: r == 'admin' ? BrandColors.gold : BrandColors.emerald, size: 32),
-                    const SizedBox(height: 6),
-                    Text(roleLabels[r]!, style: const TextStyle(fontWeight: FontWeight.w700)),
-                    Text(roleDescriptions[r]!, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12)),
-                  ],
+  Widget _roles(BuildContext context) {
+    final lang = context.lang;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SectionHeader(context.tr('Ringkasan Hak Akses (Permission)', 'Role Permissions Overview')),
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 10,
+          crossAxisSpacing: 10,
+          childAspectRatio: 1.35,
+          children: [
+            for (final r in roleLabels.keys)
+              Card(
+                key: Key('role-$r'),
+                margin: EdgeInsets.zero,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(roleIcons[r], color: r == 'admin' ? BrandColors.gold : BrandColors.emerald, size: 32),
+                      const SizedBox(height: 6),
+                      Text(roleLabel(r, lang: lang), style: const TextStyle(fontWeight: FontWeight.w700)),
+                      Text(
+                        roleDescription(r, lang: lang),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-        ],
-      ),
-      const SizedBox(height: 12),
-      const Text(
-        'Akses keuangan untuk peran Pengurus dapat diaktifkan admin di pengaturan masjid. '
-        'Semua izin diperiksa di server.',
-        style: TextStyle(fontSize: 12),
-      ),
-    ],
-  );
+          ],
+        ),
+        const SizedBox(height: 12),
+        Text(
+          context.tr(
+            'Akses keuangan untuk peran Pengurus dapat diaktifkan admin di pengaturan masjid. '
+            'Semua izin diperiksa di server.',
+            'Finance access for the Committee role can be enabled by an admin in mosque settings. '
+            'All permissions are enforced on the server.',
+          ),
+          style: const TextStyle(fontSize: 12),
+        ),
+      ],
+    );
+  }
 
-  Future<void> _invite() async {
+  Future<void> _invite(BuildContext context) async {
+    final lang = context.lang;
     final email = TextEditingController();
     var role = 'pengurus';
     final result = await showDialog<(String, String)>(
       context: context,
       builder: (_) => StatefulBuilder(
-        builder: (context, setLocal) => AlertDialog(
-          title: const Text('Undang Pengurus'),
+        builder: (dialogCtx, setLocal) => AlertDialog(
+          title: Text(context.tr('Undang Pengurus', 'Invite Committee Member')),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -247,18 +291,21 @@ class _MembersPageState extends ConsumerState<MembersPage> {
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 initialValue: role,
-                decoration: const InputDecoration(labelText: 'Peran'),
-                items: [for (final r in roleLabels.entries) DropdownMenuItem(value: r.key, child: Text(r.value))],
+                decoration: InputDecoration(labelText: context.tr('Peran', 'Role')),
+                items: [
+                  for (final r in roleLabels.entries)
+                    DropdownMenuItem(value: r.key, child: Text(roleLabel(r.key, lang: lang))),
+                ],
                 onChanged: (v) => setLocal(() => role = v ?? role),
               ),
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')),
+            TextButton(onPressed: () => Navigator.pop(dialogCtx), child: Text(context.tr('Batal', 'Cancel'))),
             FilledButton(
               key: const Key('send-invite'),
-              onPressed: () => Navigator.pop(context, (email.text.trim(), role)),
-              child: const Text('Undang'),
+              onPressed: () => Navigator.pop(dialogCtx, (email.text.trim(), role)),
+              child: Text(context.tr('Undang', 'Invite')),
             ),
           ],
         ),
@@ -268,16 +315,21 @@ class _MembersPageState extends ConsumerState<MembersPage> {
     try {
       final inv = await ref.read(masjidApiProvider).inviteMember(widget.ctx.id, result.$1, result.$2);
       ref.invalidate(membersProvider(widget.ctx.id));
-      if (!mounted) return;
+      if (!context.mounted) return;
       final token = '${inv['token']}';
       await showDialog<void>(
         context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('Kode Undangan'),
+        builder: (dialogCtx) => AlertDialog(
+          title: Text(context.tr('Kode Undangan', 'Invite Code')),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Bagikan kode ini ke calon pengurus. Mereka memasukkannya saat Aktivasi Akun.'),
+              Text(
+                context.tr(
+                  'Bagikan kode ini ke calon pengurus. Mereka memasukkannya saat Aktivasi Akun.',
+                  'Share this code with the invited member. They will enter it during Account Activation.',
+                ),
+              ),
               const SizedBox(height: 12),
               SelectableText(
                 token,
@@ -289,14 +341,14 @@ class _MembersPageState extends ConsumerState<MembersPage> {
           actions: [
             TextButton(
               onPressed: () => Clipboard.setData(ClipboardData(text: token)),
-              child: const Text('Salin'),
+              child: Text(context.tr('Salin', 'Copy')),
             ),
-            FilledButton(onPressed: () => Navigator.pop(context), child: const Text('Selesai')),
+            FilledButton(onPressed: () => Navigator.pop(dialogCtx), child: Text(context.tr('Selesai', 'Done'))),
           ],
         ),
       );
     } on ApiException catch (e) {
-      if (mounted) {
+      if (context.mounted) {
         showSnack(context, e.errors.values.expand((v) => v is List ? v : [v]).firstOrNull?.toString() ?? e.message);
       }
     }

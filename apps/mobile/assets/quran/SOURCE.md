@@ -15,9 +15,8 @@
 kesesuaian dengan Mushaf Standar Indonesia oleh penelaah (lihat `docs/licensing/`).
 
 ## Terjemahan
-**Al-Qur'an dan Terjemahannya (Kementerian Agama RI)** (`id.indonesian`, Tanzil.net, pembaruan 4 Juni 2010),
-dari paket npm `tanzil` (`public/trans-id.txt`). Disertakan atas keputusan pemilik produk untuk fitur Personal
-yang gratis; izin tertulis Kemenag belum dikonfirmasi.
+- **Indonesia**: **Al-Qur'an dan Terjemahannya (Kementerian Agama RI)** (`id.indonesian`, Tanzil.net, pembaruan 4 Juni 2010), dari paket npm `tanzil` (`public/trans-id.txt`). Disertakan atas keputusan pemilik produk untuk fitur Personal yang gratis; izin tertulis Kemenag belum dikonfirmasi.
+- **English**: **Saheeh International** (`en.sahih`, melalui alquran.cloud / Tanzil.net), bidang `en` untuk seluruh 6.236 ayat.
 
 Anotasi tajwid (`tj`) untuk seluruh 6.236 ayat dibuat oleh pengklasifikasi tajwid Moeslim PM
 (`packages/personal_core/tool/annotate_tajweed.dart`); teks & terjemahan tidak diubah. Lihat `docs/tajwid-warna.md`.

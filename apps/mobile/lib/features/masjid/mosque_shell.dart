@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 
+import '../../core/l10n.dart';
 import '../../ui/components.dart';
 import 'account_page.dart';
 import 'agenda_page.dart';
@@ -22,13 +23,13 @@ class MasjidDashboardPage extends ConsumerStatefulWidget {
 class _MasjidDashboardPageState extends ConsumerState<MasjidDashboardPage> {
   int _tab = 0;
 
-  void _goTo(String label, List<(String, IconData, IconData, Widget)> tabs) {
-    final i = tabs.indexWhere((t) => t.$1 == label);
+  void _goTo(String tabId, List<(String, String, IconData, IconData, Widget)> tabs) {
+    final i = tabs.indexWhere((t) => t.$1 == tabId);
     if (i >= 0) setState(() => _tab = i);
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => mosqueScoped(context, (context) {
     final session = ref.watch(sessionProvider).value!;
     final mosque = session.activeMosque!;
     final id = mosque['id'] as String;
@@ -43,20 +44,34 @@ class _MasjidDashboardPageState extends ConsumerState<MasjidDashboardPage> {
       permissions: {...?(d?['permissions'] as List?)?.cast<String>()},
     );
 
-    late final List<(String, IconData, IconData, Widget)> tabs;
+    late final List<(String, String, IconData, IconData, Widget)> tabs;
     tabs = [
       (
         'Beranda',
+        context.tr('Beranda', 'Home'),
         MoeslimIcons.beranda,
         MoeslimIcons.beranda,
         MosqueHomeTab(ctx: ctx, dash: dash, onOpenTab: (l) => _goTo(l, tabs)),
       ),
-      if (ctx.can('finance.view')) ('Keuangan', MoeslimIcons.keuangan, MoeslimIcons.keuangan, FinanceTab(ctx: ctx)),
+      if (ctx.can('finance.view'))
+        ('Keuangan', context.tr('Keuangan', 'Finance'), MoeslimIcons.keuangan, MoeslimIcons.keuangan, FinanceTab(ctx: ctx)),
       if (ctx.can('events.view'))
-        ('Kegiatan', MoeslimIcons.kalender, MoeslimIcons.kalender, AgendaPage(ctx: ctx, embedded: true)),
+        (
+          'Kegiatan',
+          context.tr('Kegiatan', 'Events'),
+          MoeslimIcons.kalender,
+          MoeslimIcons.kalender,
+          AgendaPage(ctx: ctx, embedded: true),
+        ),
       if (ctx.can('staff.view'))
-        ('Petugas', MoeslimIcons.petugas, MoeslimIcons.petugas, StaffPage(ctx: ctx, embedded: true)),
-      ('Akun', MoeslimIcons.profil, MoeslimIcons.profil, MosqueAccountTab(ctx: ctx)),
+        (
+          'Petugas',
+          context.tr('Petugas', 'Roster'),
+          MoeslimIcons.petugas,
+          MoeslimIcons.petugas,
+          StaffPage(ctx: ctx, embedded: true),
+        ),
+      ('Akun', context.tr('Akun', 'Account'), MoeslimIcons.profil, MoeslimIcons.profil, MosqueAccountTab(ctx: ctx)),
     ];
     final index = _tab.clamp(0, tabs.length - 1);
 
@@ -72,7 +87,7 @@ class _MasjidDashboardPageState extends ConsumerState<MasjidDashboardPage> {
         actions: [
           if (session.mosques.length > 1)
             PopupMenuButton<String>(
-              tooltip: 'Ganti masjid',
+              tooltip: context.tr('Ganti masjid', 'Switch mosque'),
               icon: const Icon(MoeslimIcons.sinkronisasi),
               onSelected: ref.read(sessionProvider.notifier).selectMosque,
               itemBuilder: (_) => [
@@ -82,14 +97,14 @@ class _MasjidDashboardPageState extends ConsumerState<MasjidDashboardPage> {
             ),
         ],
       ),
-      body: IndexedStack(index: index, children: [for (final t in tabs) t.$4]),
+      body: IndexedStack(index: index, children: [for (final t in tabs) t.$5]),
       bottomNavigationBar: NavigationBar(
         selectedIndex: index,
         onDestinationSelected: (i) => setState(() => _tab = i),
         destinations: [
-          for (final t in tabs) NavigationDestination(icon: Icon(t.$2), selectedIcon: Icon(t.$3), label: t.$1),
+          for (final t in tabs) NavigationDestination(icon: Icon(t.$3), selectedIcon: Icon(t.$4), label: t.$2),
         ],
       ),
     );
-  }
+  });
 }

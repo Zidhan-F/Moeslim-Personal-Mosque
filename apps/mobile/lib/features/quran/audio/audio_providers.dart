@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:personal_core/personal_core.dart';
 
+import '../../../core/l10n.dart';
 import '../../../core/providers.dart';
 import '../../masjid/session.dart';
 import 'audio_engine.dart';
@@ -123,6 +124,12 @@ class QuranPlayer extends Notifier<PlayerState> {
 
   AudioEngine get _engine => ref.read(audioEngineProvider);
 
+  String _playbackError() => tr(
+    ref.read(appLanguageProvider),
+    'Gagal memutar audio. Periksa koneksi atau unduh untuk offline.',
+    'Failed to play audio. Check your connection or download for offline use.',
+  );
+
   @override
   PlayerState build() {
     final engine = ref.watch(audioEngineProvider);
@@ -142,7 +149,7 @@ class QuranPlayer extends Notifier<PlayerState> {
         engine.errors.listen(
           (_) => state = state.copyWith(
             playing: false,
-            error: 'Gagal memutar audio. Periksa koneksi atau unduh untuk offline.',
+            error: _playbackError(),
           ),
         ),
       )
@@ -268,7 +275,7 @@ class QuranPlayer extends Notifier<PlayerState> {
       if (gen != _playGen) return;
       state = state.copyWith(
         playing: false,
-        error: 'Gagal memutar audio. Periksa koneksi atau unduh untuk offline.',
+        error: _playbackError(),
       );
     }
   }

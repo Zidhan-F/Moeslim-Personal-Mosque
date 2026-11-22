@@ -1,16 +1,21 @@
+import 'package:shared_prayer/shared_prayer.dart';
+
 import 'key_value_store.dart';
 
 enum TrackerItem {
-  subuh('Subuh'),
-  dzuhur('Dzuhur'),
-  ashar('Ashar'),
-  maghrib('Maghrib'),
-  isya('Isya'),
-  tilawah('Tilawah'),
-  dzikir('Dzikir pagi/petang');
+  subuh('Subuh', 'Fajr'),
+  dzuhur('Dzuhur', 'Dhuhr'),
+  ashar('Ashar', 'Asr'),
+  maghrib('Maghrib', 'Maghrib'),
+  isya('Isya', 'Isha'),
+  tilawah('Tilawah', 'Quran Reading'),
+  dzikir('Dzikir pagi/petang', 'Morning & Evening Dhikr');
 
   final String label;
-  const TrackerItem(this.label);
+  final String labelEn;
+  const TrackerItem(this.label, this.labelEn);
+
+  String labelFor(AppLanguage lang) => lang == AppLanguage.en ? labelEn : label;
 
   static const prayers = [subuh, dzuhur, ashar, maghrib, isya];
 }

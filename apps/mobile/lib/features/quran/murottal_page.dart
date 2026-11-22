@@ -3,6 +3,7 @@ import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:personal_core/personal_core.dart';
 
+import '../../core/l10n.dart';
 import '../../ui/components.dart';
 import 'audio/audio_providers.dart';
 import 'audio/quran_player_bar.dart';
@@ -49,7 +50,7 @@ class _MurottalPageState extends ConsumerState<MurottalPage> {
     final ayahPos = player.current?.ayah ?? 0;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Murottal Al-Qur\'an'), centerTitle: true),
+      appBar: AppBar(title: Text(context.tr('Murottal Al-Qur\'an', 'Qur\'an Recitation')), centerTitle: true),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -62,9 +63,9 @@ class _MurottalPageState extends ConsumerState<MurottalPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Murottal', style: TextStyle(color: BrandColors.cream)),
+                      Text(context.tr('Murottal', 'Recitation'), style: const TextStyle(color: BrandColors.cream)),
                       Text(
-                        rec?.qari ?? 'Belum ada rekaman',
+                        rec?.qari ?? context.tr('Belum ada rekaman', 'No recording available'),
                         key: const Key('murottal-qari'),
                         style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700),
                       ),
@@ -80,7 +81,12 @@ class _MurottalPageState extends ConsumerState<MurottalPage> {
               key: const Key('murottal-surah'),
               leading: const Icon(MoeslimIcons.quranTerbuka, color: BrandColors.emerald),
               title: Text(surah.name, style: const TextStyle(fontWeight: FontWeight.w700)),
-              subtitle: Text('Surah ke-${surah.number} • ${surah.ayahCount} Ayat'),
+              subtitle: Text(
+                context.tr(
+                  'Surah ke-${surah.number} • ${surah.ayahCount} Ayat',
+                  'Surah ${surah.number} • ${surah.ayahCount} Verses',
+                ),
+              ),
               trailing: const Icon(MoeslimIcons.audio),
               onTap: () => showAudioSheet(context, surah),
             ),
@@ -96,7 +102,12 @@ class _MurottalPageState extends ConsumerState<MurottalPage> {
             padding: const EdgeInsets.symmetric(vertical: 4),
             child: Row(
               children: [
-                Text(ayahPos == 0 ? 'Ayat –' : 'Ayat $ayahPos / ${surah.ayahCount}', style: t.bodySmall),
+                Text(
+                  ayahPos == 0
+                      ? context.tr('Ayat –', 'Verse –')
+                      : context.tr('Ayat $ayahPos / ${surah.ayahCount}', 'Verse $ayahPos / ${surah.ayahCount}'),
+                  style: t.bodySmall,
+                ),
                 const Spacer(),
                 Text('${_fmt(player.position)} / ${_fmt(player.duration ?? Duration.zero)}', style: t.bodySmall),
               ],
@@ -106,13 +117,13 @@ class _MurottalPageState extends ConsumerState<MurottalPage> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               IconButton(
-                tooltip: 'Ulang ayat',
+                tooltip: context.tr('Ulang ayat', 'Repeat verse'),
                 isSelected: player.repeatAyah,
                 icon: const Icon(Icons.repeat_one),
                 onPressed: ctl.toggleRepeat,
               ),
               IconButton(
-                tooltip: 'Ayat sebelumnya',
+                tooltip: context.tr('Ayat sebelumnya', 'Previous verse'),
                 icon: const Icon(MoeslimIcons.sebelumnya, size: 32),
                 onPressed: rec == null ? null : () => ctl.skip(-1),
               ),
@@ -125,7 +136,7 @@ class _MurottalPageState extends ConsumerState<MurottalPage> {
                   padding: EdgeInsets.zero,
                   alignment: Alignment.center,
                 ),
-                tooltip: player.playing ? 'Jeda' : 'Putar',
+                tooltip: player.playing ? context.tr('Jeda', 'Pause') : context.tr('Putar', 'Play'),
                 icon: Transform.translate(
                   offset: Offset(player.playing ? 0 : 2.0, 0),
                   child: Icon(player.playing ? MoeslimIcons.pause : MoeslimIcons.play),
@@ -133,11 +144,15 @@ class _MurottalPageState extends ConsumerState<MurottalPage> {
                 onPressed: rec == null ? null : () => ctl.toggleSurahPlayback(surah.number),
               ),
               IconButton(
-                tooltip: 'Ayat berikutnya',
+                tooltip: context.tr('Ayat berikutnya', 'Next verse'),
                 icon: const Icon(MoeslimIcons.selanjutnya, size: 32),
                 onPressed: rec == null ? null : () => ctl.skip(1),
               ),
-              IconButton(tooltip: 'Berhenti', icon: const Icon(Icons.stop), onPressed: ctl.stop),
+              IconButton(
+                tooltip: context.tr('Berhenti', 'Stop'),
+                icon: const Icon(Icons.stop),
+                onPressed: ctl.stop,
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -147,28 +162,35 @@ class _MurottalPageState extends ConsumerState<MurottalPage> {
                 child: _Chip(
                   key: const Key('murottal-speed'),
                   top: '${player.speed}x',
-                  label: 'Kecepatan',
+                  label: context.tr('Kecepatan', 'Speed'),
                   onTap: () => ctl.setSpeed(_speeds[(_speeds.indexOf(player.speed) + 1) % _speeds.length]),
                 ),
               ),
               Expanded(
-                child: _Chip(icon: MoeslimIcons.profil, label: 'Qari', onTap: () => showAudioSheet(context, surah)),
+                child: _Chip(
+                  icon: MoeslimIcons.profil,
+                  label: context.tr('Qari', 'Reciter'),
+                  onTap: () => showAudioSheet(context, surah),
+                ),
               ),
               Expanded(
                 child: _Chip(
                   icon: MoeslimIcons.unduh,
-                  label: 'Unduh Offline',
+                  label: context.tr('Unduh Offline', 'Offline Download'),
                   onTap: () => showAudioSheet(context, surah),
                 ),
               ),
             ],
           ),
           if (rec == null)
-            const Padding(
-              padding: EdgeInsets.only(top: 8),
-              child: Text('Belum ada rekaman untuk surah ini.', key: Key('no-audio')),
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                context.tr('Belum ada rekaman untuk surah ini.', 'No recording available for this surah.'),
+                key: const Key('no-audio'),
+              ),
             ),
-          const SectionHeader('Daftar Putar'),
+          SectionHeader(context.tr('Daftar Putar', 'Playlist')),
           for (final s in surahs.take(20))
             ListTile(
               key: Key('playlist-${s.number}'),
@@ -178,7 +200,7 @@ class _MurottalPageState extends ConsumerState<MurottalPage> {
                 s.name,
                 style: TextStyle(fontWeight: s.number == surahNo ? FontWeight.w700 : FontWeight.w500),
               ),
-              subtitle: Text('${s.ayahCount} ayat'),
+              subtitle: Text(context.tr('${s.ayahCount} ayat', '${s.ayahCount} verses')),
               trailing: Icon(
                 s.number == surahNo && player.playing ? MoeslimIcons.suara : MoeslimIcons.play,
                 color: scheme.primary,

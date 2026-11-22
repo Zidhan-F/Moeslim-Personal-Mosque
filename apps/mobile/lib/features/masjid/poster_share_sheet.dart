@@ -1,12 +1,14 @@
 import 'package:flutter/services.dart';
 import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
+import 'package:shared_prayer/shared_prayer.dart';
 
 import '../../core/format.dart';
+import '../../core/l10n.dart';
 import 'agenda_page.dart' show categoryLabel;
 import 'finance_pro_pages.dart' show saveBoundaryPng;
 import 'mosque_providers.dart';
-import 'staff_page.dart' show dutyLabels, prayerLabels;
+import 'staff_page.dart' show dutyTypeLabel, prayerSlotLabel;
 
 /// Data siap pakai untuk kartu Poster & teks WhatsApp.
 class PosterData {
@@ -33,20 +35,25 @@ class PosterData {
 
 /// Pembangun teks WhatsApp resmi masjid (ringkas, sopan, bebas karakter tidak rapi).
 abstract final class WaTextBuilder {
-  static PosterData forEvent(String mosqueName, Map<String, dynamic> event) {
+  static PosterData forEvent(
+    String mosqueName,
+    Map<String, dynamic> event, {
+    AppLanguage lang = AppLanguage.id,
+  }) {
+    final isEn = lang == AppLanguage.en;
     final start = DateTime.parse(event['starts_at'] as String).toLocal();
-    final title = '${event['title'] ?? 'Agenda Masjid'}';
-    final cat = categoryLabel(event['category'] as String?);
+    final title = '${event['title'] ?? (isEn ? 'Mosque Event' : 'Agenda Masjid')}';
+    final cat = categoryLabel(event['category'] as String?, lang: lang);
     final speaker = event['speaker'] as String?;
     final location = event['location'] as String?;
     final desc = event['description'] as String?;
-    final dateText = '${longDate(start)}, ${hhmm(start)}';
+    final dateText = '${longDate(start, lang: lang)}, ${hhmm(start)}';
 
     final rows = <(String, String)>[
-      ('Kategori', cat),
-      ('Waktu', dateText),
-      if (location != null && location.isNotEmpty) ('Lokasi', location),
-      if (speaker != null && speaker.isNotEmpty) ('Pemateri', speaker),
+      (isEn ? 'Category' : 'Kategori', cat),
+      (isEn ? 'Time' : 'Waktu', dateText),
+      if (location != null && location.isNotEmpty) (isEn ? 'Location' : 'Lokasi', location),
+      if (speaker != null && speaker.isNotEmpty) (isEn ? 'Speaker' : 'Pemateri', speaker),
     ];
 
     final wa = [
@@ -58,77 +65,98 @@ abstract final class WaTextBuilder {
       for (final r in rows) '${r.$1}: ${r.$2}',
       if (desc != null && desc.isNotEmpty) ...['', desc],
       '',
-      'Mari hadir dan ajak keluarga serta sahabat. Barakallahu fiikum.',
+      isEn
+          ? 'Please join us with family and friends. Barakallahu fiikum.'
+          : 'Mari hadir dan ajak keluarga serta sahabat. Barakallahu fiikum.',
     ].join('\n');
 
     return PosterData(
-      overline: 'AGENDA MASJID',
+      overline: isEn ? 'MOSQUE EVENT' : 'AGENDA MASJID',
       title: title,
       mosqueName: mosqueName,
       subtitle: cat,
       rows: rows,
-      footer: 'Mari makmurkan masjid bersama keluarga dan jamaah.',
+      footer: isEn
+          ? 'Join us with family and congregation to enliven the mosque.'
+          : 'Mari makmurkan masjid bersama keluarga dan jamaah.',
       whatsappText: wa,
       filePrefix: 'poster-agenda-${event['id'] ?? 'masjid'}',
     );
   }
 
-  static PosterData forAnnouncement(String mosqueName, Map<String, dynamic> ann) {
-    final title = '${ann['title'] ?? 'Pengumuman Masjid'}';
+  static PosterData forAnnouncement(
+    String mosqueName,
+    Map<String, dynamic> ann, {
+    AppLanguage lang = AppLanguage.id,
+  }) {
+    final isEn = lang == AppLanguage.en;
+    final title = '${ann['title'] ?? (isEn ? 'Mosque Announcement' : 'Pengumuman Masjid')}';
     final body = '${ann['body'] ?? ''}';
 
     final wa = [
-      '*PENGUMUMAN MASJID*',
+      isEn ? '*MOSQUE ANNOUNCEMENT*' : '*PENGUMUMAN MASJID*',
       '*$mosqueName*',
       '',
       '*$title*',
       body,
       '',
-      'Demikian disampaikan, jazakumullahu khairan katsiran.',
+      isEn ? 'Thank you for your attention. Jazakumullahu khairan.' : 'Demikian disampaikan, jazakumullahu khairan katsiran.',
     ].join('\n');
 
     return PosterData(
-      overline: 'PENGUMUMAN MASJID',
+      overline: isEn ? 'MOSQUE ANNOUNCEMENT' : 'PENGUMUMAN MASJID',
       title: title,
       mosqueName: mosqueName,
       rows: [
-        ('Informasi', body),
+        (isEn ? 'Details' : 'Informasi', body),
       ],
-      footer: 'Informasi resmi Takmir $mosqueName.',
+      footer: isEn ? 'Official announcement from $mosqueName Committee.' : 'Informasi resmi Takmir $mosqueName.',
       whatsappText: wa,
       filePrefix: 'poster-pengumuman-${ann['id'] ?? 'masjid'}',
     );
   }
 
-  static PosterData forFridayStaff(String mosqueName, DateTime date, List<Map<String, dynamic>> staff) {
-    final dateText = longDate(date);
+  static PosterData forFridayStaff(
+    String mosqueName,
+    DateTime date,
+    List<Map<String, dynamic>> staff, {
+    AppLanguage lang = AppLanguage.id,
+  }) {
+    final isEn = lang == AppLanguage.en;
+    final dateText = longDate(date, lang: lang);
     final rows = <(String, String)>[
       for (final s in staff)
         (
-          '${dutyLabels[s['duty_type']] ?? s['duty_type']}${s['prayer'] != null ? ' (${prayerLabels[s['prayer']] ?? s['prayer']})' : ''}',
+          '${dutyTypeLabel(s['duty_type'] as String?, lang: lang)}${s['prayer'] != null ? ' (${prayerSlotLabel(s['prayer'] as String?, lang: lang)})' : ''}',
           '${s['name']}',
         ),
     ];
 
     final wa = [
-      '*PETUGAS SALAT JUMAT*',
+      isEn ? '*FRIDAY PRAYER ROSTER*' : '*PETUGAS SALAT JUMAT*',
       '*$mosqueName*',
-      'Tanggal: $dateText',
+      '${isEn ? 'Date' : 'Tanggal'}: $dateText',
       '',
       if (rows.isEmpty)
-        'Jadwal petugas belum ditentukan.'
+        (isEn ? 'Duty roster has not been assigned yet.' : 'Jadwal petugas belum ditentukan.')
       else
         for (final r in rows) '- ${r.$1}: *${r.$2}*',
       '',
-      'Mari bersegera menuju masjid dan luruskan shaf. Barakallahu fiikum.',
+      isEn
+          ? 'Please arrive early and straighten the rows. Barakallahu fiikum.'
+          : 'Mari bersegera menuju masjid dan luruskan shaf. Barakallahu fiikum.',
     ].join('\n');
 
     return PosterData(
-      overline: 'PETUGAS JUMAT',
+      overline: isEn ? 'FRIDAY ROSTER' : 'PETUGAS JUMAT',
       title: dateText,
       mosqueName: mosqueName,
-      rows: rows.isEmpty ? const [('Jadwal', 'Belum ada petugas terjadwal')] : rows,
-      footer: 'Mari hadir lebih awal untuk meraih keutamaan Jumat.',
+      rows: rows.isEmpty
+          ? [(isEn ? 'Schedule' : 'Jadwal', isEn ? 'No roster assigned yet' : 'Belum ada petugas terjadwal')]
+          : rows,
+      footer: isEn
+          ? 'Arrive early to gain the blessings of Friday.'
+          : 'Mari hadir lebih awal untuk meraih keutamaan Jumat.',
       whatsappText: wa,
       filePrefix: 'poster-petugas-${isoDate(date)}',
     );
@@ -151,25 +179,36 @@ class _PosterShareSheetState extends State<PosterShareSheet> {
   _PosterTheme _theme = _PosterTheme.emerald;
   bool _saving = false;
 
-  Future<void> _copyWa() async {
+  Future<void> _copyWa(BuildContext context) async {
+    final lang = context.lang;
     await Clipboard.setData(ClipboardData(text: widget.data.whatsappText));
-    if (mounted) showSnack(context, 'Teks WhatsApp disalin. Siap bagikan ke grup jamaah.');
+    if (context.mounted) {
+      showSnack(
+        context,
+        lang == AppLanguage.en
+            ? 'WhatsApp text copied. Ready to share with congregation groups.'
+            : 'Teks WhatsApp disalin. Siap bagikan ke grup jamaah.',
+      );
+    }
   }
 
-  Future<void> _savePng() async {
+  Future<void> _savePng(BuildContext context) async {
+    final lang = context.lang;
     setState(() => _saving = true);
     try {
-      final path = await saveBoundaryPng(_posterKey, '${widget.data.filePrefix}.png');
-      if (mounted) showSnack(context, 'Poster tersimpan: $path');
+      final path = await saveBoundaryPng(_posterKey, '${widget.data.filePrefix}.png', lang: lang);
+      if (context.mounted) {
+        showSnack(context, lang == AppLanguage.en ? 'Poster saved: $path' : 'Poster tersimpan: $path');
+      }
     } catch (e) {
-      if (mounted) showSnack(context, '$e');
+      if (context.mounted) showSnack(context, '$e');
     } finally {
       if (mounted) setState(() => _saving = false);
     }
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => mosqueScoped(context, (context) {
     final (bg, headerBg, accent, textColor, mutedColor) = switch (_theme) {
       _PosterTheme.emerald => (
         BrandColors.cream,
@@ -201,26 +240,29 @@ class _PosterShareSheetState extends State<PosterShareSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Bagikan Poster & Teks WA', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              context.tr('Bagikan Poster & Teks WA', 'Share Poster & WhatsApp Text'),
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 10),
             Wrap(
               spacing: 8,
               children: [
                 ChoiceChip(
                   key: const Key('theme-emerald'),
-                  label: const Text('Hijau Moeslim'),
+                  label: Text(context.tr('Hijau Moeslim', 'Moeslim Green')),
                   selected: _theme == _PosterTheme.emerald,
                   onSelected: (_) => setState(() => _theme = _PosterTheme.emerald),
                 ),
                 ChoiceChip(
                   key: const Key('theme-cream'),
-                  label: const Text('Krem Elegan'),
+                  label: Text(context.tr('Krem Elegan', 'Warm Cream')),
                   selected: _theme == _PosterTheme.cream,
                   onSelected: (_) => setState(() => _theme = _PosterTheme.cream),
                 ),
                 ChoiceChip(
                   key: const Key('theme-night'),
-                  label: const Text('Malam'),
+                  label: Text(context.tr('Malam', 'Night')),
                   selected: _theme == _PosterTheme.night,
                   onSelected: (_) => setState(() => _theme = _PosterTheme.night),
                 ),
@@ -309,21 +351,21 @@ class _PosterShareSheetState extends State<PosterShareSheet> {
             FilledButton.icon(
               key: const Key('poster-copy-wa'),
               style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48), shape: const StadiumBorder()),
-              onPressed: _saving ? null : _copyWa,
+              onPressed: _saving ? null : () => _copyWa(context),
               icon: const Icon(Icons.copy_rounded),
-              label: const Text('Salin Teks WhatsApp'),
+              label: Text(context.tr('Salin Teks WhatsApp', 'Copy WhatsApp Text')),
             ),
             const SizedBox(height: 8),
             OutlinedButton.icon(
               key: const Key('poster-save-png'),
               style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
-              onPressed: _saving ? null : _savePng,
+              onPressed: _saving ? null : () => _savePng(context),
               icon: const Icon(Icons.image_outlined),
-              label: const Text('Simpan Poster PNG'),
+              label: Text(context.tr('Simpan Poster PNG', 'Save Poster PNG')),
             ),
           ],
         ),
       ),
     );
-  }
+  });
 }

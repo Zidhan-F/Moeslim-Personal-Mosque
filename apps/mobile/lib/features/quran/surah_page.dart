@@ -4,8 +4,10 @@ import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:personal_core/personal_core.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
+import '../../core/l10n.dart';
 import '../../core/providers.dart';
 import '../../ui/components.dart';
+import '../ibadah/share_card_page.dart';
 import 'audio/audio_providers.dart';
 import 'audio/quran_player_bar.dart';
 import 'murottal_page.dart';
@@ -107,7 +109,9 @@ class _SurahPageState extends ConsumerState<SurahPage> {
       final isPlayingThis = player.ayah == ayah && player.playing;
       return IconButton(
         key: Key('play-ayah-$ayah'),
-        tooltip: isPlayingThis ? 'Jeda ayat $ayah' : 'Putar mulai ayat $ayah',
+        tooltip: isPlayingThis
+            ? context.tr('Jeda ayat $ayah', 'Pause verse $ayah')
+            : context.tr('Putar mulai ayat $ayah', 'Play from verse $ayah'),
         icon: Icon(isPlayingThis ? MoeslimIcons.suara : MoeslimIcons.play),
         onPressed: canPlay ? () => ref.read(quranPlayerProvider.notifier).playOrToggleFromAyah(ayah) : null,
       );
@@ -123,7 +127,13 @@ class _SurahPageState extends ConsumerState<SurahPage> {
             style: quranTextStyle(fontSize: 34, color: scheme.primary),
           ),
           Text('Surah ${surah.name}', style: t.titleMedium),
-          Text('${surah.revelation} • ${surah.ayahCount} Ayat • Juz ${juzOf(surah.number, 1)}', style: t.bodySmall),
+          Text(
+            context.tr(
+              '${surah.revelation} • ${surah.ayahCount} Ayat • Juz ${juzOf(surah.number, 1)}',
+              '${context.surahRev(surah)} • ${surah.ayahCount} Verses • Juz ${juzOf(surah.number, 1)}',
+            ),
+            style: t.bodySmall,
+          ),
           const Padding(
             padding: EdgeInsets.only(top: 8),
             child: BrandElementArt(BrandElement.ayahDivider, width: 150, height: 26),
@@ -150,7 +160,9 @@ class _SurahPageState extends ConsumerState<SurahPage> {
         actions: [
           IconButton(
             key: const Key('toggle-tajweed'),
-            tooltip: tajweedOn ? 'Matikan warna tajwid' : 'Nyalakan warna tajwid',
+            tooltip: tajweedOn
+                ? context.tr('Matikan warna tajwid', 'Disable tajweed colors')
+                : context.tr('Nyalakan warna tajwid', 'Enable tajweed colors'),
             isSelected: tajweedOn,
             icon: const Icon(Icons.format_color_text),
             onPressed: () {
@@ -160,7 +172,7 @@ class _SurahPageState extends ConsumerState<SurahPage> {
             },
           ),
           PopupMenuButton<String>(
-            tooltip: 'Lainnya',
+            tooltip: context.tr('Lainnya', 'More'),
             onSelected: (v) {
               if (v == 'legend') {
                 Navigator.of(context).push(MaterialPageRoute(builder: (_) => const TajweedLegendPage()));
@@ -169,15 +181,21 @@ class _SurahPageState extends ConsumerState<SurahPage> {
                 Navigator.of(context).push(MaterialPageRoute(builder: (_) => MurottalPage(initialSurah: surah.number)));
               }
             },
-            itemBuilder: (_) => const [
+            itemBuilder: (menuContext) => [
               PopupMenuItem(
                 value: 'murottal',
-                child: ListTile(leading: Icon(MoeslimIcons.audio), title: Text('Buka Murottal')),
+                child: ListTile(
+                  leading: const Icon(MoeslimIcons.audio),
+                  title: Text(menuContext.tr('Buka Murottal', 'Open Recitation')),
+                ),
               ),
               PopupMenuItem(
-                key: Key('tajweed-legend'),
+                key: const Key('tajweed-legend'),
                 value: 'legend',
-                child: ListTile(leading: Icon(Icons.palette_outlined), title: Text('Panduan warna tajwid')),
+                child: ListTile(
+                  leading: const Icon(Icons.palette_outlined),
+                  title: Text(menuContext.tr('Panduan warna tajwid', 'Tajweed color guide')),
+                ),
               ),
             ],
           ),
@@ -197,7 +215,15 @@ class _SurahPageState extends ConsumerState<SurahPage> {
                   children: [
                     Text(surah.name, style: t.titleMedium?.copyWith(color: scheme.primary)),
                     const SizedBox(width: 8),
-                    Expanded(child: Text('Surah ke-${surah.number} • ${surah.ayahCount} Ayat', style: t.bodySmall)),
+                    Expanded(
+                      child: Text(
+                        context.tr(
+                          'Surah ke-${surah.number} • ${surah.ayahCount} Ayat',
+                          'Surah ${surah.number} • ${surah.ayahCount} Verses',
+                        ),
+                        style: t.bodySmall,
+                      ),
+                    ),
                     const Icon(Icons.keyboard_arrow_down),
                   ],
                 ),
@@ -214,15 +240,22 @@ class _SurahPageState extends ConsumerState<SurahPage> {
                     padding: const EdgeInsets.all(16),
                     children: [
                       header,
-                      const Padding(
-                        padding: EdgeInsets.all(24),
+                      Padding(
+                        padding: const EdgeInsets.all(24),
                         child: Text(
-                          'Teks Al-Qur\'an belum tersedia di perangkat.',
+                          context.tr(
+                            'Teks Al-Qur\'an belum tersedia di perangkat.',
+                            'Qur\'an text is not yet available on this device.',
+                          ),
                           textAlign: TextAlign.center,
                         ),
                       ),
                       for (var a = 1; a <= surah.ayahCount; a++)
-                        ListTile(dense: true, title: Text('Ayat $a'), trailing: playButton(a)),
+                        ListTile(
+                          dense: true,
+                          title: Text(context.tr('Ayat $a', 'Verse $a')),
+                          trailing: playButton(a),
+                        ),
                     ],
                   );
                 }
@@ -238,6 +271,7 @@ class _SurahPageState extends ConsumerState<SurahPage> {
                     final a = ayat[index - 1];
                     final marked = _bookmarked.contains(a.number);
                     final active = player.ayah == a.number && player.surah == surah.number;
+                    final translation = a.translationFor(context.lang);
                     return Container(
                       decoration: active
                           ? BoxDecoration(
@@ -253,14 +287,40 @@ class _SurahPageState extends ConsumerState<SurahPage> {
                               OctagonNumber(a.number),
                               const Spacer(),
                               IconButton(
+                                key: Key('share-ayah-${a.number}'),
+                                tooltip: context.tr(
+                                  'Buat kartu ayat ${a.number}',
+                                  'Create card for verse ${a.number}',
+                                ),
+                                icon: const Icon(MoeslimIcons.bagikan),
+                                onPressed: () => Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => ShareCardPage(
+                                      initialArabic: a.text,
+                                      initialTranslation: translation ?? '',
+                                      initialSource: context.tr(
+                                        'QS. ${surah.name}: ${a.number}',
+                                        'Quran ${surah.name} (${surah.number}): ${a.number}',
+                                      ),
+                                      initialBadge: context.tr('Al-Qur\'an', 'Al-Quran'),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              IconButton(
                                 key: Key('tafsir-ayah-${a.number}'),
-                                tooltip: 'Tafsir & catatan ayat ${a.number}',
+                                tooltip: context.tr(
+                                  'Tafsir & catatan ayat ${a.number}',
+                                  'Tafsir & notes for verse ${a.number}',
+                                ),
                                 icon: const Icon(MoeslimIcons.buku),
                                 onPressed: () => showAyahTafsirSheet(context, ref, surah: surah, ayah: a),
                               ),
                               playButton(a.number),
                               IconButton(
-                                tooltip: marked ? 'Hapus penanda' : 'Tandai ayat',
+                                tooltip: marked
+                                    ? context.tr('Hapus penanda', 'Remove bookmark')
+                                    : context.tr('Tandai ayat', 'Bookmark verse'),
                                 icon: Icon(
                                   marked ? MoeslimIcons.bookmark : MoeslimIcons.penanda,
                                   color: marked ? BrandColors.goldText : null,
@@ -279,10 +339,10 @@ class _SurahPageState extends ConsumerState<SurahPage> {
                             colored: tajweedOn,
                             style: TextStyle(fontSize: 26 * scale, height: 2.0),
                           ),
-                          if (a.translation != null)
+                          if (translation != null)
                             Padding(
                               padding: const EdgeInsets.only(top: 8),
-                              child: Text(a.translation!, style: TextStyle(fontSize: 14.5 * scale, height: 1.5)),
+                              child: Text(translation, style: TextStyle(fontSize: 14.5 * scale, height: 1.5)),
                             ),
                         ],
                       ),

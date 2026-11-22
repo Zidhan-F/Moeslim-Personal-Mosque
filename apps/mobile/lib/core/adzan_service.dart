@@ -25,16 +25,33 @@ class ScheduledAdzanAlarm {
     required this.locationName,
   });
 
-  Map<String, Object> toMap() => {
+  Map<String, Object> toMap({AppLanguage lang = AppLanguage.id}) => {
         'id': prayer.index + 100,
         'prayer': prayer.name,
-        'prayerLabel': prayer.label,
+        'prayerLabel': prayer.labelFor(lang),
         'isFajr': prayer == Prayer.fajr,
         'localTime': '${localTime.hour.toString().padLeft(2, '0')}:${localTime.minute.toString().padLeft(2, '0')}',
         'triggerAtMs': triggerUtc.millisecondsSinceEpoch,
         'muadzinId': muadzinId,
         'locationName': locationName,
+        'language': lang.code,
       };
+}
+
+/// Status izin notifikasi alarm adzan pada perangkat.
+class AdzanNotificationStatus {
+  final bool granted;
+  final bool fullScreenAllowed;
+
+  const AdzanNotificationStatus({this.granted = true, this.fullScreenAllowed = true});
+
+  factory AdzanNotificationStatus.fromMap(Map<Object?, Object?>? m) {
+    if (m == null) return const AdzanNotificationStatus();
+    return AdzanNotificationStatus(
+      granted: m['granted'] as bool? ?? true,
+      fullScreenAllowed: m['fullScreenAllowed'] as bool? ?? true,
+    );
+  }
 }
 
 /// Konversi waktu jam dinding lokal (sesuai [utcOffsetHours]) menjadi waktu absolut UTC.
@@ -84,15 +101,36 @@ List<ScheduledAdzanAlarm> computeUpcomingAdzanAlarms(PersonalSettings settings, 
 /// Abstraksi penjadwal alarm & pemutar suara adzan agar mudah diuji dan terhubung ke Android native.
 abstract class AdzanAlarmBackend {
   Stream<void> get onCompleted;
+  Stream<Prayer?> get onNativeAlarmChanged;
   Future<void> syncAlarms(List<ScheduledAdzanAlarm> alarms, PersonalSettings settings);
-  Future<void> playAdzan(AdzanMuadzin muadzin, {Prayer? prayer});
+  Future<void> playAdzan(
+    AdzanMuadzin muadzin, {
+    Prayer? prayer,
+    String? localTime,
+    String? locationName,
+    AppThemeMode themeMode = AppThemeMode.system,
+    AppLanguage language = AppLanguage.id,
+  });
   Future<void> stopAdzan();
+  Future<Prayer?> getActiveNativeAlarm();
+  Future<AdzanNotificationStatus> checkNotificationStatus();
+  Future<AdzanNotificationStatus> requestNotificationPermission();
+  Future<void> openNotificationSettings();
   Future<void> dispose();
+}
+
+Prayer? _prayerFromName(String? name) {
+  if (name == null) return null;
+  for (final p in Prayer.values) {
+    if (p.name == name) return p;
+  }
+  return null;
 }
 
 class PlatformAdzanAlarmBackend implements AdzanAlarmBackend {
   static const _channel = MethodChannel('id.moeslim.moeslim_mobile/adzan_alarm');
   final _completed = StreamController<void>.broadcast();
+  final _nativeAlarm = StreamController<Prayer?>.broadcast();
   AudioPlayer? _player;
   StreamSubscription<PlayerState>? _playerSub;
 
@@ -100,6 +138,9 @@ class PlatformAdzanAlarmBackend implements AdzanAlarmBackend {
     _channel.setMethodCallHandler((call) async {
       if (call.method == 'onPlaybackCompleted' && !_completed.isClosed) {
         _completed.add(null);
+      } else if (call.method == 'onAlarmStateChanged' && !_nativeAlarm.isClosed) {
+        final args = call.arguments as Map?;
+        _nativeAlarm.add(_prayerFromName(args?['prayer'] as String?));
       }
     });
   }
@@ -108,16 +149,24 @@ class PlatformAdzanAlarmBackend implements AdzanAlarmBackend {
   Stream<void> get onCompleted => _completed.stream;
 
   @override
+  Stream<Prayer?> get onNativeAlarmChanged => _nativeAlarm.stream;
+
+  @override
   Future<void> syncAlarms(List<ScheduledAdzanAlarm> alarms, PersonalSettings settings) async {
     try {
       if (alarms.isEmpty || !settings.notificationsEnabled) {
-        await _channel.invokeMethod<void>('cancelAllAlarms');
+        await _channel.invokeMethod<void>('cancelAllAlarms', {
+          'themeMode': settings.themeMode.name,
+          'language': settings.language.code,
+        });
       } else {
         await _channel.invokeMethod<void>('scheduleAlarms', {
-          'alarms': [for (final a in alarms) a.toMap()],
+          'alarms': [for (final a in alarms) a.toMap(lang: settings.language)],
           'muadzinId': settings.muadzin.id,
           'muadzinName': settings.muadzin.name,
           'assetPath': settings.muadzin.assetPath,
+          'themeMode': settings.themeMode.name,
+          'language': settings.language.code,
         });
       }
     } catch (_) {
@@ -126,22 +175,34 @@ class PlatformAdzanAlarmBackend implements AdzanAlarmBackend {
   }
 
   @override
-  Future<void> playAdzan(AdzanMuadzin muadzin, {Prayer? prayer}) async {
-    await stopAdzan();
+  Future<void> playAdzan(
+    AdzanMuadzin muadzin, {
+    Prayer? prayer,
+    String? localTime,
+    String? locationName,
+    AppThemeMode themeMode = AppThemeMode.system,
+    AppLanguage language = AppLanguage.id,
+  }) async {
     var handledByNative = false;
     try {
       final res = await _channel.invokeMethod<bool>('playAdzan', {
         'muadzinId': muadzin.id,
         'muadzinName': muadzin.name,
         'assetPath': muadzin.assetPath,
-        'prayerLabel': prayer?.label,
+        'prayer': prayer?.name,
+        'prayerLabel': prayer?.labelFor(language),
+        'localTime': localTime ?? '',
+        'locationName': locationName ?? '',
         'isFajr': prayer == Prayer.fajr,
         'isPreview': prayer == null,
+        'themeMode': themeMode.name,
+        'language': language.code,
       });
       handledByNative = res == true;
     } catch (_) {}
 
     if (!handledByNative) {
+      await _player?.stop();
       final player = _ensurePlayer();
       await player.setAsset(muadzin.assetPath);
       await player.setVolume(1.0);
@@ -173,6 +234,43 @@ class PlatformAdzanAlarmBackend implements AdzanAlarmBackend {
   }
 
   @override
+  Future<Prayer?> getActiveNativeAlarm() async {
+    try {
+      final res = await _channel.invokeMethod<Map<Object?, Object?>>('getActiveAlarm');
+      return _prayerFromName(res?['prayer'] as String?);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Future<AdzanNotificationStatus> checkNotificationStatus() async {
+    try {
+      final res = await _channel.invokeMethod<Map<Object?, Object?>>('checkNotificationStatus');
+      return AdzanNotificationStatus.fromMap(res);
+    } catch (_) {
+      return const AdzanNotificationStatus();
+    }
+  }
+
+  @override
+  Future<AdzanNotificationStatus> requestNotificationPermission() async {
+    try {
+      final res = await _channel.invokeMethod<Map<Object?, Object?>>('requestNotificationPermission');
+      return AdzanNotificationStatus.fromMap(res);
+    } catch (_) {
+      return const AdzanNotificationStatus();
+    }
+  }
+
+  @override
+  Future<void> openNotificationSettings() async {
+    try {
+      await _channel.invokeMethod<void>('openNotificationSettings');
+    } catch (_) {}
+  }
+
+  @override
   Future<void> dispose() async {
     _channel.setMethodCallHandler(null);
     await _playerSub?.cancel();
@@ -180,6 +278,7 @@ class PlatformAdzanAlarmBackend implements AdzanAlarmBackend {
       await _player?.dispose();
     } catch (_) {}
     await _completed.close();
+    await _nativeAlarm.close();
   }
 }
 
@@ -195,6 +294,7 @@ class AdzanAlarmState {
   final String? previewingMuadzinId;
   final String? lastTriggeredSlotKey;
   final String? lastError;
+  final bool notificationsGranted;
 
   const AdzanAlarmState({
     this.scheduledAlarms = const [],
@@ -202,6 +302,7 @@ class AdzanAlarmState {
     this.previewingMuadzinId,
     this.lastTriggeredSlotKey,
     this.lastError,
+    this.notificationsGranted = true,
   });
 
   bool get isRinging => ringingPrayer != null;
@@ -218,6 +319,7 @@ class AdzanAlarmState {
     String? lastTriggeredSlotKey,
     String? lastError,
     bool clearError = false,
+    bool? notificationsGranted,
   }) =>
       AdzanAlarmState(
         scheduledAlarms: scheduledAlarms ?? this.scheduledAlarms,
@@ -225,12 +327,14 @@ class AdzanAlarmState {
         previewingMuadzinId: clearPreview ? null : (previewingMuadzinId ?? this.previewingMuadzinId),
         lastTriggeredSlotKey: lastTriggeredSlotKey ?? this.lastTriggeredSlotKey,
         lastError: clearError ? null : (lastError ?? this.lastError),
+        notificationsGranted: notificationsGranted ?? this.notificationsGranted,
       );
 }
 
 class AdzanController extends Notifier<AdzanAlarmState> {
   String? _lastSyncSignature;
   DateTime? _previousLocalMinute;
+  bool _autoRequestedNotif = false;
 
   AdzanAlarmBackend get _backend => ref.read(adzanBackendProvider);
 
@@ -241,7 +345,19 @@ class AdzanController extends Notifier<AdzanAlarmState> {
         state = state.copyWith(clearRinging: true, clearPreview: true);
       }
     });
-    ref.onDispose(completedSub.cancel);
+    final nativeSub = _backend.onNativeAlarmChanged.listen((prayer) {
+      if (prayer == null) {
+        if (state.isRinging) {
+          state = state.copyWith(clearRinging: true);
+        }
+      } else {
+        state = state.copyWith(ringingPrayer: prayer, clearPreview: true, clearError: true);
+      }
+    });
+    ref.onDispose(() {
+      completedSub.cancel();
+      nativeSub.cancel();
+    });
 
     ref.listen<AsyncValue<PersonalSettings>>(settingsProvider, (_, next) {
       final s = next.value;
@@ -259,6 +375,11 @@ class AdzanController extends Notifier<AdzanAlarmState> {
       }
     });
 
+    Future.microtask(() async {
+      await syncActiveNativeAlarm();
+      await refreshNotificationStatus(requestIfNeeded: true);
+    });
+
     final initialSettings = ref.read(settingsProvider).value;
     final initialNow = ref.read(nowProvider).value;
     if (initialSettings != null && initialNow != null) {
@@ -271,11 +392,39 @@ class AdzanController extends Notifier<AdzanAlarmState> {
     return const AdzanAlarmState();
   }
 
+  Future<void> syncActiveNativeAlarm() async {
+    final active = await _backend.getActiveNativeAlarm();
+    if (active != null && state.ringingPrayer != active) {
+      state = state.copyWith(ringingPrayer: active, clearPreview: true, clearError: true);
+    }
+  }
+
+  Future<void> refreshNotificationStatus({bool requestIfNeeded = false}) async {
+    var status = await _backend.checkNotificationStatus();
+    final enabled = ref.read(settingsProvider).value?.notificationsEnabled ?? false;
+    if (requestIfNeeded && enabled && !status.granted && !_autoRequestedNotif) {
+      _autoRequestedNotif = true;
+      status = await _backend.requestNotificationPermission();
+    }
+    if (state.notificationsGranted != status.granted) {
+      state = state.copyWith(notificationsGranted: status.granted);
+    }
+  }
+
+  Future<void> requestNotificationPermission() async {
+    final status = await _backend.requestNotificationPermission();
+    state = state.copyWith(notificationsGranted: status.granted);
+  }
+
+  Future<void> openNotificationSettings() => _backend.openNotificationSettings();
+
   Future<void> _syncScheduleIfNeeded(PersonalSettings s, List<ScheduledAdzanAlarm> upcoming) async {
     final sig = [
       s.notificationsEnabled,
       s.muadzin.id,
       s.effectiveLocationName,
+      s.themeMode.name,
+      s.language.code,
       for (final a in upcoming) '${a.prayer.name}:${a.triggerUtc.millisecondsSinceEpoch}',
     ].join('|');
     if (sig == _lastSyncSignature) return;
@@ -314,7 +463,14 @@ class AdzanController extends Notifier<AdzanAlarmState> {
             lastTriggeredSlotKey: slotKey,
           );
           try {
-            await _backend.playAdzan(s.muadzin, prayer: p);
+            await _backend.playAdzan(
+              s.muadzin,
+              prayer: p,
+              localTime: hhmm(pTime),
+              locationName: s.effectiveLocationName,
+              themeMode: s.themeMode,
+              language: s.language,
+            );
           } catch (_) {
             state = state.copyWith(lastError: 'Gagal memutar suara adzan. Periksa volume perangkat.');
           }
@@ -345,16 +501,25 @@ class AdzanController extends Notifier<AdzanAlarmState> {
     }
   }
 
-  /// Picu alarm adzan untuk waktu salat [prayer] (untuk simulasi/uji alarm maupun saat waktu tiba).
+  /// Picu alarm adzan untuk waktu salat [prayer] beserta pop-up notifikasi & tombol matikan.
   Future<void> triggerAlarm(Prayer prayer) async {
     final s = ref.read(settingsProvider).value ?? PersonalSettings.defaults;
+    final now = ref.read(nowProvider).value ?? DateTime.now();
+    final local = wallClock(now, s.effectiveUtcOffset);
     state = state.copyWith(
       ringingPrayer: prayer,
       clearPreview: true,
       clearError: true,
     );
     try {
-      await _backend.playAdzan(s.muadzin, prayer: prayer);
+      await _backend.playAdzan(
+        s.muadzin,
+        prayer: prayer,
+        localTime: hhmm(local),
+        locationName: s.effectiveLocationName,
+        themeMode: s.themeMode,
+        language: s.language,
+      );
     } catch (_) {
       state = state.copyWith(lastError: 'Gagal memutar suara adzan. Periksa volume alarm perangkat.');
     }
