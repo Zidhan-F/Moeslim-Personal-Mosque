@@ -67,6 +67,11 @@ final babyNamesRepoProvider = Provider((ref) => BabyNamesRepository(ref.watch(st
 final debtLedgerRepoProvider = Provider((ref) => DebtLedgerRepository(ref.watch(storeProvider)));
 final seniorModeRepoProvider = Provider((ref) => SeniorModeRepository(ref.watch(storeProvider)));
 final worshipTimerRepoProvider = Provider((ref) => WorshipTimerRepository(ref.watch(storeProvider)));
+final journalRepoProvider = Provider((ref) => JournalRepository(ref.watch(storeProvider)));
+final arabicStudyRepoProvider = Provider((ref) => ArabicStudyRepository(ref.watch(storeProvider)));
+final learningPathRepoProvider = Provider((ref) => LearningPathRepository(ref.watch(storeProvider)));
+final familySpaceRepoProvider = Provider((ref) => FamilySpaceRepository(ref.watch(storeProvider)));
+final communityCacheRepoProvider = Provider((ref) => CommunityCacheRepository(ref.watch(storeProvider)));
 
 /// Status jadwal hari ini untuk lokasi aktif: waktu sholat, sholat berikutnya, dan sisa waktu.
 class PrayerStatus {

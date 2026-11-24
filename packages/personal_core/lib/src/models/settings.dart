@@ -2,7 +2,7 @@ import 'package:shared_prayer/shared_prayer.dart';
 
 import '../content/cities.dart';
 
-enum AppThemeMode { system, light, dark }
+enum AppThemeMode { light, dark, nature, sky, twilight, sahara, layl, sakina, zamrud, rosa }
 
 /// Pilihan suara muadzin untuk alarm adzan waktu salat.
 class AdzanMuadzin {
@@ -128,11 +128,20 @@ class PersonalSettings {
   final Map<Prayer, bool> prayerAdzan;
   final String muadzinId;
 
+  /// Volume khusus suara adzan di dalam aplikasi (0.0 sampai 1.0, independen dari volume HP).
+  final double adzanVolume;
+
+  /// Bila true, suara adzan memakai pengaturan volume aplikasi sendiri (mengabaikan mode hening/volume HP).
+  final bool adzanOverrideDeviceVolume;
+
   /// Warnai teks Al-Qur'an sesuai hukum tajwid (bila dataset anotasi tersedia).
   final bool tajweedColors;
 
   /// Nama panggilan untuk sapaan di Beranda (opsional, hanya di perangkat).
   final String? displayName;
+
+  /// Path berkas foto profil lokal di perangkat (100% offline, tidak pernah diunggah).
+  final String? profilePhotoPath;
   final bool onboardingDone;
   final int tilawahTargetPages;
   final AppLanguage language;
@@ -145,13 +154,16 @@ class PersonalSettings {
     this.madhab = AsrMadhab.shafii,
     this.adjustments = const {},
     this.hijriOffset = 0,
-    this.themeMode = AppThemeMode.system,
+    this.themeMode = AppThemeMode.light,
     this.fontScale = 1.0,
     this.notificationsEnabled = true,
     this.prayerAdzan = const {},
     this.muadzinId = 'makkah',
+    this.adzanVolume = 0.85,
+    this.adzanOverrideDeviceVolume = true,
     this.tajweedColors = true,
     this.displayName,
+    this.profilePhotoPath,
     this.onboardingDone = false,
     this.tilawahTargetPages = 20,
     this.language = AppLanguage.id,
@@ -209,8 +221,12 @@ class PersonalSettings {
     bool? notificationsEnabled,
     Map<Prayer, bool>? prayerAdzan,
     String? muadzinId,
+    double? adzanVolume,
+    bool? adzanOverrideDeviceVolume,
     bool? tajweedColors,
     String? displayName,
+    String? profilePhotoPath,
+    bool clearProfilePhoto = false,
     bool? onboardingDone,
     int? tilawahTargetPages,
     AppLanguage? language,
@@ -228,8 +244,11 @@ class PersonalSettings {
         notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
         prayerAdzan: prayerAdzan ?? this.prayerAdzan,
         muadzinId: muadzinId ?? this.muadzinId,
+        adzanVolume: (adzanVolume ?? this.adzanVolume).clamp(0.0, 1.0).toDouble(),
+        adzanOverrideDeviceVolume: adzanOverrideDeviceVolume ?? this.adzanOverrideDeviceVolume,
         tajweedColors: tajweedColors ?? this.tajweedColors,
         displayName: displayName ?? this.displayName,
+        profilePhotoPath: clearProfilePhoto ? null : (profilePhotoPath ?? this.profilePhotoPath),
         onboardingDone: onboardingDone ?? this.onboardingDone,
         tilawahTargetPages: tilawahTargetPages ?? this.tilawahTargetPages,
         language: language ?? this.language,
@@ -248,8 +267,11 @@ class PersonalSettings {
         'notificationsEnabled': notificationsEnabled,
         'prayerAdzan': {for (final e in prayerAdzan.entries) e.key.name: e.value},
         'muadzinId': muadzinId,
+        'adzanVolume': adzanVolume,
+        'adzanOverrideDeviceVolume': adzanOverrideDeviceVolume,
         'tajweedColors': tajweedColors,
         if (displayName != null) 'displayName': displayName!,
+        if (profilePhotoPath != null) 'profilePhotoPath': profilePhotoPath!,
         'onboardingDone': onboardingDone,
         'tilawahTargetPages': tilawahTargetPages,
         'language': language.code,
@@ -275,7 +297,7 @@ class PersonalSettings {
             Prayer.values.byName(e.key as String): (e.value as num).toInt(),
       },
       hijriOffset: (j['hijriOffset'] as num?)?.toInt() ?? 0,
-      themeMode: byName(AppThemeMode.values, j['themeMode'], AppThemeMode.system),
+      themeMode: byName(AppThemeMode.values, j['themeMode'], AppThemeMode.light),
       fontScale: (j['fontScale'] as num?)?.toDouble() ?? 1.0,
       notificationsEnabled: j['notificationsEnabled'] as bool? ?? true,
       prayerAdzan: {
@@ -284,8 +306,11 @@ class PersonalSettings {
             Prayer.values.byName(e.key as String): e.value as bool,
       },
       muadzinId: adzanMuadzins.any((m) => m.id == rawMuadzin) ? rawMuadzin! : 'makkah',
+      adzanVolume: ((j['adzanVolume'] as num?)?.toDouble() ?? 0.85).clamp(0.0, 1.0).toDouble(),
+      adzanOverrideDeviceVolume: j['adzanOverrideDeviceVolume'] as bool? ?? true,
       tajweedColors: j['tajweedColors'] as bool? ?? true,
       displayName: j['displayName'] as String?,
+      profilePhotoPath: j['profilePhotoPath'] as String?,
       onboardingDone: j['onboardingDone'] as bool? ?? false,
       tilawahTargetPages: (j['tilawahTargetPages'] as num?)?.toInt() ?? 20,
       language: AppLanguage.fromCode(j['language'] as String?),

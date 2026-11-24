@@ -3,8 +3,10 @@ library;
 
 export 'package:shared_prayer/shared_prayer.dart' show AppLanguage;
 
+export 'src/content/arabic_language.dart';
 export 'src/content/asmaul_husna.dart';
 export 'src/content/l10n_core.dart';
+export 'src/content/learning_path.dart';
 export 'src/content/astronomy_qibla_fiqih.dart';
 export 'src/content/audio.dart';
 export 'src/content/audio_production.dart';
@@ -34,8 +36,10 @@ export 'src/models/settings.dart';
 export 'src/models/share_card_preset.dart';
 export 'src/storage/audio_preference_repository.dart';
 export 'src/storage/backup_restore_service.dart';
+export 'src/storage/family_space_repository.dart';
 export 'src/storage/fasting_repository.dart';
 export 'src/storage/favorite_mosque_repository.dart';
+export 'src/storage/journal_repository.dart';
 export 'src/storage/key_value_store.dart';
 export 'src/storage/khatam_planner_repository.dart';
 export 'src/storage/muhasabah_repository.dart';

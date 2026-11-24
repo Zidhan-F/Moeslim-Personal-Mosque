@@ -79,12 +79,19 @@ class PublicMosqueController extends Controller
     {
         $m = Mosque::where('slug', $slug)->firstOrFail();
         $rows = $m->events()->where('status', 'active')->where('visibility', 'public')
+            ->where('publication_status', '!=', 'draft')
             ->where('starts_at', '>=', now()->subHours(6))->orderBy('starts_at')->limit(50)->get();
 
         return response()->json(['data' => $rows->map(fn ($e) => [
             'id' => $e->id, 'title' => $e->title, 'description' => $e->description, 'category' => $e->category,
             'location' => $e->location, 'speaker' => $e->speaker,
             'starts_at' => $e->starts_at?->toIso8601String(), 'ends_at' => $e->ends_at?->toIso8601String(),
+            'publication_status' => $e->publication_status ?? 'published',
+            'hijri_year' => $e->hijri_year,
+            'learning_path' => $e->learning_path,
+            'registration_enabled' => (bool) $e->registration_enabled,
+            'capacity' => $e->capacity,
+            'version' => (int) ($e->version ?? 1),
             'updated_at' => $e->updated_at?->toIso8601String(),
         ])]);
     }

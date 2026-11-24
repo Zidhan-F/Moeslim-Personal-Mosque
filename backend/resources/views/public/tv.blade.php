@@ -4,9 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#07372F">
-    <link rel="icon" type="image/png" href="/moeslim-icon.png?v=1">
-    <link rel="shortcut icon" href="/favicon.ico?v=1">
-    <link rel="apple-touch-icon" href="/moeslim-icon.png?v=1">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+    <link rel="icon" type="image/png" href="/moeslim-icon.png?v=2">
+    <link rel="shortcut icon" href="/favicon.ico?v=2">
+    <link rel="apple-touch-icon" href="/moeslim-icon.png?v=2">
     <link rel="manifest" href="/tv/manifest.json">
     <title>Moeslim Mosque TV Display</title>
     <style>
@@ -691,7 +692,7 @@
     <!-- PAIRING VIEW (Zero mosque data before paired) -->
     <main id="pairing-view" class="pair-shell">
         <section>
-            <div class="brand-mark"><img src="/moeslim-icon.png" alt="Moeslim" class="brand-logo"> Moeslim Mosque TV</div>
+            <div class="brand-mark"><img src="/moeslim-icon.png?v=2" alt="Moeslim" class="brand-logo"> Moeslim Mosque TV</div>
             <h1 class="pair-title">Hubungkan Layar TV ke Masjid Anda</h1>
             <p class="pair-lead">
                 Tampilkan jam digital, jadwal salat otomatis, countdown iqamah, layar hening salat, papan petugas Jumat, dan QRIS infaq masjid langsung dari browser TV tanpa install aplikasi tambahan.

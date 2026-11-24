@@ -5,13 +5,13 @@ import 'package:shared_prayer/shared_prayer.dart';
 import '../../core/l10n.dart';
 import '../../ui/components.dart';
 import '../../ui/hijab_art.dart';
+import '../family/family_space_page.dart';
 import '../ibadah/asmaul_husna_page.dart';
 import '../ibadah/astronomy_qibla_fiqih_page.dart';
 import '../ibadah/doa_pages.dart';
 import '../ibadah/family_education_page.dart';
 import '../ibadah/fasting_tracker_page.dart';
 import '../ibadah/fiqih_guide_page.dart';
-import '../ibadah/guided_dzikir_page.dart';
 import '../ibadah/hadith_page.dart';
 import '../ibadah/hijri_page.dart';
 import '../ibadah/manasik_page.dart';
@@ -27,10 +27,12 @@ import '../ibadah/tasbih_page.dart';
 import '../ibadah/tracker_page.dart';
 import '../ibadah/utility_accessibility_page.dart';
 import '../ibadah/zakat_faraid_page.dart';
+import '../learning/learning_path_page.dart';
 import '../more/about_licenses_page.dart';
 import '../more/backup_restore_page.dart';
 import '../more/followed_mosques_page.dart';
 import '../more/nearby_mosques_gps_page.dart';
+import '../more/ramadan_local_page.dart';
 import '../prayer/auto_dnd_page.dart';
 import '../prayer/home_widget_page.dart';
 import '../prayer/prayer_page.dart';
@@ -41,6 +43,7 @@ import '../quran/tafsir_search_page.dart';
 import '../quran/tahfidz_page.dart';
 import '../quran/tajweed_learning_page.dart';
 import '../quran/tajweed_view.dart';
+import '../services/personal_services_page.dart';
 
 class _FeatureEntry {
   final String id;
@@ -49,6 +52,7 @@ class _FeatureEntry {
   final String keywords;
   final BrandTile? tile;
   final IconData? icon;
+  final SoftAsset? softAsset;
   final Widget? art;
   final VoidCallback Function(BuildContext context) onOpen;
 
@@ -59,6 +63,7 @@ class _FeatureEntry {
     required this.keywords,
     this.tile,
     this.icon,
+    this.softAsset,
     this.art,
     required this.onOpen,
   });
@@ -135,7 +140,7 @@ class _AllFeaturesPageState extends State<AllFeaturesPage> {
         labelId: 'Perencana Khatam',
         labelEn: 'Khatam Planner',
         keywords: 'target halaman khatam quran reading plan daily pages completion',
-        icon: MoeslimIcons.kalender,
+        softAsset: SoftAsset.khatam,
         onOpen: (c) => _pushPage(c, () => const KhatamPlannerPage()),
       ),
       _FeatureEntry(
@@ -143,7 +148,7 @@ class _AllFeaturesPageState extends State<AllFeaturesPage> {
         labelId: 'Belajar Tajwid',
         labelEn: 'Learn Tajweed',
         keywords: 'makharijul huruf hukum kuis tajwid tajweed articulation rules quiz',
-        icon: MoeslimIcons.alquran,
+        softAsset: SoftAsset.tajweed,
         onOpen: (c) => _pushPage(c, () => const TajweedLearningPage()),
       ),
       _FeatureEntry(
@@ -151,7 +156,7 @@ class _AllFeaturesPageState extends State<AllFeaturesPage> {
         labelId: 'Warna Tajwid',
         labelEn: 'Tajweed Colors',
         keywords: 'panduan legenda warna tajwid tajweed color legend guide',
-        icon: MoeslimIcons.keterangan,
+        softAsset: SoftAsset.tajweedColors,
         onOpen: (c) => _pushPage(c, () => const TajweedLegendPage()),
       ),
       _FeatureEntry(
@@ -159,7 +164,7 @@ class _AllFeaturesPageState extends State<AllFeaturesPage> {
         labelId: "Pendalaman Qur'an",
         labelEn: "Qur'an Study",
         keywords: 'kata per kata asbabun nuzul flashcard sajdah word by word vocabulary',
-        icon: MoeslimIcons.quranTerbuka,
+        softAsset: SoftAsset.quranStudy,
         onOpen: (c) => _pushPage(c, () => const QuranStudySuitePage()),
       ),
       _FeatureEntry(
@@ -167,7 +172,7 @@ class _AllFeaturesPageState extends State<AllFeaturesPage> {
         labelId: 'Fokus Tilawah',
         labelEn: 'Focus Reading',
         keywords: 'baca otomatis autoscroll tenang distraction free focus reading',
-        icon: MoeslimIcons.alquran,
+        softAsset: SoftAsset.focusReading,
         onOpen: (c) => _pushPage(c, () => const FocusTilawahPage()),
       ),
     ]),
@@ -193,7 +198,7 @@ class _AllFeaturesPageState extends State<AllFeaturesPage> {
         labelId: 'Kiblat Matahari & Safar',
         labelEn: 'Solar Qibla & Travel',
         keywords: 'rashdul qiblah peta jama qashar dhuha tahajud solar qibla travel prayer map',
-        icon: MoeslimIcons.kompas,
+        softAsset: SoftAsset.solarQibla,
         onOpen: (c) => _pushPage(c, () => const AstronomyQiblaFiqihPage()),
       ),
       _FeatureEntry(
@@ -226,17 +231,17 @@ class _AllFeaturesPageState extends State<AllFeaturesPage> {
         id: 'doa-dzikir',
         labelId: 'Doa & Dzikir',
         labelEn: 'Duas & Dhikr',
-        keywords: 'doa harian aktivitas hisnul muslim daily supplication prayers fortress',
+        keywords: 'doa harian aktivitas dzikir terpandu pagi petang hisnul muslim daily supplication adhkar guided dhikr',
         tile: BrandTile.doaDzikir,
         onOpen: (c) => _pushPage(c, () => const DoaListPage()),
       ),
       _FeatureEntry(
         id: 'dzikir-terpandu',
-        labelId: 'Dzikir Pagi & Petang',
-        labelEn: 'Morning & Evening Dhikr',
-        keywords: 'al matsurat wirid bada salat terpandu morning evening adhkar guided remembrance',
+        labelId: 'Dzikir Terpandu',
+        labelEn: 'Guided Dhikr',
+        keywords: 'al matsurat wirid bada salat pagi petang terpandu morning evening adhkar guided remembrance',
         icon: MoeslimIcons.matahari,
-        onOpen: (c) => _pushPage(c, () => const GuidedDzikirPage()),
+        onOpen: (c) => _pushPage(c, () => const DoaListPage(initialTab: 2)),
       ),
       _FeatureEntry(
         id: 'tasbih',
@@ -251,7 +256,7 @@ class _AllFeaturesPageState extends State<AllFeaturesPage> {
         labelId: 'Asmaul Husna',
         labelEn: '99 Names of Allah',
         keywords: '99 nama allah makna kuis asmaul husna names attributes meaning quiz',
-        icon: MoeslimIcons.bintang,
+        softAsset: SoftAsset.asmaulHusna,
         onOpen: (c) => _pushPage(c, () => const AsmaulHusnaPage()),
       ),
       _FeatureEntry(
@@ -267,7 +272,7 @@ class _AllFeaturesPageState extends State<AllFeaturesPage> {
         labelId: 'Kartu Bagikan Ayat',
         labelEn: 'Verse Share Cards',
         keywords: 'desain poster kutipan dakwah doa share quote card poster image',
-        icon: MoeslimIcons.bagikan,
+        softAsset: SoftAsset.shareCard,
         onOpen: (c) => _pushPage(c, () => const ShareCardPage()),
       ),
     ]),
@@ -293,7 +298,7 @@ class _AllFeaturesPageState extends State<AllFeaturesPage> {
         labelId: 'Puasa & Qadha',
         labelEn: 'Fasting & Qadha',
         keywords: 'senin kamis ayyamul bidh utang fidyah fasting monday thursday white days makeup',
-        icon: MoeslimIcons.bulan,
+        softAsset: SoftAsset.fasting,
         onOpen: (c) => _pushPage(c, () => const FastingTrackerPage()),
       ),
       _FeatureEntry(
@@ -317,7 +322,7 @@ class _AllFeaturesPageState extends State<AllFeaturesPage> {
         labelId: 'Pelacak Sedekah',
         labelEn: 'Charity Tracker',
         keywords: 'infaq kebaikan subuh jumat amal sadaqah charity donation giving',
-        icon: MoeslimIcons.donasi,
+        softAsset: SoftAsset.charity,
         onOpen: (c) => _pushPage(c, () => const SedekahTrackerPage()),
       ),
       _FeatureEntry(
@@ -325,7 +330,7 @@ class _AllFeaturesPageState extends State<AllFeaturesPage> {
         labelId: 'Jurnal Muhasabah',
         labelEn: 'Reflection Journal',
         keywords: 'refleksi syukur harian catatan pin muhasabah gratitude diary journal',
-        icon: MoeslimIcons.edit,
+        softAsset: SoftAsset.muhasabah,
         onOpen: (c) => _pushPage(c, () => const MuhasabahJournalPage()),
       ),
     ]),
@@ -335,7 +340,7 @@ class _AllFeaturesPageState extends State<AllFeaturesPage> {
         labelId: 'Kitab Hadits',
         labelEn: 'Hadith Library',
         keywords: 'arbain nawawi riyadus shalihin shahih hadith collection authentic sunnah',
-        icon: MoeslimIcons.buku,
+        softAsset: SoftAsset.hadith,
         onOpen: (c) => _pushPage(c, () => const HadithPage()),
       ),
       _FeatureEntry(
@@ -351,7 +356,7 @@ class _AllFeaturesPageState extends State<AllFeaturesPage> {
         labelId: 'Zakat & Waris',
         labelEn: 'Zakat & Inheritance',
         keywords: 'kalkulator maal profesi fitrah fidyah faraid zakat calculator wealth inheritance',
-        tile: BrandTile.keuangan,
+        softAsset: SoftAsset.zakat,
         onOpen: (c) => _pushPage(c, () => const ZakatFaraidPage()),
       ),
       _FeatureEntry(
@@ -359,7 +364,7 @@ class _AllFeaturesPageState extends State<AllFeaturesPage> {
         labelId: 'Manasik Haji & Umrah',
         labelEn: 'Hajj & Umrah Guide',
         keywords: 'rukun thawaf sai kaabah umroh hajj umrah pilgrimage tawaf sai rituals',
-        icon: MoeslimIcons.kubah,
+        softAsset: SoftAsset.kaaba,
         onOpen: (c) => _pushPage(c, () => const ManasikPage()),
       ),
       _FeatureEntry(
@@ -367,7 +372,7 @@ class _AllFeaturesPageState extends State<AllFeaturesPage> {
         labelId: 'Sirah & 25 Nabi',
         labelEn: 'Seerah & Prophets',
         keywords: 'nabawiyah rasulullah kisah sahabat sejarah seerah prophet stories companions history',
-        icon: MoeslimIcons.histori,
+        softAsset: SoftAsset.sirah,
         onOpen: (c) => _pushPage(c, () => const SirahPage()),
       ),
       _FeatureEntry(
@@ -375,8 +380,24 @@ class _AllFeaturesPageState extends State<AllFeaturesPage> {
         labelId: 'Keluarga & Edukasi',
         labelEn: 'Family & Learning',
         keywords: 'nama bayi hijaiyah kuis glosarium utang baby names arabic alphabet quiz glossary debt',
-        icon: MoeslimIcons.jamaah,
+        softAsset: SoftAsset.familyEdu,
         onOpen: (c) => _pushPage(c, () => const FamilyEducationPage()),
+      ),
+      _FeatureEntry(
+        id: 'moeslim-family',
+        labelId: 'Moeslim Family',
+        labelEn: 'Moeslim Family',
+        keywords: 'ruang keluarga agenda bersama target belajar anak cloud qr invite family space',
+        softAsset: SoftAsset.familySpace,
+        onOpen: (c) => _pushPage(c, () => const FamilySpacePage()),
+      ),
+      _FeatureEntry(
+        id: 'learning-path',
+        labelId: 'Learning Path & Arab',
+        labelEn: 'Learning Path & Arabic',
+        keywords: 'jalur belajar bahasa arab kamus terjemahan nahwu sharaf flashcard kelas masjid learning path arabic',
+        softAsset: SoftAsset.learningPath,
+        onOpen: (c) => _pushPage(c, () => const LearningPathPage()),
       ),
     ]),
     _FeatureGroup('Masjid, Utilitas & Lainnya', 'Mosques, Utilities & More', [
@@ -387,6 +408,22 @@ class _AllFeaturesPageState extends State<AllFeaturesPage> {
         keywords: 'agenda pengumuman jamaah masjid followed mosque events announcements',
         tile: BrandTile.masjid,
         onOpen: (c) => _pushPage(c, () => const FollowedMosquesPage()),
+      ),
+      _FeatureEntry(
+        id: 'ramadan-masjid',
+        labelId: 'Ramadan Masjid',
+        labelEn: 'Mosque Ramadan',
+        keywords: 'tarawih buka bersama itikaf jadwal ramadan lokal masjid daftar kegiatan',
+        softAsset: SoftAsset.ramadanMosque,
+        onOpen: (c) => _pushPage(c, () => const RamadanLocalPage()),
+      ),
+      _FeatureEntry(
+        id: 'layanan-masjid',
+        labelId: 'Layanan Masjid',
+        labelEn: 'Mosque Services',
+        keywords: 'tpq pendaftaran fasilitas aspirasi konsultasi sosial permohonan services',
+        softAsset: SoftAsset.mosqueServices,
+        onOpen: (c) => _pushPage(c, () => const PersonalServicesPage()),
       ),
       _FeatureEntry(
         id: 'masjid-gps',
@@ -518,7 +555,10 @@ class _AllFeaturesPageState extends State<AllFeaturesPage> {
                                     key: Key('feature-${item.id}'),
                                     tile: item.tile,
                                     icon: item.icon,
-                                    art: item.art,
+                                    art: item.art ??
+                                        (item.softAsset != null
+                                            ? SoftArt(item.softAsset!, width: 40, height: 40, thumbnail: true)
+                                            : null),
                                     label: item.labelFor(lang),
                                     onTap: item.onOpen(context),
                                   ),

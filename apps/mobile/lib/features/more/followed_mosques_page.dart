@@ -6,7 +6,10 @@ import 'package:personal_core/personal_core.dart';
 import '../../core/format.dart';
 import '../../core/l10n.dart';
 import '../../core/providers.dart';
+import '../learning/learning_path_page.dart';
 import '../masjid/session.dart';
+import '../services/personal_services_page.dart';
+import 'ramadan_local_page.dart';
 
 final _followedProvider = FutureProvider.autoDispose((ref) => ref.watch(favoriteMosqueRepoProvider).all());
 
@@ -183,6 +186,51 @@ class _FollowedMosqueDetailPageState extends ConsumerState<FollowedMosqueDetailP
                 ),
                 style: const TextStyle(fontSize: 12),
               ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                ActionChip(
+                  avatar: const SoftArt(SoftAsset.ramadanMosque, width: 18, height: 18, thumbnail: true),
+                  label: Text(context.tr('Ramadan Masjid', 'Mosque Ramadan')),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => RamadanLocalPage(
+                        initialMosqueSlug: widget.mosque.slug,
+                        initialMosqueName: widget.mosque.name,
+                      ),
+                    ),
+                  ),
+                ),
+                ActionChip(
+                  avatar: const SoftArt(SoftAsset.learningPath, width: 18, height: 18, thumbnail: true),
+                  label: Text(context.tr('Kelas Masjid', 'Mosque Classes')),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => LearningPathPage(
+                        initialTab: 2,
+                        initialMosqueSlug: widget.mosque.slug,
+                        initialMosqueName: widget.mosque.name,
+                      ),
+                    ),
+                  ),
+                ),
+                ActionChip(
+                  avatar: const SoftArt(SoftAsset.mosqueServices, width: 18, height: 18, thumbnail: true),
+                  label: Text(context.tr('Layanan Masjid', 'Mosque Services')),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => PersonalServicesPage(
+                        initialMosqueSlug: widget.mosque.slug,
+                        initialMosqueName: widget.mosque.name,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
             if (c == null && !_offline) const Center(child: CircularProgressIndicator()),
             if (c == null && _offline)
               Text(

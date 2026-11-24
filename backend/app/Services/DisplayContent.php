@@ -18,6 +18,7 @@ class DisplayContent
 
         $events = $mosque->events()
             ->where('status', 'active')->where('visibility', 'public')->where('show_on_display', true)
+            ->whereIn('publication_status', ['published', 'updated'])
             ->where('starts_at', '>=', now()->subHours(3))
             ->where('starts_at', '<=', now()->addDays(14))
             ->orderBy('starts_at')->limit(10)

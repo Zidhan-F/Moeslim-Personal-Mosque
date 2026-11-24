@@ -27,56 +27,83 @@ String isoDate(DateTime d) => '${d.year}-${d.month.toString().padLeft(2, '0')}-$
 (String, String) monthRange(DateTime month) =>
     (isoDate(DateTime(month.year, month.month, 1)), isoDate(DateTime(month.year, month.month + 1, 0)));
 
+Duration? _noRetry(int retryCount, Object error) => null;
+
 final dashboardProvider = FutureProvider.autoDispose.family<Map<String, dynamic>, String>(
   (ref, id) => ref.watch(masjidApiProvider).dashboard(id),
+  retry: _noRetry,
 );
 final eventsProvider = FutureProvider.autoDispose.family<List<Map<String, dynamic>>, String>(
   (ref, id) => ref.watch(masjidApiProvider).events(id),
+  retry: _noRetry,
 );
 final transactionsProvider = FutureProvider.autoDispose.family<List<Map<String, dynamic>>, (String, String?, String?)>(
   (ref, k) => ref.watch(masjidApiProvider).transactions(k.$1, flow: k.$2, q: k.$3),
+  retry: _noRetry,
 );
 final financeSummaryProvider = FutureProvider.autoDispose.family<Map<String, dynamic>, (String, String, String)>(
   (ref, k) => ref.watch(masjidApiProvider).financeSummary(k.$1, from: k.$2, to: k.$3),
+  retry: _noRetry,
 );
 final monthlyReportProvider = FutureProvider.autoDispose.family<Map<String, dynamic>, (String, int)>(
   (ref, k) => ref.watch(masjidApiProvider).monthlyReport(k.$1, k.$2),
+  retry: _noRetry,
 );
 final fridayReportProvider = FutureProvider.autoDispose.family<Map<String, dynamic>, (String, String?)>(
   (ref, k) => ref.watch(masjidApiProvider).fridayReport(k.$1, date: k.$2),
+  retry: _noRetry,
 );
 final donationBoxCountsProvider = FutureProvider.autoDispose.family<List<Map<String, dynamic>>, String>(
   (ref, id) => ref.watch(masjidApiProvider).donationBoxCounts(id),
+  retry: _noRetry,
 );
 final membersProvider = FutureProvider.autoDispose.family<Map<String, dynamic>, String>(
   (ref, id) => ref.watch(masjidApiProvider).members(id),
+  retry: _noRetry,
 );
 final staffProvider = FutureProvider.autoDispose.family<List<Map<String, dynamic>>, (String, String, String)>(
   (ref, k) => ref.watch(masjidApiProvider).staffAssignments(k.$1, from: k.$2, to: k.$3),
+  retry: _noRetry,
 );
 final inventoryProvider = FutureProvider.autoDispose.family<List<Map<String, dynamic>>, String>(
   (ref, id) => ref.watch(masjidApiProvider).inventory(id),
+  retry: _noRetry,
 );
 final displaysProvider = FutureProvider.autoDispose.family<Map<String, dynamic>, String>(
   (ref, id) => ref.watch(masjidApiProvider).displays(id),
+  retry: _noRetry,
 );
 final announcementsProvider = FutureProvider.autoDispose.family<List<Map<String, dynamic>>, String>(
   (ref, id) => ref.watch(masjidApiProvider).announcements(id),
+  retry: _noRetry,
 );
 final subscriptionProvider = FutureProvider.autoDispose.family<Map<String, dynamic>, String>(
   (ref, id) => ref.watch(masjidApiProvider).subscription(id),
+  retry: _noRetry,
 );
 final auditLogsProvider = FutureProvider.autoDispose.family<List<Map<String, dynamic>>, String>(
   (ref, id) => ref.watch(masjidApiProvider).auditLogs(id),
+  retry: _noRetry,
 );
 final zakatProvider = FutureProvider.autoDispose.family<Map<String, dynamic>, (String, int)>(
   (ref, k) => ref.watch(masjidApiProvider).zakat(k.$1, hijriYear: k.$2),
+  retry: _noRetry,
 );
 final qurbanProvider = FutureProvider.autoDispose.family<Map<String, dynamic>, (String, int)>(
   (ref, k) => ref.watch(masjidApiProvider).qurbanAnimals(k.$1, hijriYear: k.$2),
+  retry: _noRetry,
 );
 final couponsProvider = FutureProvider.autoDispose.family<Map<String, dynamic>, (String, String, int)>(
   (ref, k) => ref.watch(masjidApiProvider).coupons(k.$1, program: k.$2, hijriYear: k.$3),
+  retry: _noRetry,
+);
+final mosqueServicesProvider = FutureProvider.autoDispose.family<List<Map<String, dynamic>>, String>(
+  (ref, id) => ref.watch(masjidApiProvider).mosqueServices(id),
+  retry: _noRetry,
+);
+final mosqueServiceRequestsProvider = FutureProvider.autoDispose.family<List<Map<String, dynamic>>, (String, String?)>(
+  (ref, k) => ref.watch(masjidApiProvider).mosqueServiceRequests(k.$1, status: k.$2),
+  retry: _noRetry,
 );
 
 /// Konteks masjid aktif untuk halaman-halaman Mosque: id, nama, kota, slug, dan izin peran.

@@ -3,8 +3,9 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="icon" type="image/png" href="/moeslim-icon.png?v=1">
-    <link rel="shortcut icon" href="/favicon.ico?v=1">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+    <link rel="icon" type="image/png" href="/moeslim-icon.png?v=2">
+    <link rel="shortcut icon" href="/favicon.ico?v=2">
     <title>{{ $mosque->name }} | Profil Masjid Moeslim</title>
     <style>
         :root {

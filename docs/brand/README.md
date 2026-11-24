@@ -1,6 +1,6 @@
 # Identitas Visual Moeslim PM: Personal & Mosque
 
-Sumber: *Moeslim PM Brand Kit* (master SVG di `packages/moeslim_brand/brand-kit-src/`).
+Sumber: *Moeslim PM Logo Brand Kit V2* (master SVG & PNG di `packages/moeslim_brand/brand-kit-v2-src/`).
 Semua aplikasi mengambil brand dari satu paket: **`packages/moeslim_brand`**: token warna, tema
 Material 3 terang/gelap, tipografi **Inter** (dibundel, offline), dan widget `BrandLogo`.
 

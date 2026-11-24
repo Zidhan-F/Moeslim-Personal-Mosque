@@ -18,19 +18,55 @@ class MasjidHomePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) => mosqueScoped(context, (context) {
     final session = ref.watch(sessionProvider);
     return session.when(
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (e, _) => Scaffold(
-        appBar: AppBar(title: const Text('Moeslim Mosque')),
+      loading: () => Scaffold(
+        appBar: AppBar(title: const Text('Moeslim Mosque'), centerTitle: true),
         body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('$e', textAlign: TextAlign.center),
-              TextButton(
-                onPressed: () => ref.invalidate(sessionProvider),
-                child: Text(context.tr('Coba lagi', 'Try again')),
-              ),
-            ],
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                Text(
+                  context.tr('Menghubungkan ke server...', 'Connecting to server...'),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      error: (e, _) => Scaffold(
+        appBar: AppBar(title: const Text('Moeslim Mosque'), centerTitle: true),
+        body: SingleChildScrollView(
+          child: BrandEmptyState(
+            art: BrandEmptyArt.tanpaInternet,
+            title: context.tr('Server belum dapat dijangkau', 'Server unavailable'),
+            message: '$e',
+            action: Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 10,
+              runSpacing: 8,
+              children: [
+                FilledButton.icon(
+                  key: const Key('mosque-retry'),
+                  onPressed: () => ref.invalidate(sessionProvider),
+                  icon: const Icon(MoeslimIcons.refresh),
+                  label: Text(context.tr('Coba lagi', 'Try again')),
+                ),
+                OutlinedButton(
+                  key: const Key('mosque-back-personal'),
+                  onPressed: () => Navigator.of(context).popUntil((r) => r.isFirst),
+                  child: Text(context.tr('Kembali ke Personal', 'Back to Personal')),
+                ),
+                TextButton(
+                  key: const Key('mosque-offline-logout'),
+                  onPressed: () => ref.read(sessionProvider.notifier).logout(),
+                  child: Text(context.tr('Keluar akun', 'Sign out')),
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -7,6 +7,7 @@ import 'package:personal_core/personal_core.dart';
 import '../../core/l10n.dart';
 import '../../core/providers.dart';
 import '../../ui/components.dart';
+import 'utility_accessibility_page.dart';
 
 typedef _GuidedDzikirEn = ({String title, String translation, String source, String virtue});
 
@@ -205,15 +206,58 @@ const Map<String, _GuidedDzikirEn> _guidedDzikirEn = {
   ),
 };
 
-class GuidedDzikirPage extends ConsumerStatefulWidget {
+class GuidedDzikirPage extends StatefulWidget {
   final GuidedDzikirTime initialTime;
   const GuidedDzikirPage({super.key, this.initialTime = GuidedDzikirTime.pagi});
 
   @override
-  ConsumerState<GuidedDzikirPage> createState() => _GuidedDzikirPageState();
+  State<GuidedDzikirPage> createState() => _GuidedDzikirPageState();
 }
 
-class _GuidedDzikirPageState extends ConsumerState<GuidedDzikirPage> {
+class _GuidedDzikirPageState extends State<GuidedDzikirPage> {
+  final _bodyKey = GlobalKey<GuidedDzikirBodyState>();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(context.tr('Dzikir Terpandu', 'Guided Dhikr')),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            key: const Key('guided-dzikir-reset-session'),
+            tooltip: context.tr('Ulangi sesi ini', 'Reset this session'),
+            onPressed: () => _bodyKey.currentState?.resetSession(),
+            icon: const Icon(MoeslimIcons.ulang),
+          ),
+        ],
+      ),
+      body: GuidedDzikirBody(
+        key: _bodyKey,
+        initialTime: widget.initialTime,
+        showInlineReset: false,
+      ),
+    );
+  }
+}
+
+/// Konten interaktif Dzikir Terpandu (Pagi, Petang, Ba'da Salat) yang dapat dipakai
+/// langsung di halaman Doa & Dzikir maupun halaman mandiri.
+class GuidedDzikirBody extends ConsumerStatefulWidget {
+  final GuidedDzikirTime initialTime;
+  final bool showInlineReset;
+
+  const GuidedDzikirBody({
+    super.key,
+    this.initialTime = GuidedDzikirTime.pagi,
+    this.showInlineReset = true,
+  });
+
+  @override
+  ConsumerState<GuidedDzikirBody> createState() => GuidedDzikirBodyState();
+}
+
+class GuidedDzikirBodyState extends ConsumerState<GuidedDzikirBody> {
   late int _tabIndex;
   Map<String, int> _counts = {};
   bool _loading = true;
@@ -269,7 +313,7 @@ class _GuidedDzikirPageState extends ConsumerState<GuidedDzikirPage> {
     setState(() => _counts = Map<String, int>.from(_counts)..[item.id] = 0);
   }
 
-  Future<void> _resetSession() async {
+  Future<void> resetSession() async {
     await ref.read(guidedDzikirRepoProvider).resetSession(_today, _currentTime);
     await _load();
   }
@@ -316,86 +360,91 @@ class _GuidedDzikirPageState extends ConsumerState<GuidedDzikirPage> {
     final t = Theme.of(context).textTheme;
     final isEn = context.isEn;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(context.tr('Dzikir Terpandu', 'Guided Dhikr')),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            key: const Key('guided-dzikir-reset-session'),
-            tooltip: context.tr('Ulangi sesi ini', 'Reset this session'),
-            onPressed: _resetSession,
-            icon: const Icon(MoeslimIcons.ulang),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+          child: PillTabs(
+            labels: [
+              context.tr('Dzikir Pagi', 'Morning Dhikr'),
+              context.tr('Dzikir Petang', 'Evening Dhikr'),
+              context.tr('Ba\'da Salat', 'After Prayer'),
+            ],
+            index: _tabIndex,
+            onChanged: (i) => setState(() => _tabIndex = i),
           ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: PillTabs(
-              labels: [
-                context.tr('Dzikir Pagi', 'Morning Dhikr'),
-                context.tr('Dzikir Petang', 'Evening Dhikr'),
-                context.tr('Ba\'da Salat', 'After Prayer'),
-              ],
-              index: _tabIndex,
-              onChanged: (i) => setState(() => _tabIndex = i),
-            ),
-          ),
-          Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
-                    itemCount: items.length + 1,
-                    itemBuilder: (context, index) {
-                      if (index == 0) {
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(
-                                      _tabIndex == 0
-                                          ? MoeslimIcons.matahari
-                                          : (_tabIndex == 1 ? MoeslimIcons.bulan : MoeslimIcons.zikr),
-                                      color: scheme.primary,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        _timeLabel(context, _currentTime),
-                                        style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+        ),
+        Expanded(
+          child: _loading
+              ? const Center(child: CircularProgressIndicator())
+              : ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
+                  itemCount: items.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _ContextualDzikirReminderCard(
+                            onSelectTab: (tab) => setState(() => _tabIndex = tab),
+                          ),
+                          Card(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        _tabIndex == 0
+                                            ? MoeslimIcons.matahari
+                                            : (_tabIndex == 1 ? MoeslimIcons.bulan : MoeslimIcons.zikr),
+                                        color: scheme.primary,
                                       ),
-                                    ),
-                                    Text(
-                                      context.tr(
-                                        '$completedCount / ${items.length} selesai',
-                                        '$completedCount / ${items.length} done',
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          _timeLabel(context, _currentTime),
+                                          style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                                        ),
                                       ),
-                                      key: const Key('guided-dzikir-progress-text'),
-                                      style: t.labelLarge?.copyWith(color: scheme.primary, fontWeight: FontWeight.w700),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 6),
-                                Text(_timeHint(context, _currentTime), style: t.bodySmall),
-                                const SizedBox(height: 10),
-                                LinearProgressIndicator(
-                                  value: progress,
-                                  minHeight: 8,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                              ],
+                                      Text(
+                                        context.tr(
+                                          '$completedCount / ${items.length} selesai',
+                                          '$completedCount / ${items.length} done',
+                                        ),
+                                        key: const Key('guided-dzikir-progress-text'),
+                                        style: t.labelLarge?.copyWith(color: scheme.primary, fontWeight: FontWeight.w700),
+                                      ),
+                                      if (widget.showInlineReset) ...[
+                                        const SizedBox(width: 4),
+                                        IconButton(
+                                          key: const Key('guided-dzikir-reset-session'),
+                                          tooltip: context.tr('Ulangi sesi ini', 'Reset this session'),
+                                          visualDensity: VisualDensity.compact,
+                                          onPressed: resetSession,
+                                          icon: const Icon(MoeslimIcons.ulang, size: 18),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(_timeHint(context, _currentTime), style: t.bodySmall),
+                                  const SizedBox(height: 10),
+                                  LinearProgressIndicator(
+                                    value: progress,
+                                    minHeight: 8,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        );
-                      }
+                        ],
+                      );
+                    }
 
                       final item = items[index - 1];
                       final count = _counts[item.id] ?? 0;
@@ -521,10 +570,44 @@ class _GuidedDzikirPageState extends ConsumerState<GuidedDzikirPage> {
                           ),
                         ),
                       );
-                    },
-                  ),
-          ),
-        ],
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ContextualDzikirReminderCard extends ConsumerWidget {
+  final ValueChanged<int> onSelectTab;
+  const _ContextualDzikirReminderCard({required this.onSelectTab});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final now = ref.watch(nowProvider).value ?? DateTime.now();
+    final advice = evaluateContextualSunnahForTime(now, lang: context.lang).first;
+    final scheme = Theme.of(context).colorScheme;
+    final t = Theme.of(context).textTheme;
+
+    return Card(
+      key: const Key('dzikir-contextual-sunnah-card'),
+      margin: const EdgeInsets.only(bottom: 10),
+      child: ListTile(
+        leading: Icon(MoeslimIcons.bintang, color: scheme.primary),
+        title: Text(advice.title, style: t.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+        subtitle: Text('${advice.timeWindowLabel} · ${advice.subtitle}', maxLines: 2, overflow: TextOverflow.ellipsis),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () {
+          if (advice.actionType == 'dzikir_pagi') {
+            onSelectTab(0);
+          } else if (advice.actionType == 'dzikir_petang') {
+            onSelectTab(1);
+          } else {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const UtilityAccessibilityPage(initialTab: 4)),
+            );
+          }
+        },
       ),
     );
   }

@@ -7,6 +7,7 @@ import 'package:personal_core/personal_core.dart';
 import '../../core/l10n.dart';
 import '../../ui/components.dart';
 import '../quran/quran_source.dart';
+import 'guided_dzikir_page.dart';
 import 'share_card_page.dart';
 
 /// Satu doa dalam Al-Qur'an: rentang ayat beserta teks & terjemahan dari dataset terpasang.
@@ -106,7 +107,13 @@ List<String> _orderedGroups(List<DailyDua> list) {
 }
 
 class DoaListPage extends ConsumerStatefulWidget {
-  const DoaListPage({super.key});
+  final int initialTab;
+  final GuidedDzikirTime initialDzikirTime;
+  const DoaListPage({
+    super.key,
+    this.initialTab = 0,
+    this.initialDzikirTime = GuidedDzikirTime.pagi,
+  });
 
   @override
   ConsumerState<DoaListPage> createState() => _DoaListPageState();
@@ -114,9 +121,15 @@ class DoaListPage extends ConsumerStatefulWidget {
 
 class _DoaListPageState extends ConsumerState<DoaListPage> {
   final _searchController = TextEditingController();
-  int _tab = 0;
+  late int _tab;
   String _q = '';
   String? _selectedGroup;
+
+  @override
+  void initState() {
+    super.initState();
+    _tab = widget.initialTab.clamp(0, 2);
+  }
 
   @override
   void dispose() {
@@ -140,84 +153,99 @@ class _DoaListPageState extends ConsumerState<DoaListPage> {
   @override
   Widget build(BuildContext context) {
     final isDaily = _tab == 0;
+    final isDzikir = _tab == 2;
     final dailyDuas = ref.watch(dailyDuasProvider);
     final quranDuas = ref.watch(quranicDuasProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text(context.tr('Doa & Dzikir', 'Duas & Dhikr')), centerTitle: true),
-      body: CustomScrollView(
-        slivers: [
-          SliverPadding(
+      body: Column(
+        children: [
+          Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            sliver: SliverToBoxAdapter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  PillTabs(
-                    labels: [
-                      context.tr('Doa Harian', 'Daily Duas'),
-                      context.tr('Doa Al-Qur\'an', 'Quranic Duas'),
-                    ],
-                    index: _tab,
-                    onChanged: (i) => setState(() => _tab = i),
-                  ),
-                  const SizedBox(height: 12),
-                  const Center(child: BrandArt(BrandIllustration.heroQuran, height: 150)),
-                  const SizedBox(height: 8),
-                  Text(
-                    isDaily
-                        ? context.tr('Doa Harian & Aktivitas', 'Daily & Activity Duas')
-                        : context.tr('Doa dalam Al-Qur\'an', 'Duas in the Quran'),
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    isDaily
-                        ? context.tr(
-                            'Kumpulan doa sehari-hari dan aktivitas dari bangun tidur hingga tidur lagi.',
-                            'Collection of everyday duas from waking up until going to sleep.',
-                          )
-                        : context.tr(
-                            'Doa-doa yang diabadikan dalam Al-Qur\'an, lengkap dengan teks Arab dan terjemahan.',
-                            'Supplications preserved in the Quran, complete with Arabic text and translation.',
-                          ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    key: const Key('doa-search'),
-                    controller: _searchController,
-                    textInputAction: TextInputAction.search,
-                    decoration: InputDecoration(
-                      prefixIcon: const Icon(MoeslimIcons.pencarian),
-                      suffixIcon: _q.isNotEmpty
-                          ? IconButton(
-                              key: const Key('doa-search-clear'),
-                              tooltip: context.tr('Hapus pencarian', 'Clear search'),
-                              onPressed: _clearSearch,
-                              icon: const Icon(Icons.close),
-                            )
-                          : null,
-                      hintText: isDaily
-                          ? context.tr(
-                              'Cari doa aktivitas (mis. tidur, makan, masjid, perjalanan)',
-                              'Search daily duas (e.g. sleep, meal, mosque, travel)',
-                            )
-                          : context.tr(
-                              'Cari doa (mis. ampunan, ilmu, orang tua)',
-                              'Search duas (e.g. forgiveness, knowledge, parents)',
-                            ),
-                    ),
-                    onChanged: (v) => setState(() => _q = v.trim().toLowerCase()),
-                  ),
-                ],
-              ),
+            child: PillTabs(
+              labels: [
+                context.tr('Doa Harian', 'Daily Duas'),
+                context.tr('Doa Al-Qur\'an', 'Quranic Duas'),
+                context.tr('Dzikir Terpandu', 'Guided Dhikr'),
+              ],
+              index: _tab,
+              onChanged: (i) => setState(() => _tab = i),
             ),
           ),
-          if (isDaily)
-            ..._buildDailySlivers(context, dailyDuas)
-          else
-            ..._buildQuranSlivers(context, quranDuas),
-          const SliverToBoxAdapter(child: SizedBox(height: 24)),
+          Expanded(
+            child: isDzikir
+                ? GuidedDzikirBody(
+                    initialTime: widget.initialDzikirTime,
+                    showInlineReset: true,
+                  )
+                : CustomScrollView(
+                    slivers: [
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                        sliver: SliverToBoxAdapter(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Center(child: BrandArt(BrandIllustration.heroQuran, height: 150)),
+                              const SizedBox(height: 8),
+                              Text(
+                                isDaily
+                                    ? context.tr('Doa Harian & Aktivitas', 'Daily & Activity Duas')
+                                    : context.tr('Doa dalam Al-Qur\'an', 'Duas in the Quran'),
+                                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                isDaily
+                                    ? context.tr(
+                                        'Kumpulan doa sehari-hari dan aktivitas dari bangun tidur hingga tidur lagi.',
+                                        'Collection of everyday duas from waking up until going to sleep.',
+                                      )
+                                    : context.tr(
+                                        'Doa-doa yang diabadikan dalam Al-Qur\'an, lengkap dengan teks Arab dan terjemahan.',
+                                        'Supplications preserved in the Quran, complete with Arabic text and translation.',
+                                      ),
+                              ),
+                              const SizedBox(height: 12),
+                              TextField(
+                                key: const Key('doa-search'),
+                                controller: _searchController,
+                                textInputAction: TextInputAction.search,
+                                decoration: InputDecoration(
+                                  prefixIcon: const Icon(MoeslimIcons.pencarian),
+                                  suffixIcon: _q.isNotEmpty
+                                      ? IconButton(
+                                          key: const Key('doa-search-clear'),
+                                          tooltip: context.tr('Hapus pencarian', 'Clear search'),
+                                          onPressed: _clearSearch,
+                                          icon: const Icon(Icons.close),
+                                        )
+                                      : null,
+                                  hintText: isDaily
+                                      ? context.tr(
+                                          'Cari doa aktivitas (mis. tidur, makan, masjid, perjalanan)',
+                                          'Search daily duas (e.g. sleep, meal, mosque, travel)',
+                                        )
+                                      : context.tr(
+                                          'Cari doa (mis. ampunan, ilmu, orang tua)',
+                                          'Search duas (e.g. forgiveness, knowledge, parents)',
+                                        ),
+                                ),
+                                onChanged: (v) => setState(() => _q = v.trim().toLowerCase()),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      if (isDaily)
+                        ..._buildDailySlivers(context, dailyDuas)
+                      else
+                        ..._buildQuranSlivers(context, quranDuas),
+                      const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                    ],
+                  ),
+          ),
         ],
       ),
     );

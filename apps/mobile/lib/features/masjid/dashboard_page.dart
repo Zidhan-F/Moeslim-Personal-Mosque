@@ -114,6 +114,8 @@ class MosqueHomeTab extends ConsumerWidget {
       if (ctx.can('zakat.view')) (MoeslimIcons.saldo, 'Zakat', () => _push(context, ZakatPage(ctx: ctx))),
       if (ctx.can('qurban.view'))
         (Icons.qr_code_2_rounded, context.tr('Kurban & QR', 'Qurban & QR'), () => _push(context, QurbanPage(ctx: ctx))),
+      if (ctx.can('services.view'))
+        (MoeslimIcons.laporan, context.tr('Layanan', 'Services'), () => _push(context, MosqueServicesAdminPage(ctx: ctx))),
       (MoeslimIcons.web, context.tr('Profil Web', 'Web Profile'), () => _push(context, MosqueMicrositePage(ctx: ctx))),
     ];
 
@@ -200,6 +202,8 @@ class MosqueHomeTab extends ConsumerWidget {
                       ? const SoftArt(SoftAsset.zakat, width: 40, height: 40, thumbnail: true)
                       : q.$1 == Icons.qr_code_2_rounded
                       ? const SoftArt(SoftAsset.qurban, width: 40, height: 40, thumbnail: true)
+                      : q.$1 == MoeslimIcons.laporan
+                      ? const SoftArt(SoftAsset.mosqueServices, width: 40, height: 40, thumbnail: true)
                       : null,
                   label: q.$2,
                   onTap: q.$3,
@@ -302,6 +306,11 @@ class _RecentActivity extends ConsumerWidget {
     'member.role_changed': 'Peran pengurus diubah',
     'display.paired': 'TV Display terhubung',
     'display.revoked': 'TV Display dicabut',
+    'event.registration_updated': 'Status peserta kegiatan diperbarui',
+    'service.definition_created': 'Layanan masjid dibuat',
+    'service.definition_updated': 'Layanan masjid diperbarui',
+    'service.request_status_updated': 'Status permohonan layanan diperbarui',
+    'service.requests_exported': 'Daftar permohonan layanan diekspor',
   };
 
   static const _labelsEn = {
@@ -334,6 +343,11 @@ class _RecentActivity extends ConsumerWidget {
     'member.role_changed': 'Committee role updated',
     'display.paired': 'TV Display paired',
     'display.revoked': 'TV Display revoked',
+    'event.registration_updated': 'Event registration status updated',
+    'service.definition_created': 'Mosque service created',
+    'service.definition_updated': 'Mosque service updated',
+    'service.request_status_updated': 'Service request status updated',
+    'service.requests_exported': 'Service requests exported',
   };
 
   static String _label(String action, AppLanguage lang) =>

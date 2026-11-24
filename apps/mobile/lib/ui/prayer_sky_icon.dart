@@ -2,10 +2,9 @@ import 'dart:math' as math;
 
 import 'package:material_ui/material_ui.dart';
 
-/// Ikon waktu salat yang menggambarkan posisi matahari/bulan:
-/// Subuh (fajar), Dzuhur (matahari terik), Ashar (matahari sore berawan),
+/// Ikon waktu salat yang menggambarkan posisi matahari/bulan, satu gaya garis untuk semua baris jadwal:
+/// Subuh (fajar), Syuruq (matahari terbit), Dzuhur (matahari terik), Ashar (matahari sore berawan),
 /// Maghrib (matahari terbenam), Isya (bulan sabit & bintang).
-/// Gaya garis sama dengan ikon matahari Syuruq.
 class PrayerSkyIcon extends StatelessWidget {
   final String prayer;
   final Color color;
@@ -14,12 +13,12 @@ class PrayerSkyIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ExcludeSemantics(
-        child: SizedBox(
-          width: size,
-          height: size,
-          child: CustomPaint(painter: _SkyPainter(prayer, color)),
-        ),
-      );
+    child: SizedBox(
+      width: size,
+      height: size,
+      child: CustomPaint(painter: _SkyPainter(prayer, color)),
+    ),
+  );
 }
 
 class _SkyPainter extends CustomPainter {
@@ -38,11 +37,7 @@ class _SkyPainter extends CustomPainter {
   void _rays(Canvas c, Offset o, double r1, double r2, Iterable<double> degrees) {
     for (final d in degrees) {
       final a = d * math.pi / 180;
-      c.drawLine(
-        o + Offset(math.cos(a), math.sin(a)) * r1,
-        o + Offset(math.cos(a), math.sin(a)) * r2,
-        _line,
-      );
+      c.drawLine(o + Offset(math.cos(a), math.sin(a)) * r1, o + Offset(math.cos(a), math.sin(a)) * r2, _line);
     }
   }
 
@@ -57,6 +52,20 @@ class _SkyPainter extends CustomPainter {
         canvas.drawCircle(const Offset(4.5, 6.5), .9, _fill);
         canvas.drawCircle(const Offset(19.5, 5.5), .9, _fill);
         canvas.drawLine(const Offset(8, 20.5), const Offset(16, 20.5), _line);
+      case 'Syuruq': // terbit: matahari naik di atas cakrawala, sinar menyebar, panah ke atas
+        canvas.drawLine(const Offset(3, 16), const Offset(21, 16), _line);
+        canvas.drawArc(Rect.fromCircle(center: const Offset(12, 16), radius: 5), math.pi, math.pi, false, _line);
+        canvas.drawArc(
+          Rect.fromCircle(center: const Offset(12, 16), radius: 2.6),
+          math.pi,
+          math.pi,
+          true,
+          Paint()..color = color.withValues(alpha: .35),
+        );
+        _rays(canvas, const Offset(12, 16), 7.5, 10, [180, 215, 250, 290, 325, 360]);
+        canvas.drawLine(const Offset(12, 22), const Offset(12, 18.5), _line);
+        canvas.drawLine(const Offset(10, 20.3), const Offset(12, 18.5), _line);
+        canvas.drawLine(const Offset(14, 20.3), const Offset(12, 18.5), _line);
       case 'Dzuhur': // terik: matahari penuh di puncak, sinar panjang
         canvas.drawCircle(const Offset(12, 12), 4.2, _fill);
         _rays(canvas, const Offset(12, 12), 7, 10.5, [for (var i = 0; i < 8; i++) i * 45.0]);

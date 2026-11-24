@@ -88,14 +88,13 @@ class GoogleMosqueFinder {
   }
 }
 
-/// Mencari masjid/musholla di sekitar koordinat lewat OpenStreetMap (Overpass API).
-/// Gratis dan tanpa kunci API; datanya dikelola komunitas sehingga bisa sedikit
-/// berbeda dari Google Maps.
+/// Mencari masjid/musholla di sekitar koordinat lewat OpenStreetMap (Overpass API
+/// dengan cadangan cepat Photon Komoot). Gratis, tanpa API key, dan tidak memerlukan
+/// server backend sendiri.
 class OnlineMosqueFinder {
-  static const _endpoints = [
-    'https://overpass-api.de/api/interpreter',
-    'https://overpass.kumi.systems/api/interpreter',
-  ];
+  static const _overpassEndpoint = 'https://overpass-api.de/api/interpreter';
+  static const _photonEndpoint = 'https://photon.komoot.io/api/';
+  static const _userAgent = 'MoeslimPM/1.0 (https://moeslim.id)';
   static const _cachePrefix = 'nearby_mosques_cache_';
   static const _cacheTtl = Duration(hours: 24);
 
@@ -110,12 +109,13 @@ class OnlineMosqueFinder {
       ? '$_cachePrefix${c.latitude.toStringAsFixed(2)}_${c.longitude.toStringAsFixed(2)}_en'
       : '$_cachePrefix${c.latitude.toStringAsFixed(2)}_${c.longitude.toStringAsFixed(2)}';
 
-  /// Hasil cache (maks 24 jam) dipakai dulu; bila tidak ada, ambil dari jaringan.
-  /// Melempar exception bila jaringan gagal dan tidak ada cache sama sekali.
+  /// Hasil cache (maks 24 jam) dipakai dulu kecuali [forceRefresh]; bila tidak ada,
+  /// ambil dari jaringan (Overpass lalu fallback cepat Photon OSM).
   Future<List<NearbyMosqueItem>> search(
     Coordinates origin, {
     int radiusMeters = 5000,
     AppLanguage lang = AppLanguage.id,
+    bool forceRefresh = false,
   }) async {
     final key = _cacheKey(origin, lang);
     final cached = await store.readJson(key);
@@ -126,15 +126,19 @@ class OnlineMosqueFinder {
           if (e is Map) NearbyMosqueItem.fromJson(Map<String, dynamic>.from(e)),
       ];
       final at = DateTime.tryParse(cached['at'] as String? ?? '');
-      if (items.isNotEmpty && at != null && now().difference(at) < _cacheTtl) return items;
+      if (!forceRefresh && items.isNotEmpty && at != null && now().difference(at) < _cacheTtl) {
+        return items;
+      }
       stale = items;
     }
     try {
       final items = await _fetch(origin, radiusMeters, lang);
-      await store.writeJson(key, {
-        'at': now().toIso8601String(),
-        'items': [for (final m in items) m.toJson()],
-      });
+      if (items.isNotEmpty) {
+        await store.writeJson(key, {
+          'at': now().toIso8601String(),
+          'items': [for (final m in items) m.toJson()],
+        });
+      }
       return items;
     } catch (_) {
       if (stale != null && stale.isNotEmpty) return stale;
@@ -143,37 +147,98 @@ class OnlineMosqueFinder {
   }
 
   Future<List<NearbyMosqueItem>> _fetch(Coordinates o, int radius, AppLanguage lang) async {
+    Object? lastError;
+
+    // 1. Coba Overpass (node & way saja, timeout cepat 7 detik agar tidak menggantung).
     final around = '(around:$radius,${o.latitude},${o.longitude})';
-    final query = '[out:json][timeout:25];('
+    final query = '[out:json][timeout:7];('
         'node["amenity"="place_of_worship"]["religion"="muslim"]$around;'
         'way["amenity"="place_of_worship"]["religion"="muslim"]$around;'
-        'relation["amenity"="place_of_worship"]["religion"="muslim"]$around;'
-        ');out center tags 400;';
-    Object? lastError;
-    for (final url in _endpoints) {
-      try {
-        final res = await client
-            .post(
-              Uri.parse(url),
-              headers: {'User-Agent': 'MoeslimApp/1.0'},
-              body: {'data': query},
-            )
-            .timeout(const Duration(seconds: 30));
-        if (res.statusCode != 200) {
-          lastError = 'HTTP ${res.statusCode}';
-          continue;
-        }
-        return parseOverpass(utf8.decode(res.bodyBytes), lang: lang);
-      } catch (e) {
-        lastError = e;
+        ');out center tags 200;';
+    try {
+      final res = await client
+          .post(
+            Uri.parse(_overpassEndpoint),
+            headers: {'User-Agent': _userAgent},
+            body: {'data': query},
+          )
+          .timeout(const Duration(seconds: 8));
+      if (res.statusCode == 200) {
+        final items = parseOverpass(utf8.decode(res.bodyBytes), lang: lang);
+        if (items.isNotEmpty) return items;
+      } else {
+        lastError = 'Overpass HTTP ${res.statusCode}';
       }
+    } catch (e) {
+      lastError = e;
     }
+
+    // 2. Fallback cepat ke Photon (OpenStreetMap geocoder gratis, ~1-2 detik).
+    try {
+      final items = await _fetchPhoton(o, radius, lang);
+      if (items.isNotEmpty) return items;
+    } catch (e) {
+      lastError = e;
+    }
+
     throw Exception(
       lang == AppLanguage.en ? 'Mosque search failed: $lastError' : 'Pencarian masjid gagal: $lastError',
     );
   }
 
-  /// Mengubah respons Overpass menjadi daftar masjid (tanpa duplikat, harus bernama atau berkoordinat).
+  Future<List<NearbyMosqueItem>> _fetchPhoton(Coordinates o, int radius, AppLanguage lang) async {
+    final terms = lang == AppLanguage.en ? const ['mosque', 'masjid'] : const ['masjid', 'musholla'];
+    final maxKm = (radius / 1000.0 * 3).clamp(10.0, 20.0);
+    Object? firstError;
+
+    final results = await Future.wait(
+      terms.map((term) async {
+        final uri = Uri.parse(_photonEndpoint).replace(
+          queryParameters: {
+            'q': term,
+            'lat': o.latitude.toStringAsFixed(5),
+            'lon': o.longitude.toStringAsFixed(5),
+            'limit': '30',
+            'osm_tag': 'amenity:place_of_worship',
+            'location_bias_scale': '0.1',
+          },
+        );
+        try {
+          final res = await client
+              .get(uri, headers: {'User-Agent': _userAgent})
+              .timeout(const Duration(seconds: 10));
+          if (res.statusCode != 200) {
+            firstError ??= 'Photon HTTP ${res.statusCode}';
+            return const <NearbyMosqueItem>[];
+          }
+          return parsePhoton(utf8.decode(res.bodyBytes), origin: o, maxDistanceKm: maxKm, lang: lang);
+        } catch (e) {
+          firstError ??= e;
+          return const <NearbyMosqueItem>[];
+        }
+      }),
+    );
+
+    final dedup = <String, NearbyMosqueItem>{};
+    for (final list in results) {
+      for (final item in list) {
+        dedup.putIfAbsent(item.id, () => item);
+      }
+    }
+    if (dedup.isEmpty && firstError != null) {
+      throw Exception('$firstError');
+    }
+    return dedup.values.toList();
+  }
+
+  static bool _isSmallPrayerRoom(String lower) =>
+      lower.contains('musholla') ||
+      lower.contains('mushola') ||
+      lower.contains('musala') ||
+      lower.contains('surau') ||
+      lower.contains('langgar');
+
+  /// Mengubah respons Overpass menjadi daftar masjid (harus berkoordinat).
   static List<NearbyMosqueItem> parseOverpass(String body, {AppLanguage lang = AppLanguage.id}) {
     final isEn = lang == AppLanguage.en;
     final json = jsonDecode(body);
@@ -187,12 +252,7 @@ class OnlineMosqueFinder {
       final lon = ((e['lon'] ?? center?['lon']) as num?)?.toDouble();
       if (lat == null || lon == null) continue;
       final name = (tags['name'] as String?)?.trim();
-      final lower = (name ?? '').toLowerCase();
-      final isSmall = lower.contains('musholla') ||
-          lower.contains('mushola') ||
-          lower.contains('musala') ||
-          lower.contains('surau') ||
-          lower.contains('langgar');
+      final isSmall = _isSmallPrayerRoom((name ?? '').toLowerCase());
       final kind = isSmall ? (isEn ? 'Prayer Room' : 'Musholla') : (isEn ? 'Mosque' : 'Masjid');
       out.add(NearbyMosqueItem(
         id: 'osm_${e['type']}_${e['id']}',
@@ -202,6 +262,67 @@ class OnlineMosqueFinder {
         latitude: lat,
         longitude: lon,
         facilities: _facilities(tags, lang),
+      ));
+    }
+    return out;
+  }
+
+  /// Mengubah respons GeoJSON Photon (OpenStreetMap) menjadi daftar masjid sekitar.
+  static List<NearbyMosqueItem> parsePhoton(
+    String body, {
+    required Coordinates origin,
+    double maxDistanceKm = 15.0,
+    AppLanguage lang = AppLanguage.id,
+  }) {
+    final isEn = lang == AppLanguage.en;
+    final json = jsonDecode(body);
+    final features = (json is Map ? json['features'] : null) as List? ?? const [];
+    final out = <NearbyMosqueItem>[];
+    for (final f in features) {
+      if (f is! Map) continue;
+      final geom = f['geometry'] as Map?;
+      final coords = geom?['coordinates'] as List?;
+      if (coords == null || coords.length < 2) continue;
+      final lon = (coords[0] as num?)?.toDouble();
+      final lat = (coords[1] as num?)?.toDouble();
+      if (lat == null || lon == null) continue;
+      if (computeDistanceKm(origin, Coordinates(lat, lon)) > maxDistanceKm) continue;
+
+      final props = (f['properties'] as Map?)?.cast<String, dynamic>() ?? const {};
+      final rawName = (props['name'] as String?)?.trim() ?? '';
+      final lower = rawName.toLowerCase();
+      final isSmall = _isSmallPrayerRoom(lower);
+      final kind = isSmall ? (isEn ? 'Prayer Room' : 'Musholla') : (isEn ? 'Mosque' : 'Masjid');
+      final street = (props['street'] as String?)?.trim() ?? '';
+      final displayName = rawName.isEmpty
+          ? (street.isNotEmpty ? '$kind $street' : (isEn ? '$kind (unnamed)' : '$kind (tanpa nama)'))
+          : (lower == 'masjid' || lower == 'musholla' || lower == 'mushola') && street.isNotEmpty
+              ? '$rawName $street'
+              : rawName;
+
+      final addrParts = <String>[
+        if (street.isNotEmpty)
+          [street, props['housenumber']].whereType<String>().map((s) => s.trim()).where((s) => s.isNotEmpty).join(' '),
+        for (final key in const ['district', 'locality', 'city', 'county', 'state'])
+          if (props[key] is String && (props[key] as String).trim().isNotEmpty) (props[key] as String).trim(),
+      ];
+      final uniqueAddr = <String>[];
+      for (final p in addrParts) {
+        if (!uniqueAddr.contains(p)) uniqueAddr.add(p);
+      }
+
+      final osmType = props['osm_type'] ?? 'N';
+      final osmId = props['osm_id'] ?? '${lat.toStringAsFixed(5)}_${lon.toStringAsFixed(5)}';
+      out.add(NearbyMosqueItem(
+        id: 'osm_${osmType}_$osmId',
+        name: displayName,
+        kind: kind,
+        address: uniqueAddr.isEmpty
+            ? (isEn ? 'Address not listed on map' : 'Alamat belum tercatat di peta')
+            : uniqueAddr.join(', '),
+        latitude: lat,
+        longitude: lon,
+        facilities: isEn ? 'No facility data yet' : 'Belum ada data fasilitas',
       ));
     }
     return out;

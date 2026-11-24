@@ -55,6 +55,8 @@ void main() {
       200,
       scrollable: find.byType(Scrollable).first,
     );
+    await Scrollable.ensureVisible(tester.element(find.byKey(const Key('masjid-entry'))), alignment: 0.5);
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('masjid-entry')));
     await tester.pumpAndSettle();
     expect(find.text('Pilih Peran di Moeslim PM'), findsOneWidget);
@@ -86,5 +88,36 @@ void main() {
     expect(find.textContaining('80%'), findsOneWidget);
     expect(find.text('Keuangan'), findsOneWidget); // tab sesuai izin finance.view
     expect(find.text('Petugas'), findsNothing); // bendahara tanpa staff.view
+  });
+
+  testWidgets('saat server mati dengan token tersimpan, layar langsung tampil error tanpa loading terus', (
+    tester,
+  ) async {
+    final tokens = MemoryTokenStore('saved-token');
+    final offlineClient = MockClient((_) async => http.Response('<html>ERR_NGROK_3200 offline</html>', 404));
+    await pumpApp(tester, client: offlineClient, tokens: tokens);
+
+    await tester.tap(find.text('Profil').last);
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('masjid-entry')),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await Scrollable.ensureVisible(tester.element(find.byKey(const Key('masjid-entry'))), alignment: 0.5);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('masjid-entry')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(find.text('Server belum dapat dijangkau'), findsOneWidget);
+    expect(find.textContaining('sedang tidak aktif'), findsOneWidget);
+    expect(find.byKey(const Key('mosque-retry')), findsOneWidget);
+    expect(find.byKey(const Key('mosque-back-personal')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('mosque-offline-logout')));
+    await tester.pumpAndSettle();
+    expect(tokens.value, isNull);
+    expect(find.text('Pilih Peran di Moeslim PM'), findsOneWidget);
   });
 }

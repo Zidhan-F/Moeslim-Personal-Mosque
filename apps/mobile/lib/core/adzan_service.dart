@@ -108,9 +108,12 @@ abstract class AdzanAlarmBackend {
     Prayer? prayer,
     String? localTime,
     String? locationName,
-    AppThemeMode themeMode = AppThemeMode.system,
+    AppThemeMode themeMode = AppThemeMode.light,
     AppLanguage language = AppLanguage.id,
+    double volume = 0.85,
+    bool overrideDeviceVolume = true,
   });
+  Future<void> setVolume(double volume, {bool overrideDeviceVolume = true});
   Future<void> stopAdzan();
   Future<Prayer?> getActiveNativeAlarm();
   Future<AdzanNotificationStatus> checkNotificationStatus();
@@ -158,6 +161,8 @@ class PlatformAdzanAlarmBackend implements AdzanAlarmBackend {
         await _channel.invokeMethod<void>('cancelAllAlarms', {
           'themeMode': settings.themeMode.name,
           'language': settings.language.code,
+          'adzanVolume': settings.adzanVolume,
+          'overrideDeviceVolume': settings.adzanOverrideDeviceVolume,
         });
       } else {
         await _channel.invokeMethod<void>('scheduleAlarms', {
@@ -167,6 +172,8 @@ class PlatformAdzanAlarmBackend implements AdzanAlarmBackend {
           'assetPath': settings.muadzin.assetPath,
           'themeMode': settings.themeMode.name,
           'language': settings.language.code,
+          'adzanVolume': settings.adzanVolume,
+          'overrideDeviceVolume': settings.adzanOverrideDeviceVolume,
         });
       }
     } catch (_) {
@@ -180,9 +187,12 @@ class PlatformAdzanAlarmBackend implements AdzanAlarmBackend {
     Prayer? prayer,
     String? localTime,
     String? locationName,
-    AppThemeMode themeMode = AppThemeMode.system,
+    AppThemeMode themeMode = AppThemeMode.light,
     AppLanguage language = AppLanguage.id,
+    double volume = 0.85,
+    bool overrideDeviceVolume = true,
   }) async {
+    final safeVolume = volume.clamp(0.0, 1.0).toDouble();
     var handledByNative = false;
     try {
       final res = await _channel.invokeMethod<bool>('playAdzan', {
@@ -197,17 +207,43 @@ class PlatformAdzanAlarmBackend implements AdzanAlarmBackend {
         'isPreview': prayer == null,
         'themeMode': themeMode.name,
         'language': language.code,
+        'adzanVolume': safeVolume,
+        'overrideDeviceVolume': overrideDeviceVolume,
       });
       handledByNative = res == true;
     } catch (_) {}
 
     if (!handledByNative) {
       await _player?.stop();
+      if (safeVolume <= 0.001) {
+        if (prayer == null) {
+          if (!_completed.isClosed) _completed.add(null);
+        } else {
+          Future<void>.delayed(const Duration(seconds: 20), () {
+            if (!_completed.isClosed) _completed.add(null);
+          });
+        }
+        return;
+      }
       final player = _ensurePlayer();
       await player.setAsset(muadzin.assetPath);
-      await player.setVolume(1.0);
+      await player.setVolume(safeVolume);
       unawaited(player.play());
     }
+  }
+
+  @override
+  Future<void> setVolume(double volume, {bool overrideDeviceVolume = true}) async {
+    final safeVolume = volume.clamp(0.0, 1.0).toDouble();
+    try {
+      await _channel.invokeMethod<void>('setAdzanVolume', {
+        'adzanVolume': safeVolume,
+        'overrideDeviceVolume': overrideDeviceVolume,
+      });
+    } catch (_) {}
+    try {
+      await _player?.setVolume(safeVolume);
+    } catch (_) {}
   }
 
   AudioPlayer _ensurePlayer() {
@@ -396,6 +432,8 @@ class AdzanController extends Notifier<AdzanAlarmState> {
     final active = await _backend.getActiveNativeAlarm();
     if (active != null && state.ringingPrayer != active) {
       state = state.copyWith(ringingPrayer: active, clearPreview: true, clearError: true);
+    } else if (active == null && state.ringingPrayer != null) {
+      state = state.copyWith(clearRinging: true);
     }
   }
 
@@ -425,6 +463,8 @@ class AdzanController extends Notifier<AdzanAlarmState> {
       s.effectiveLocationName,
       s.themeMode.name,
       s.language.code,
+      s.adzanVolume.toStringAsFixed(2),
+      s.adzanOverrideDeviceVolume,
       for (final a in upcoming) '${a.prayer.name}:${a.triggerUtc.millisecondsSinceEpoch}',
     ].join('|');
     if (sig == _lastSyncSignature) return;
@@ -470,6 +510,8 @@ class AdzanController extends Notifier<AdzanAlarmState> {
               locationName: s.effectiveLocationName,
               themeMode: s.themeMode,
               language: s.language,
+              volume: s.adzanVolume,
+              overrideDeviceVolume: s.adzanOverrideDeviceVolume,
             );
           } catch (_) {
             state = state.copyWith(lastError: 'Gagal memutar suara adzan. Periksa volume perangkat.');
@@ -480,25 +522,37 @@ class AdzanController extends Notifier<AdzanAlarmState> {
     }
   }
 
-  /// Putar atau hentikan pratinjau suara muadzin pilihan.
+  /// Putar atau hentikan pratinjau suara muadzin pilihan memakai volume adzan aplikasi.
   Future<void> togglePreviewMuadzin(AdzanMuadzin muadzin) async {
     if (state.previewingMuadzinId == muadzin.id) {
       await stopAdzan();
       return;
     }
+    final s = ref.read(settingsProvider).value ?? PersonalSettings.defaults;
     state = state.copyWith(
       previewingMuadzinId: muadzin.id,
       clearRinging: true,
       clearError: true,
     );
     try {
-      await _backend.playAdzan(muadzin);
+      await _backend.playAdzan(
+        muadzin,
+        themeMode: s.themeMode,
+        language: s.language,
+        volume: s.adzanVolume,
+        overrideDeviceVolume: s.adzanOverrideDeviceVolume,
+      );
     } catch (_) {
       state = state.copyWith(
         clearPreview: true,
-        lastError: 'Suara adzan belum dapat diputar. Pastikan volume media perangkat aktif.',
+        lastError: 'Suara adzan belum dapat diputar. Pastikan volume perangkat aktif.',
       );
     }
+  }
+
+  /// Perbarui volume adzan secara langsung saat audio adzan/pratinjau sedang diputar.
+  Future<void> updateLiveVolume(double volume, {required bool overrideDeviceVolume}) async {
+    await _backend.setVolume(volume, overrideDeviceVolume: overrideDeviceVolume);
   }
 
   /// Picu alarm adzan untuk waktu salat [prayer] beserta pop-up notifikasi & tombol matikan.
@@ -519,6 +573,8 @@ class AdzanController extends Notifier<AdzanAlarmState> {
         locationName: s.effectiveLocationName,
         themeMode: s.themeMode,
         language: s.language,
+        volume: s.adzanVolume,
+        overrideDeviceVolume: s.adzanOverrideDeviceVolume,
       );
     } catch (_) {
       state = state.copyWith(lastError: 'Gagal memutar suara adzan. Periksa volume alarm perangkat.');

@@ -286,5 +286,113 @@
     "source": "exec-5f9d400b-c9c7-4e02-aae6-c7f464cb35ec.png",
     "alpha": true,
     "bytes": 40984
+  },
+  {
+    "name": "familySpace",
+    "source": "familySpace.png",
+    "alpha": true,
+    "bytes": 44950
+  },
+  {
+    "name": "learningPath",
+    "source": "learningPath.png",
+    "alpha": true,
+    "bytes": 42456
+  },
+  {
+    "name": "mosqueServices",
+    "source": "mosqueServices.png",
+    "alpha": true,
+    "bytes": 32054
+  },
+  {
+    "name": "ramadanMosque",
+    "source": "ramadanMosque.png",
+    "alpha": true,
+    "bytes": 31922
+  },
+  {
+    "name": "fasting",
+    "source": "fasting.png",
+    "alpha": true,
+    "bytes": 44524
+  },
+  {
+    "name": "hadith",
+    "source": "hadith.png",
+    "alpha": true,
+    "bytes": 72446
+  },
+  {
+    "name": "sirah",
+    "source": "sirah.png",
+    "alpha": true,
+    "bytes": 39334
+  },
+  {
+    "name": "tajweed",
+    "source": "tajweed.png",
+    "alpha": true,
+    "bytes": 41788
+  },
+  {
+    "name": "tajweedColors",
+    "source": "tajweedColors.png",
+    "alpha": true,
+    "bytes": 30362
+  },
+  {
+    "name": "quranStudy",
+    "source": "quranStudy.png",
+    "alpha": true,
+    "bytes": 31524
+  },
+  {
+    "name": "focusReading",
+    "source": "focusReading.png",
+    "alpha": true,
+    "bytes": 36900
+  },
+  {
+    "name": "khatam",
+    "source": "khatam.png",
+    "alpha": true,
+    "bytes": 90674
+  },
+  {
+    "name": "solarQibla",
+    "source": "solarQibla.png",
+    "alpha": true,
+    "bytes": 62264
+  },
+  {
+    "name": "asmaulHusna",
+    "source": "asmaulHusna.png",
+    "alpha": true,
+    "bytes": 41736
+  },
+  {
+    "name": "shareCard",
+    "source": "shareCard.png",
+    "alpha": true,
+    "bytes": 35364
+  },
+  {
+    "name": "charity",
+    "source": "charity.png",
+    "alpha": true,
+    "bytes": 44986
+  },
+  {
+    "name": "muhasabah",
+    "source": "muhasabah.png",
+    "alpha": true,
+    "bytes": 49260
+  },
+  {
+    "name": "familyEdu",
+    "source": "familyEdu.png",
+    "alpha": true,
+    "bytes": 26990
   }
 ]

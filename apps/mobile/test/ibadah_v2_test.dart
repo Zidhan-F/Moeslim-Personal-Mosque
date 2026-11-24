@@ -227,4 +227,19 @@ void main() {
     );
     expect(find.text('Data doa belum tersedia'), findsOneWidget);
   });
+
+  testWidgets('Doa & Dzikir memuat tab Dzikir Terpandu beserta pengingat dzikir kontekstual', (tester) async {
+    await pumpApp(tester);
+    await open(tester, const DoaListPage());
+    expect(find.byKey(const Key('tab-Dzikir Terpandu')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('tab-Dzikir Terpandu')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('dzikir-contextual-sunnah-card')), findsOneWidget);
+    expect(find.byKey(const Key('tab-Dzikir Pagi')), findsOneWidget);
+    expect(find.byKey(const Key('tab-Dzikir Petang')), findsOneWidget);
+    expect(find.byKey(const Key('tab-Ba\'da Salat')), findsOneWidget);
+    expect(find.byKey(const Key('guided-dzikir-progress-text')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

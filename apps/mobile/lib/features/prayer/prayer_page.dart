@@ -197,11 +197,7 @@ class _PrayerPageState extends ConsumerState<PrayerPage> with WidgetsBindingObse
                             const SizedBox(width: 4),
                             Text(
                               countdown(status.remaining),
-                              style: TextStyle(
-                                color: goldInk,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 16,
-                              ),
+                              style: TextStyle(color: goldInk, fontWeight: FontWeight.w700, fontSize: 16),
                             ),
                           ],
                         ),
@@ -226,9 +222,7 @@ class _PrayerPageState extends ConsumerState<PrayerPage> with WidgetsBindingObse
                           ),
                           child: ListTile(
                             dense: true,
-                            leading: p == null
-                                ? Icon(MoeslimIcons.matahari, color: goldInk)
-                                : PrayerSkyIcon(canonicalKey, color: goldInk),
+                            leading: PrayerSkyIcon(canonicalKey, color: goldInk),
                             title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -258,7 +252,8 @@ class _PrayerPageState extends ConsumerState<PrayerPage> with WidgetsBindingObse
                                         .save(s.setPrayerAdzan(p, !s.isAdzanActiveFor(p))),
                                   ),
                                 ] else
-                                  const SizedBox(width: 10),
+                                  // Syuruq tidak punya adzan: sisakan lebar tombol alarm agar jam sejajar baris lain.
+                                  const SizedBox(width: 4 + 40),
                                 SizedBox(
                                   width: 24,
                                   child: !time.isAfter(status.now)
@@ -312,8 +307,7 @@ class _PrayerPageState extends ConsumerState<PrayerPage> with WidgetsBindingObse
                       ),
                       trailing: OutlinedButton.icon(
                         key: const Key('prayer-preview-adzan'),
-                        onPressed: () =>
-                            ref.read(adzanControllerProvider.notifier).togglePreviewMuadzin(s.muadzin),
+                        onPressed: () => ref.read(adzanControllerProvider.notifier).togglePreviewMuadzin(s.muadzin),
                         icon: Icon(
                           adzanState.previewingMuadzinId == s.muadzin.id ? MoeslimIcons.pause : MoeslimIcons.suara,
                           size: 18,
@@ -545,7 +539,9 @@ class _PrayerGpsBanner extends ConsumerWidget {
         ),
         child: Row(
           children: [
-            Expanded(child: Text(message, style: TextStyle(color: warnFg, fontSize: 13))),
+            Expanded(
+              child: Text(message, style: TextStyle(color: warnFg, fontSize: 13)),
+            ),
             const SizedBox(width: 8),
             OutlinedButton(
               onPressed: () => ref.read(gpsControllerProvider.notifier).syncToPrayerSettings(),
@@ -583,17 +579,34 @@ class _PrayerGpsBanner extends ConsumerWidget {
 }
 
 class PrayerSettingsPage extends ConsumerStatefulWidget {
-  const PrayerSettingsPage({super.key});
+  final bool focusAdzan;
+  const PrayerSettingsPage({super.key, this.focusAdzan = false});
 
   @override
   ConsumerState<PrayerSettingsPage> createState() => _PrayerSettingsPageState();
 }
 
 class _PrayerSettingsPageState extends ConsumerState<PrayerSettingsPage> with WidgetsBindingObserver {
+  final _adzanSectionKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    if (widget.focusAdzan) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final ctx = _adzanSectionKey.currentContext;
+        if (ctx != null) {
+          Scrollable.ensureVisible(
+            ctx,
+            duration: const Duration(milliseconds: 280),
+            curve: Curves.easeOutCubic,
+            alignment: 0.04,
+          );
+        }
+      });
+    }
   }
 
   @override
@@ -620,14 +633,11 @@ class _PrayerSettingsPageState extends ConsumerState<PrayerSettingsPage> with Wi
     final notifier = ref.read(settingsProvider.notifier);
     final gpsState = ref.watch(gpsControllerProvider);
     final adzanState = ref.watch(adzanControllerProvider);
-    ref.listen<String?>(
-      adzanControllerProvider.select((st) => st.lastError),
-      (_, err) {
-        if (err != null && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
-        }
-      },
-    );
+    ref.listen<String?>(adzanControllerProvider.select((st) => st.lastError), (_, err) {
+      if (err != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+      }
+    });
     final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -651,17 +661,17 @@ class _PrayerSettingsPageState extends ConsumerState<PrayerSettingsPage> with Wi
                     subtitle: Text(
                       s.isUsingGpsLocation && s.deviceLocation != null
                           ? '${localizeLocationLabel(s.deviceLocation!.label, lang)} '
-                              '(${_formatCoord(s.deviceLocation!.latitude, isLatitude: true, lang: lang)}, '
-                              '${_formatCoord(s.deviceLocation!.longitude, isLatitude: false, lang: lang)})'
+                                '(${_formatCoord(s.deviceLocation!.latitude, isLatitude: true, lang: lang)}, '
+                                '${_formatCoord(s.deviceLocation!.longitude, isLatitude: false, lang: lang)})'
                           : (s.useDeviceLocation
-                              ? context.tr(
-                                  'Menunggu status GPS aktif dan izin lokasi.',
-                                  'Waiting for GPS and location permission.',
-                                )
-                              : context.tr(
-                                  'Aktifkan untuk menghitung jadwal salat sesuai koordinat GPS aktual.',
-                                  'Enable to calculate prayer times from your live GPS coordinates.',
-                                )),
+                                ? context.tr(
+                                    'Menunggu status GPS aktif dan izin lokasi.',
+                                    'Waiting for GPS and location permission.',
+                                  )
+                                : context.tr(
+                                    'Aktifkan untuk menghitung jadwal salat sesuai koordinat GPS aktual.',
+                                    'Enable to calculate prayer times from your live GPS coordinates.',
+                                  )),
                     ),
                     value: s.useDeviceLocation,
                     onChanged: (enabled) async {
@@ -713,8 +723,10 @@ class _PrayerSettingsPageState extends ConsumerState<PrayerSettingsPage> with Wi
             ),
           ),
           const SizedBox(height: 12),
-          Card(
-            key: const Key('adzan-settings-card'),
+          KeyedSubtree(
+            key: _adzanSectionKey,
+            child: Card(
+              key: const Key('adzan-settings-card'),
             child: Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: Column(
@@ -811,6 +823,113 @@ class _PrayerSettingsPageState extends ConsumerState<PrayerSettingsPage> with Wi
                       label: Text(context.tr('Uji Pop-up & Suara Alarm', 'Test Alarm Pop-up & Sound')),
                     ),
                   ),
+                  const Divider(height: 20),
+                  SwitchListTile(
+                    key: const Key('adzan-override-device-switch'),
+                    secondary: Icon(
+                      s.adzanOverrideDeviceVolume ? Icons.volume_up_rounded : Icons.phone_android_rounded,
+                      color: s.adzanOverrideDeviceVolume ? scheme.primary : scheme.outline,
+                    ),
+                    title: Text(
+                      context.tr(
+                        'Suara Adzan Mandiri (Abaikan Aturan HP)',
+                        'Independent Adhan Volume (Override Phone)',
+                      ),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: Text(
+                      s.adzanOverrideDeviceVolume
+                          ? context.tr(
+                              'Memakai volume adzan di bawah walau HP sedang hening atau volume kecil, lalu mengembalikan volume HP setelah adzan selesai.',
+                              'Plays at the app volume below even if your phone is muted or quiet, then restores your phone volume when adhan ends.',
+                            )
+                          : context.tr(
+                              'Mengikuti volume notifikasi dan mode hening perangkat HP Anda.',
+                              'Follows your phone notification volume and silent mode.',
+                            ),
+                    ),
+                    value: s.adzanOverrideDeviceVolume,
+                    onChanged: (override) async {
+                      await notifier.save(s.copyWith(adzanOverrideDeviceVolume: override));
+                      await ref
+                          .read(adzanControllerProvider.notifier)
+                          .updateLiveVolume(s.adzanVolume, overrideDeviceVolume: override);
+                    },
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            context.tr(
+                              'Volume Suara Adzan (${(s.adzanVolume * 100).round()}%)',
+                              'Adhan Sound Volume (${(s.adzanVolume * 100).round()}%)',
+                            ),
+                            key: const Key('adzan-volume-label'),
+                            style: Theme.of(context).textTheme.labelLarge,
+                          ),
+                        ),
+                        if (s.adzanVolume <= 0.001)
+                          Text(
+                            context.tr('Hening', 'Muted'),
+                            style: TextStyle(color: scheme.outline, fontWeight: FontWeight.w600, fontSize: 12.5),
+                          ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          key: const Key('adzan-volume-mute'),
+                          tooltip: context.tr('Bisukan suara adzan (0%)', 'Mute adhan sound (0%)'),
+                          icon: Icon(
+                            s.adzanVolume <= 0.001 ? Icons.volume_off_rounded : Icons.volume_mute_rounded,
+                            color: s.adzanVolume <= 0.001 ? scheme.primary : scheme.outline,
+                          ),
+                          onPressed: () async {
+                            await notifier.save(s.copyWith(adzanVolume: 0.0));
+                            await ref
+                                .read(adzanControllerProvider.notifier)
+                                .updateLiveVolume(0.0, overrideDeviceVolume: s.adzanOverrideDeviceVolume);
+                          },
+                        ),
+                        Expanded(
+                          child: Slider(
+                            key: const Key('adzan-volume-slider'),
+                            min: 0.0,
+                            max: 1.0,
+                            divisions: 20,
+                            value: s.adzanVolume,
+                            label: '${(s.adzanVolume * 100).round()}%',
+                            onChanged: (v) async {
+                              await notifier.save(s.copyWith(adzanVolume: v));
+                              await ref
+                                  .read(adzanControllerProvider.notifier)
+                                  .updateLiveVolume(v, overrideDeviceVolume: s.adzanOverrideDeviceVolume);
+                            },
+                          ),
+                        ),
+                        IconButton(
+                          key: const Key('adzan-volume-max'),
+                          tooltip: context.tr('Volume maksimal (100%)', 'Maximum volume (100%)'),
+                          icon: Icon(
+                            Icons.volume_up_rounded,
+                            color: s.adzanVolume >= 0.99 ? scheme.primary : scheme.outline,
+                          ),
+                          onPressed: () async {
+                            await notifier.save(s.copyWith(adzanVolume: 1.0));
+                            await ref
+                                .read(adzanControllerProvider.notifier)
+                                .updateLiveVolume(1.0, overrideDeviceVolume: s.adzanOverrideDeviceVolume);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 20),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
                     child: Text(
@@ -887,9 +1006,7 @@ class _PrayerSettingsPageState extends ConsumerState<PrayerSettingsPage> with Wi
                       ),
                       title: Text(
                         m.name,
-                        style: TextStyle(
-                          fontWeight: m.id == s.muadzin.id ? FontWeight.w700 : FontWeight.w500,
-                        ),
+                        style: TextStyle(fontWeight: m.id == s.muadzin.id ? FontWeight.w700 : FontWeight.w500),
                       ),
                       subtitle: Text('${m.originFor(lang)} • ${m.styleFor(lang)}'),
                       trailing: IconButton(
@@ -908,6 +1025,7 @@ class _PrayerSettingsPageState extends ConsumerState<PrayerSettingsPage> with Wi
                 ],
               ),
             ),
+            ),
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
@@ -923,10 +1041,7 @@ class _PrayerSettingsPageState extends ConsumerState<PrayerSettingsPage> with Wi
             onChanged: (v) {
               if (v == null) return;
               notifier.save(
-                s.copyWith(
-                  location: indonesianCities.firstWhere((c) => c.name == v),
-                  useDeviceLocation: false,
-                ),
+                s.copyWith(location: indonesianCities.firstWhere((c) => c.name == v), useDeviceLocation: false),
               );
             },
           ),
@@ -953,10 +1068,7 @@ class _PrayerSettingsPageState extends ConsumerState<PrayerSettingsPage> with Wi
             onChanged: (v) => notifier.save(s.copyWith(madhab: v)),
           ),
           const SizedBox(height: 16),
-          Text(
-            context.tr('Penyesuaian menit', 'Minute adjustments'),
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          Text(context.tr('Penyesuaian menit', 'Minute adjustments'), style: Theme.of(context).textTheme.titleMedium),
           for (final p in Prayer.values)
             Row(
               children: [

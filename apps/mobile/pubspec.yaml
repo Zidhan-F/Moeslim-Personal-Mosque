@@ -47,5 +47,6 @@ flutter:
   assets:
     - assets/audio/manifest.json
     - assets/audio/adzan/
+    - assets/audio/asmaul_husna/
     - assets/doa/daily_duas.json
     - assets/quran/

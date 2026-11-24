@@ -95,6 +95,7 @@ class Icon extends material.Icon {
     material.Icons.mosque: SoftAsset.mosque,
     material.Icons.person: SoftAsset.profile,
     material.Icons.home: SoftAsset.home,
+    material.Icons.school_outlined: SoftAsset.tajweed,
   };
 
   @override

@@ -12,6 +12,7 @@ import 'inventory_page.dart';
 import 'members_page.dart';
 import 'microsite_page.dart';
 import 'mosque_providers.dart';
+import 'services_admin_page.dart';
 import 'session.dart';
 import 'tv_config_page.dart';
 import 'zakat_qurban_page.dart';
@@ -20,6 +21,7 @@ export 'announcements_page.dart';
 export 'inventory_page.dart';
 export 'members_page.dart';
 export 'microsite_page.dart';
+export 'services_admin_page.dart';
 export 'tv_config_page.dart';
 export 'zakat_qurban_page.dart';
 
@@ -114,6 +116,14 @@ class MosqueAccountTab extends ConsumerWidget {
           context.tr('Kurban & Kupon QR', 'Qurban & QR Coupons'),
           context.tr('Patungan 1/7, sembelih & scan QR', '1/7 shares, slaughter & QR scan'),
           QurbanPage(ctx: ctx),
+        ),
+      if (ctx.can('services.view'))
+        (
+          const Key('menu-services'),
+          MoeslimIcons.laporan,
+          context.tr('Layanan Masjid', 'Mosque Services'),
+          context.tr('TPQ, fasilitas, aspirasi & permohonan jamaah', 'TPQ, facilities, feedback & congregation requests'),
+          MosqueServicesAdminPage(ctx: ctx),
         ),
       if (ctx.can('finance.view'))
         (

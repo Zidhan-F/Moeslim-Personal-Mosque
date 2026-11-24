@@ -41,8 +41,16 @@ void main() {
     await tester.tap(find.text('Profil').last);
     await tester.pump();
     await tester.scrollUntilVisible(
-      find.byKey(const Key('about-licenses')),
+      find.byKey(const Key('profile-developer-watermark')),
       200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.byKey(const Key('profile-developer-watermark')), findsOneWidget);
+    expect(find.text('Develop by zidhan.id'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('about-licenses')),
+      -200,
       scrollable: find.byType(Scrollable).first,
     );
     // Tidak ada lagi AboutListTile ganda di Profil: semua masuk ke satu menu Tentang.
@@ -51,7 +59,9 @@ void main() {
     await tester.tap(find.byKey(const Key('about-licenses')));
     await tester.pumpAndSettle();
 
-    // Pernyataan non-komersial & Daftar Isi interaktif.
+    // Watermark pengembang, pernyataan non-komersial & Daftar Isi interaktif.
+    expect(find.byKey(const Key('about-developer-watermark')), findsOneWidget);
+    expect(find.text('Develop by zidhan.id'), findsOneWidget);
     expect(find.textContaining('non-komersial'), findsWidgets);
     expect(find.textContaining('tanpa iklan'), findsOneWidget);
     expect(find.text('Daftar Isi'), findsOneWidget);

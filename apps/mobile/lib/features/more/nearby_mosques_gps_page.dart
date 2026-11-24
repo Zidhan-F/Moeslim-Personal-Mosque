@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:personal_core/personal_core.dart';
+import 'package:shared_prayer/shared_prayer.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/l10n.dart';
@@ -99,7 +100,7 @@ class _NearbyMosquesGpsPageState extends ConsumerState<NearbyMosquesGpsPage> {
   }
 
   /// Memuat masjid sekitar titik acuan dari OpenStreetMap; bila gagal, memakai daftar bawaan.
-  Future<void> _load() async {
+  Future<void> _load({bool forceRefresh = false}) async {
     final origin = (ref.read(settingsProvider).value ?? PersonalSettings.defaults).effectiveCoordinates;
     final lang = ref.read(appLanguageProvider);
     final key = '${origin.latitude.toStringAsFixed(3)},${origin.longitude.toStringAsFixed(3)}_${lang.code}';
@@ -119,7 +120,11 @@ class _NearbyMosquesGpsPageState extends ConsumerState<NearbyMosquesGpsPage> {
     }
     if (online.isEmpty) {
       try {
-        online = await ref.read(onlineMosqueFinderProvider).search(origin, lang: lang);
+        online = await ref.read(onlineMosqueFinderProvider).search(
+              origin,
+              lang: lang,
+              forceRefresh: forceRefresh,
+            );
         source = 'OpenStreetMap';
       } catch (_) {
         offline = true;
@@ -132,6 +137,56 @@ class _NearbyMosquesGpsPageState extends ConsumerState<NearbyMosquesGpsPage> {
       _source = source;
       _loading = false;
     });
+  }
+
+  Future<void> _refreshGpsLocation() async {
+    final locSvc = ref.read(locationServiceProvider);
+    final current = ref.read(settingsProvider).value ?? PersonalSettings.defaults;
+    try {
+      final enabled = await locSvc.isServiceEnabled();
+      if (!enabled) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(context.tr('Aktifkan GPS perangkat terlebih dahulu.', 'Please enable device GPS first.'))),
+          );
+        }
+        return;
+      }
+      var perm = await locSvc.checkPermission();
+      if (perm == LocationPermissionState.denied) {
+        perm = await locSvc.requestPermission();
+      }
+      if (perm != LocationPermissionState.granted) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(context.tr('Izin lokasi belum diberikan.', 'Location permission not granted.'))),
+          );
+        }
+        return;
+      }
+      final pos = await locSvc.getCurrentPosition();
+      final nearest = nearestIndonesianCity(Coordinates(pos.latitude, pos.longitude));
+      await ref.read(settingsProvider.notifier).save(
+            current.copyWith(
+              useDeviceLocation: true,
+              deviceLocation: DeviceLocation(
+                latitude: pos.latitude,
+                longitude: pos.longitude,
+                utcOffset: DateTime.now().timeZoneOffset.inMinutes / 60.0,
+                label: nearest != null ? 'Sekitar ${nearest.city.name}' : 'Lokasi GPS',
+                accuracyMeters: pos.accuracyMeters,
+                updatedAt: pos.timestamp,
+              ),
+            ),
+          );
+      await _load(forceRefresh: true);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.tr('Gagal membaca koordinat GPS saat ini.', 'Failed to read current GPS coordinates.'))),
+        );
+      }
+    }
   }
 
   Future<void> _openGoogleMaps({NearbyMosqueItem? mosque}) async {
@@ -282,6 +337,12 @@ class _NearbyMosquesGpsPageState extends ConsumerState<NearbyMosquesGpsPage> {
                             '(${settings.isUsingGpsLocation ? 'GPS Active' : 'Selected City'})',
                       ),
                     ),
+                    trailing: IconButton(
+                      key: const Key('nearby-refresh-gps'),
+                      tooltip: context.tr('Perbarui titik GPS saat ini', 'Update current GPS location'),
+                      onPressed: _loading ? null : _refreshGpsLocation,
+                      icon: const Icon(Icons.my_location_rounded),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -323,23 +384,24 @@ class _NearbyMosquesGpsPageState extends ConsumerState<NearbyMosquesGpsPage> {
                           child: Text(
                             _offline
                                 ? context.tr(
-                                    'Tidak ada internet: menampilkan daftar bawaan, bukan masjid di sekitar Anda.',
-                                    'No internet connection: showing built-in directory instead of mosques near you.',
+                                    'Peta online belum terjangkau: menampilkan daftar bawaan. Ketuk Coba lagi atau buka Google Maps.',
+                                    'Online map unavailable: showing built-in directory. Tap Retry or open Google Maps.',
                                   )
                                 : context.tr(
-                                    'Masjid & musholla dalam radius 5 km (data $_source).',
-                                    'Mosques & prayer rooms within 5 km (data from $_source).',
+                                    'Menampilkan ${ranked.length} masjid & musholla terdekat (data $_source).',
+                                    'Showing ${ranked.length} nearby mosques & prayer rooms (data from $_source).',
                                   ),
                             key: const Key('nearby-source-note'),
                             style: t.bodySmall,
                           ),
                         ),
-                        if (_offline)
-                          TextButton(
-                            key: const Key('nearby-retry'),
-                            onPressed: _load,
-                            child: Text(context.tr('Coba lagi', 'Retry')),
+                        TextButton(
+                          key: const Key('nearby-retry'),
+                          onPressed: () => _load(forceRefresh: true),
+                          child: Text(
+                            _offline ? context.tr('Coba lagi', 'Retry') : context.tr('Muat ulang', 'Refresh'),
                           ),
+                        ),
                       ],
                     ),
                   ),

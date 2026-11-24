@@ -105,7 +105,7 @@ class SessionNotifier extends AsyncNotifier<MasjidSession?> {
 
   Future<void> logout() async {
     try {
-      await ref.read(masjidApiProvider).logout();
+      await ref.read(masjidApiProvider).logout().timeout(const Duration(seconds: 3));
     } catch (_) {}
     ref.read(masjidApiProvider).token = null;
     await ref.read(tokenStoreProvider).write(null);
@@ -113,7 +113,10 @@ class SessionNotifier extends AsyncNotifier<MasjidSession?> {
   }
 }
 
-final sessionProvider = AsyncNotifierProvider<SessionNotifier, MasjidSession?>(SessionNotifier.new);
+final sessionProvider = AsyncNotifierProvider<SessionNotifier, MasjidSession?>(
+  SessionNotifier.new,
+  retry: (_, _) => null,
+);
 
 /// Kode undangan yang dimasukkan saat aktivasi akun; diterima otomatis setelah email terverifikasi.
 class PendingInviteNotifier extends Notifier<String?> {

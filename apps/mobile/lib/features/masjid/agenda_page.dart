@@ -334,15 +334,43 @@ class _EventCard extends ConsumerWidget {
               children: [
                 StatusBadge(categoryLabel(e['category'] as String?, lang: lang)),
                 const SizedBox(height: 4),
-                Icon(
-                  e['visibility'] == 'public' ? MoeslimIcons.web : MoeslimIcons.kunci,
-                  size: 16,
-                  semanticLabel: e['visibility'] == 'public'
-                      ? context.tr('Publik', 'Public')
-                      : context.tr('Internal', 'Internal'),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (e['publication_status'] != null && e['publication_status'] != 'published') ...[
+                      Text(
+                        '${e['publication_status']}',
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                          color: e['publication_status'] == 'cancelled' ? MosqueColors.expense : MosqueColors.warning,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                    ],
+                    Icon(
+                      e['visibility'] == 'public' ? MoeslimIcons.web : MoeslimIcons.kunci,
+                      size: 16,
+                      semanticLabel: e['visibility'] == 'public'
+                          ? context.tr('Publik', 'Public')
+                          : context.tr('Internal', 'Internal'),
+                    ),
+                  ],
                 ),
               ],
             ),
+            if (e['registration_enabled'] == true)
+              IconButton(
+                key: Key('event-registrations-${e['id']}'),
+                tooltip: context.tr('Daftar Peserta', 'Participants'),
+                icon: const Icon(MoeslimIcons.jamaah, size: 20),
+                onPressed: () => showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  showDragHandle: true,
+                  builder: (_) => _EventRegistrationsSheet(ctx: ctx, event: e),
+                ),
+              ),
             IconButton(
               key: Key('share-event-${e['id']}'),
               tooltip: context.tr('Bagikan Poster & WA', 'Share Poster & WhatsApp'),
@@ -361,6 +389,127 @@ class _EventCard extends ConsumerWidget {
   }
 }
 
+class _EventRegistrationsSheet extends ConsumerStatefulWidget {
+  final MosqueCtx ctx;
+  final Map<String, dynamic> event;
+  const _EventRegistrationsSheet({required this.ctx, required this.event});
+
+  @override
+  ConsumerState<_EventRegistrationsSheet> createState() => _EventRegistrationsSheetState();
+}
+
+class _EventRegistrationsSheetState extends ConsumerState<_EventRegistrationsSheet> {
+  Map<String, dynamic>? _data;
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final res = await ref.read(masjidApiProvider).mosqueEventRegistrations(
+            widget.ctx.id,
+            (widget.event['id'] as num).toInt(),
+          );
+      if (mounted) setState(() => _data = res);
+    } catch (e) {
+      if (mounted) setState(() => _error = '$e');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _setStatus(String regId, String status) async {
+    try {
+      await ref.read(masjidApiProvider).updateMosqueEventRegistration(
+            widget.ctx.id,
+            (widget.event['id'] as num).toInt(),
+            regId,
+            status,
+          );
+      await _load();
+    } on ApiException catch (e) {
+      if (mounted) showSnack(context, e.message);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => mosqueScoped(context, (context) {
+        final t = Theme.of(context).textTheme;
+        final list = [
+          for (final r in (_data?['data'] as List? ?? const []))
+            if (r is Map) Map<String, dynamic>.from(r),
+        ];
+        final ev = _data?['event'] is Map ? Map<String, dynamic>.from(_data!['event'] as Map) : widget.event;
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+          child: SizedBox(
+            height: 440,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text('${ev['title'] ?? ''}', style: t.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                const SizedBox(height: 4),
+                Text(
+                  context.tr(
+                    'Terkonfirmasi: ${ev['confirmed_count'] ?? 0}${ev['capacity'] != null ? ' / ${ev['capacity']}' : ''} · Daftar tunggu: ${ev['waitlisted_count'] ?? 0}',
+                    'Confirmed: ${ev['confirmed_count'] ?? 0}${ev['capacity'] != null ? ' / ${ev['capacity']}' : ''} · Waitlisted: ${ev['waitlisted_count'] ?? 0}',
+                  ),
+                  style: t.bodySmall,
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: _loading
+                      ? const Center(child: CircularProgressIndicator())
+                      : _error != null
+                          ? Center(child: Text(_error!))
+                          : list.isEmpty
+                              ? Center(child: Text(context.tr('Belum ada peserta terdaftar.', 'No registered participants yet.')))
+                              : ListView.builder(
+                                  itemCount: list.length,
+                                  itemBuilder: (_, i) {
+                                    final r = list[i];
+                                    final st = '${r['status'] ?? 'confirmed'}';
+                                    return Card(
+                                      child: ListTile(
+                                        title: Text('${r['participant_name'] ?? (r['user'] is Map ? (r['user'] as Map)['name'] : '-') ?? '-'}'),
+                                        subtitle: Text(
+                                          [
+                                            st,
+                                            if (r['contact_phone'] != null) '${r['contact_phone']}',
+                                            if (r['notes'] != null) '${r['notes']}',
+                                          ].join(' · '),
+                                        ),
+                                        trailing: widget.ctx.can('events.write')
+                                            ? PopupMenuButton<String>(
+                                                onSelected: (s) => _setStatus('${r['id']}', s),
+                                                itemBuilder: (_) => [
+                                                  PopupMenuItem(value: 'confirmed', child: Text(context.tr('Konfirmasi', 'Confirm'))),
+                                                  PopupMenuItem(value: 'waitlisted', child: Text(context.tr('Daftar Tunggu', 'Waitlist'))),
+                                                  PopupMenuItem(value: 'cancelled', child: Text(context.tr('Batalkan', 'Cancel'))),
+                                                ],
+                                              )
+                                            : StatusBadge(st),
+                                      ),
+                                    );
+                                  },
+                                ),
+                ),
+              ],
+            ),
+          ),
+        );
+      });
+}
+
 /// Formulir Tambah Kegiatan.
 class EventFormPage extends ConsumerStatefulWidget {
   final MosqueCtx ctx;
@@ -375,13 +524,39 @@ class _EventFormPageState extends ConsumerState<EventFormPage> {
   final _speaker = TextEditingController();
   final _location = TextEditingController();
   final _desc = TextEditingController();
+  final _hijriYear = TextEditingController(text: '1447');
+  final _capacity = TextEditingController();
   DateTime _date = DateUtils.dateOnly(DateTime.now().add(const Duration(days: 1)));
   TimeOfDay _time = const TimeOfDay(hour: 19, minute: 30);
   String _category = 'kajian';
+  String _publicationStatus = 'published';
+  String? _learningPath;
   bool _public = true;
   bool _display = true;
+  bool _registrationEnabled = false;
+  bool _waitlistEnabled = false;
   bool _busy = false;
   String? _error;
+
+  static const _learningPaths = {
+    'bahasa_arab': 'Bahasa Arab',
+    'quran_tajwid': "Al-Qur'an & Tajwid",
+    'fikih_ibadah': 'Fikih Ibadah',
+    'hadis_tafsir': 'Hadis & Tafsir',
+    'sejarah_islam': 'Sejarah Islam',
+    'akhlak_adab': 'Akhlak & Adab',
+  };
+
+  @override
+  void dispose() {
+    _title.dispose();
+    _speaker.dispose();
+    _location.dispose();
+    _desc.dispose();
+    _hijriYear.dispose();
+    _capacity.dispose();
+    super.dispose();
+  }
 
   Future<void> _save() async {
     setState(() {
@@ -391,6 +566,8 @@ class _EventFormPageState extends ConsumerState<EventFormPage> {
     String? opt(TextEditingController c) => c.text.trim().isEmpty ? null : c.text.trim();
     try {
       final start = DateTime(_date.year, _date.month, _date.day, _time.hour, _time.minute);
+      final parsedCap = int.tryParse(_capacity.text.trim());
+      final parsedHijri = int.tryParse(_hijriYear.text.trim());
       await ref.read(masjidApiProvider).createEvent(widget.ctx.id, {
         'title': _title.text.trim(),
         'speaker': opt(_speaker),
@@ -400,6 +577,12 @@ class _EventFormPageState extends ConsumerState<EventFormPage> {
         'starts_at': start.toUtc().toIso8601String(),
         'visibility': _public ? 'public' : 'internal',
         'show_on_display': _public && _display,
+        'publication_status': _publicationStatus,
+        if (_category == 'ramadan' && parsedHijri != null) 'hijri_year': parsedHijri,
+        if (_category == 'pendidikan' && _learningPath != null) 'learning_path': _learningPath,
+        'registration_enabled': _registrationEnabled,
+        if (_registrationEnabled && parsedCap != null && parsedCap > 0) 'capacity': parsedCap,
+        if (_registrationEnabled) 'waitlist_enabled': _waitlistEnabled,
       });
       ref.invalidate(eventsProvider(widget.ctx.id));
       ref.invalidate(dashboardProvider(widget.ctx.id));
@@ -516,6 +699,68 @@ class _EventFormPageState extends ConsumerState<EventFormPage> {
             value: _public && _display,
             onChanged: _public ? (v) => setState(() => _display = v) : null,
           ),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            initialValue: _publicationStatus,
+            decoration: InputDecoration(
+              labelText: context.tr('Status Publikasi', 'Publication Status'),
+              prefixIcon: const Icon(MoeslimIcons.info),
+            ),
+            items: [
+              DropdownMenuItem(value: 'published', child: Text(context.tr('Terpublikasi', 'Published'))),
+              DropdownMenuItem(value: 'draft', child: Text(context.tr('Draft (Belum tampil di jamaah)', 'Draft (Hidden from public)'))),
+            ],
+            onChanged: (v) => setState(() => _publicationStatus = v ?? 'published'),
+          ),
+          if (_category == 'ramadan') ...[
+            const SizedBox(height: 12),
+            TextField(
+              controller: _hijriYear,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: context.tr('Tahun Hijriah Ramadan', 'Ramadan Hijri Year'),
+                prefixIcon: const Icon(MoeslimIcons.bulan),
+              ),
+            ),
+          ],
+          if (_category == 'pendidikan') ...[
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String?>(
+              initialValue: _learningPath,
+              decoration: InputDecoration(
+                labelText: context.tr('Tautkan ke Jalur Belajar (opsional)', 'Link to Learning Path (optional)'),
+                prefixIcon: const Icon(MoeslimIcons.buku),
+              ),
+              items: [
+                DropdownMenuItem<String?>(value: null, child: Text(context.tr('Umum / Tidak ditautkan', 'General / Unlinked'))),
+                for (final lp in _learningPaths.entries) DropdownMenuItem<String?>(value: lp.key, child: Text(lp.value)),
+              ],
+              onChanged: (v) => setState(() => _learningPath = v),
+            ),
+          ],
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(context.tr('Buka Pendaftaran Jamaah', 'Enable Congregation Registration')),
+            subtitle: Text(context.tr('Untuk kajian berkuota, buka bersama, atau kelas masjid', 'For capped lectures, iftar, or mosque classes')),
+            value: _registrationEnabled,
+            onChanged: (v) => setState(() => _registrationEnabled = v),
+          ),
+          if (_registrationEnabled) ...[
+            TextField(
+              controller: _capacity,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: context.tr('Kuota peserta (kosongkan jika tanpa batas)', 'Participant capacity (blank for unlimited)'),
+                prefixIcon: const Icon(MoeslimIcons.jamaah),
+              ),
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(context.tr('Aktifkan Daftar Tunggu (Waitlist)', 'Enable Waitlist')),
+              value: _waitlistEnabled,
+              onChanged: (v) => setState(() => _waitlistEnabled = v),
+            ),
+          ],
           if (_error != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),

@@ -4,9 +4,11 @@ use App\Http\Controllers\Api\AnnouncementController;
 use App\Http\Controllers\Api\CouponController;
 use App\Http\Controllers\Api\DisplayController;
 use App\Http\Controllers\Api\EventController;
+use App\Http\Controllers\Api\EventRegistrationController;
 use App\Http\Controllers\Api\FinanceController;
 use App\Http\Controllers\Api\InventoryController;
 use App\Http\Controllers\Api\QurbanController;
+use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\StaffAssignmentController;
 use App\Http\Controllers\Api\ZakatController;
 use Illuminate\Support\Facades\Route;
@@ -39,12 +41,14 @@ Route::prefix('finance')->group(function () {
 });
 
 Route::get('events', [EventController::class, 'index'])->middleware('perm:events.view');
+Route::get('events/{event}/registrations', [EventRegistrationController::class, 'mosqueIndex'])->middleware('perm:events.view');
 Route::patch('events/{event}/display', [EventController::class, 'toggleDisplay'])->middleware('perm:events.display');
 Route::middleware('perm:events.write')->group(function () {
     Route::post('events', [EventController::class, 'store']);
     Route::patch('events/{event}', [EventController::class, 'update']);
     Route::post('events/{event}/archive', [EventController::class, 'archive']);
     Route::delete('events/{event}', [EventController::class, 'destroy']);
+    Route::patch('events/{event}/registrations/{registration}', [EventRegistrationController::class, 'mosqueUpdateStatus']);
 });
 
 Route::get('announcements', [AnnouncementController::class, 'index'])->middleware('perm:events.view');
@@ -115,4 +119,17 @@ Route::prefix('coupons')->group(function () {
         Route::post('redeem', [CouponController::class, 'redeem']);
         Route::post('{distributionCoupon}/void', [CouponController::class, 'void']);
     });
+});
+
+// Moeslim Services (pengelolaan layanan & permohonan jamaah)
+Route::middleware('perm:services.view')->group(function () {
+    Route::get('services', [ServiceController::class, 'mosqueDefinitions']);
+    Route::get('service-requests', [ServiceController::class, 'mosqueInbox']);
+    Route::get('service-requests/{serviceRequestId}', [ServiceController::class, 'mosqueShowRequest']);
+});
+Route::middleware('perm:services.manage')->group(function () {
+    Route::post('services', [ServiceController::class, 'storeDefinition']);
+    Route::patch('services/{definitionId}', [ServiceController::class, 'updateDefinition']);
+    Route::patch('service-requests/{serviceRequestId}/status', [ServiceController::class, 'updateStatus']);
+    Route::get('services/{definitionId}/export', [ServiceController::class, 'exportCsv'])->middleware('throttle:20,1');
 });

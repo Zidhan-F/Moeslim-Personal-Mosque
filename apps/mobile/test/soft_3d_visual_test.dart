@@ -41,7 +41,7 @@ void main() {
         role: 'admin',
         permissions: const [
           'finance.view', 'finance.write', 'events.view', 'events.write', 'members.view', 'staff.view',
-          'inventory.view', 'display.view', 'zakat.view', 'qurban.view',
+          'inventory.view', 'display.view', 'zakat.view', 'qurban.view', 'services.view',
         ],
       ), tokens: MemoryTokenStore('t0k3n'));
     final frame = GlobalKey();
@@ -78,6 +78,34 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Lihat Semua'));
     await capture('features-light');
+    for (final entry in {
+      'Perencana Khatam': SoftAsset.khatam,
+      'Belajar Tajwid': SoftAsset.tajweed,
+      'Warna Tajwid': SoftAsset.tajweedColors,
+      "Pendalaman Qur'an": SoftAsset.quranStudy,
+      'Fokus Tilawah': SoftAsset.focusReading,
+      'Kiblat Matahari & Safar': SoftAsset.solarQibla,
+      'Asmaul Husna': SoftAsset.asmaulHusna,
+      'Kartu Bagikan Ayat': SoftAsset.shareCard,
+      'Puasa & Qadha': SoftAsset.fasting,
+      'Pelacak Sedekah': SoftAsset.charity,
+      'Jurnal Muhasabah': SoftAsset.muhasabah,
+      'Kitab Hadits': SoftAsset.hadith,
+      'Zakat & Waris': SoftAsset.zakat,
+      'Manasik Haji & Umrah': SoftAsset.kaaba,
+      'Sirah & 25 Nabi': SoftAsset.sirah,
+      'Keluarga & Edukasi': SoftAsset.familyEdu,
+      'Moeslim Family': SoftAsset.familySpace,
+      'Learning Path & Arab': SoftAsset.learningPath,
+      'Ramadan Masjid': SoftAsset.ramadanMosque,
+      'Layanan Masjid': SoftAsset.mosqueServices,
+    }.entries) {
+      final tile = find.widgetWithText(MenuTile, entry.key);
+      await tester.scrollUntilVisible(tile, 200, scrollable: find.byType(Scrollable).first);
+      final art = find.descendant(of: tile, matching: find.byType(SoftArt));
+      expect(tester.widget<SoftArt>(art).asset, entry.value, reason: entry.key);
+    }
+    await capture('features-bottom-light');
     await tester.enterText(find.byType(TextField).first, 'Muslimah');
     await capture('muslimah-feature');
     expect(tester.widgetList<SoftArt>(find.byType(SoftArt)).any((art) => art.asset == SoftAsset.muslimah), isTrue);
@@ -121,6 +149,7 @@ void main() {
       'Laporan': SoftAsset.barChart,
       'Zakat': SoftAsset.zakat,
       'Kurban & QR': SoftAsset.qurban,
+      'Layanan': SoftAsset.mosqueServices,
       'Profil Web': SoftAsset.webGlobe,
     }.entries) {
       final tile = find.widgetWithText(MenuTile, entry.key);

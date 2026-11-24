@@ -9,5 +9,11 @@ import 'core/providers.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
-  runApp(ProviderScope(overrides: [storeProvider.overrideWithValue(PrefsStore(prefs))], child: const MoeslimApp()));
+  runApp(
+    ProviderScope(
+      retry: (_, _) => null,
+      overrides: [storeProvider.overrideWithValue(PrefsStore(prefs))],
+      child: const MoeslimApp(),
+    ),
+  );
 }

@@ -1,6 +1,12 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:math' as math;
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
+import 'package:moeslim_mobile/core/profile_photo_service.dart';
 import 'package:moeslim_mobile/features/home/home_page.dart';
 import 'package:moeslim_mobile/features/prayer/prayer_page.dart';
 import 'package:moeslim_mobile/features/quran/quran_source.dart';
@@ -186,10 +192,11 @@ void main() {
     final ayahCard = find.byKey(const Key('daily-ayah'));
     expect(ayahCard, findsOneWidget);
 
-    // Pastikan kartu ayat berada di posisi paling bawah (di bawah kartu sunnah kontekstual).
-    final sunnahTop = tester.getTopLeft(find.byKey(const Key('home-contextual-sunnah-card'))).dy;
+    // Kartu sunnah/dzikir kontekstual tidak tampil di Beranda utama; kartu ayat berada tepat di bawah Menu Cepat.
+    expect(find.byKey(const Key('home-contextual-sunnah-card')), findsNothing);
+    final quickMenuTop = tester.getTopLeft(find.byKey(const Key('quick-alquran'))).dy;
     final ayahTop = tester.getTopLeft(ayahCard).dy;
-    expect(ayahTop, greaterThan(sunnahTop));
+    expect(ayahTop, greaterThan(quickMenuTop));
 
     final quoteWidget = tester.widget<Text>(find.byKey(const Key('daily-ayah-text')));
     expect(quoteWidget.maxLines, isNull);
@@ -215,4 +222,115 @@ void main() {
     }
     expect(seenRefs, hasLength(30));
   });
+
+  test('koleksi kalimat pembuka Beranda memiliki 30 variasi unik ID dan EN tanpa em-dash', () {
+    expect(greetingBlessingPhrases, hasLength(30));
+    expect(greetingBlessingPhrases.map((p) => p.$1).toSet(), hasLength(30));
+    expect(greetingBlessingPhrases.map((p) => p.$2).toSet(), hasLength(30));
+    for (final (id, en) in greetingBlessingPhrases) {
+      expect(id.trim(), isNotEmpty);
+      expect(en.trim(), isNotEmpty);
+      expect(id.contains('\u2014'), isFalse);
+      expect(en.contains('\u2014'), isFalse);
+    }
+  });
+
+  testWidgets('kalimat pembuka Beranda dipilih acak 1x saat aplikasi dibuka dan tidak berubah saat pindah tab', (
+    tester,
+  ) async {
+    await pumpApp(tester);
+    await tester.pumpAndSettle();
+
+    final firstText = tester.widget<Text>(find.byKey(const Key('greeting-blessing'))).data!;
+    expect(greetingBlessingPhrases.map((p) => p.$1), contains(firstText));
+
+    // Pindah ke tab lain lalu kembali ke Beranda: kalimat harus tetap sama.
+    await tester.tap(find.text("Al-Qur'an").last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Beranda'));
+    await tester.pumpAndSettle();
+
+    // Tunggu beberapa detik (melebihi rotasi ayat): kalimat pembuka tetap tidak berubah.
+    await tester.pump(dailyAyahRotationInterval * 2);
+    await tester.pumpAndSettle();
+    final afterReturnText = tester.widget<Text>(find.byKey(const Key('greeting-blessing'))).data!;
+    expect(afterReturnText, equals(firstText));
+
+    // Simulasi dua kali buka aplikasi baru dengan seed acak berbeda -> memilih variasi berbeda.
+    final launchA = ProviderContainer(
+      overrides: [greetingBlessingRandomProvider.overrideWithValue(math.Random(1))],
+    );
+    final launchB = ProviderContainer(
+      overrides: [greetingBlessingRandomProvider.overrideWithValue(math.Random(42))],
+    );
+    addTearDown(launchA.dispose);
+    addTearDown(launchB.dispose);
+
+    final idxA = launchA.read(sessionGreetingBlessingIndexProvider);
+    final idxB = launchB.read(sessionGreetingBlessingIndexProvider);
+    expect(idxA, inInclusiveRange(0, 29));
+    expect(idxB, inInclusiveRange(0, 29));
+    expect(idxA, isNot(idxB));
+    expect(launchA.read(sessionGreetingBlessingIndexProvider), equals(idxA));
+  });
+
+  testWidgets('foto profil di Beranda & Profil dapat diganti dan dihapus secara offline', (tester) async {
+    final tmpDir = Directory.systemTemp.createTempSync('moeslim_avatar_test_');
+    addTearDown(() {
+      if (tmpDir.existsSync()) tmpDir.deleteSync(recursive: true);
+    });
+    final pngBytes = base64Decode(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+    );
+    final photoFile = File('${tmpDir.path}/avatar_test.png')..writeAsBytesSync(pngBytes);
+
+    final store = InMemoryStore();
+    final fakeService = _FakeProfilePhotoService(photoFile.path);
+    await pumpApp(tester, store: store, profilePhotoService: fakeService);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('home-profile-avatar')), findsOneWidget);
+    expect(find.byKey(const Key('profile-avatar-image')), findsNothing);
+
+    // Ketuk avatar di Beranda -> pilih foto dari galeri lokal (offline)
+    await tester.tap(find.byKey(const Key('home-profile-avatar')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('profile-photo-pick-gallery')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('profile-avatar-image')), findsOneWidget);
+    final saved = await SettingsRepository(store).load();
+    expect(saved.profilePhotoPath, equals(photoFile.path));
+
+    // Pastikan foto yang sama tampil di tab Profil
+    await tester.tap(find.text('Profil'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('profile-page-avatar')), findsOneWidget);
+    expect(find.byKey(const Key('profile-avatar-image')), findsOneWidget);
+
+    // Hapus foto profil dari tab Profil -> kembali ke avatar default
+    await tester.tap(find.byKey(const Key('profile-page-avatar')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('profile-photo-remove')));
+    await tester.pumpAndSettle();
+
+    expect(fakeService.deletedPath, equals(photoFile.path));
+    expect(find.byKey(const Key('profile-avatar-image')), findsNothing);
+    final cleared = await SettingsRepository(store).load();
+    expect(cleared.profilePhotoPath, isNull);
+  });
+}
+
+class _FakeProfilePhotoService extends ProfilePhotoService {
+  final String _nextPath;
+  String? deletedPath;
+  _FakeProfilePhotoService(this._nextPath);
+
+  @override
+  Future<String?> pickFromGallery() async => _nextPath;
+
+  @override
+  Future<void> deleteLocalPhoto(String? path) async {
+    deletedPath = path;
+  }
 }

@@ -28,8 +28,8 @@ class WebDisplayController extends Controller
             'theme_color' => '#07372F',
             'icons' => [
                 [
-                    'src' => '/moeslim-icon.png',
-                    'sizes' => '192x192',
+                    'src' => '/moeslim-icon.png?v=2',
+                    'sizes' => '512x512',
                     'type' => 'image/png',
                     'purpose' => 'any',
                 ],
@@ -40,8 +40,8 @@ class WebDisplayController extends Controller
     public function serviceWorker(): Response
     {
         $js = <<<'JS'
-const CACHE = 'moeslim-tv-v2';
-const SHELL = ['/tv', '/tv/manifest.json', '/moeslim-icon.png'];
+const CACHE = 'moeslim-tv-v3';
+const SHELL = ['/tv', '/tv/manifest.json', '/moeslim-icon.png?v=2', '/favicon.svg?v=2'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

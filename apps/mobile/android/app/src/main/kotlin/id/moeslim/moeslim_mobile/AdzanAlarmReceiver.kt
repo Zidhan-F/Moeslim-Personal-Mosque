@@ -8,7 +8,6 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.res.Configuration
 import android.graphics.Color
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
@@ -20,6 +19,8 @@ import android.os.Looper
 import android.os.PowerManager
 import java.io.File
 import java.util.concurrent.CopyOnWriteArraySet
+import java.util.concurrent.atomic.AtomicLong
+import kotlin.math.ceil
 
 data class ActiveAlarmInfo(
     val prayer: String,
@@ -28,8 +29,10 @@ data class ActiveAlarmInfo(
     val locationName: String,
     val muadzinName: String,
     val isFajr: Boolean,
-    val themeMode: String = "system",
+    val themeMode: String = "light",
     val language: String = "id",
+    val adzanVolume: Float = 0.85f,
+    val overrideDeviceVolume: Boolean = true,
     val startedAtMs: Long = System.currentTimeMillis()
 ) {
     fun toMap(): Map<String, Any> = mapOf(
@@ -41,6 +44,8 @@ data class ActiveAlarmInfo(
         "isFajr" to isFajr,
         "themeMode" to themeMode,
         "language" to language,
+        "adzanVolume" to adzanVolume.toDouble(),
+        "overrideDeviceVolume" to overrideDeviceVolume,
         "startedAtMs" to startedAtMs
     )
 }
@@ -51,12 +56,28 @@ object AdzanAudioPlayer {
     private var focusRequest: AudioFocusRequest? = null
     private var wakeLock: PowerManager.WakeLock? = null
     private var lastAppContext: Context? = null
+    private var savedAlarmStreamVolume: Int? = null
+    private var currentStreamType: Int = AudioManager.STREAM_ALARM
+    private var completionGuard: Runnable? = null
+    private val playGeneration = AtomicLong(0L)
     private val mainHandler = Handler(Looper.getMainLooper())
     private val alarmObservers = CopyOnWriteArraySet<(ActiveAlarmInfo?) -> Unit>()
 
     @Volatile
     var activeAlarm: ActiveAlarmInfo? = null
         private set
+
+    fun isActivelyPlaying(): Boolean {
+        val mp = mediaPlayer
+        if (mp != null) {
+            return try {
+                mp.isPlaying
+            } catch (_: Exception) {
+                false
+            }
+        }
+        return activeAlarm != null
+    }
 
     fun addAlarmObserver(observer: (ActiveAlarmInfo?) -> Unit) {
         alarmObservers.add(observer)
@@ -77,11 +98,72 @@ object AdzanAudioPlayer {
         }
     }
 
+    private fun applyVolume(
+        am: AudioManager?,
+        mp: MediaPlayer?,
+        volume: Float,
+        overrideDeviceVolume: Boolean
+    ) {
+        val clamped = volume.coerceIn(0f, 1f)
+        if (clamped <= 0.001f) {
+            try {
+                mp?.setVolume(0f, 0f)
+            } catch (_: Exception) {
+            }
+            return
+        }
+
+        if (overrideDeviceVolume && am != null && currentStreamType == AudioManager.STREAM_ALARM) {
+            try {
+                val maxVol = am.getStreamMaxVolume(AudioManager.STREAM_ALARM).coerceAtLeast(1)
+                if (savedAlarmStreamVolume == null) {
+                    savedAlarmStreamVolume = am.getStreamVolume(AudioManager.STREAM_ALARM)
+                }
+                val targetStep = ceil(clamped * maxVol).toInt().coerceIn(1, maxVol)
+                am.setStreamVolume(AudioManager.STREAM_ALARM, targetStep, 0)
+                val stepFraction = targetStep.toFloat() / maxVol.toFloat()
+                val fineGain = (clamped / stepFraction).coerceIn(0f, 1f)
+                mp?.setVolume(fineGain, fineGain)
+                return
+            } catch (_: SecurityException) {
+                // Jika perangkat sedang mengunci perubahan volume via DND ketat, lanjutkan lewat gain MediaPlayer.
+            } catch (_: Exception) {
+            }
+        }
+
+        try {
+            mp?.setVolume(clamped, clamped)
+        } catch (_: Exception) {
+        }
+    }
+
+    private fun restoreDeviceAlarmVolume() {
+        val prev = savedAlarmStreamVolume ?: return
+        savedAlarmStreamVolume = null
+        val am = audioManager ?: return
+        try {
+            am.setStreamVolume(AudioManager.STREAM_ALARM, prev, 0)
+        } catch (_: Exception) {
+        }
+    }
+
+    fun setLiveVolume(context: Context, volume: Float, overrideDeviceVolume: Boolean) {
+        AdzanAlarmReceiver.saveAudioPreferences(context, volume, overrideDeviceVolume)
+        val mp = mediaPlayer ?: return
+        val am = audioManager ?: (context.applicationContext.getSystemService(Context.AUDIO_SERVICE) as? AudioManager)
+        if (!overrideDeviceVolume) {
+            restoreDeviceAlarmVolume()
+        }
+        applyVolume(am, mp, volume, overrideDeviceVolume)
+    }
+
     fun playAsset(
         context: Context,
         assetPath: String,
         isPreview: Boolean = false,
         alarmInfo: ActiveAlarmInfo? = null,
+        volume: Float = AdzanAlarmReceiver.savedAdzanVolume(context),
+        overrideDeviceVolume: Boolean = AdzanAlarmReceiver.savedOverrideDeviceVolume(context),
         onComplete: (() -> Unit)? = null
     ): Boolean {
         val appContext = context.applicationContext
@@ -98,37 +180,75 @@ object AdzanAudioPlayer {
             current.prayer == alarmInfo.prayer &&
             (System.currentTimeMillis() - current.startedAtMs) < 90_000L
         ) {
-            AdzanAlarmReceiver.showRingingNotification(appContext, current)
+            val remainingMs = try {
+                val mp = mediaPlayer
+                if (mp != null && mp.duration > mp.currentPosition) {
+                    (mp.duration - mp.currentPosition).toLong() + 2_000L
+                } else {
+                    180_000L
+                }
+            } catch (_: Exception) {
+                180_000L
+            }
+            AdzanAlarmReceiver.showRingingNotification(appContext, current, timeoutAfterMs = remainingMs)
             notifyObservers(current)
             return true
         }
 
         stop(appContext)
+        val token = playGeneration.incrementAndGet()
+        val safeVol = volume.coerceIn(0f, 1f)
+
+        // Bila volume adzan di aplikasi sengaja dibisukan (0%) saat alarm tiba:
+        // tampilkan notifikasi visual singkat lalu otomatis hilang tanpa suara.
+        if (!isPreview && alarmInfo != null && safeVol <= 0.001f) {
+            activeAlarm = alarmInfo
+            val silentTimeoutMs = 20_000L
+            AdzanAlarmReceiver.showRingingNotification(appContext, alarmInfo, timeoutAfterMs = silentTimeoutMs)
+            notifyObservers(alarmInfo)
+            val guard = Runnable {
+                if (playGeneration.get() == token) {
+                    stop(appContext)
+                    onComplete?.invoke()
+                }
+            }
+            completionGuard = guard
+            mainHandler.postDelayed(guard, silentTimeoutMs)
+            return true
+        }
+        if (isPreview && safeVol <= 0.001f) {
+            if (onComplete != null) mainHandler.post { onComplete() }
+            return true
+        }
+
         val am = appContext.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
         audioManager = am
 
+        // Mode mandiri (default): pakai USAGE_ALARM agar suara adzan & pratinjau memakai pengaturan volume
+        // aplikasi sendiri dan tidak mengikuti mode hening / dering HP pengguna.
+        // Bila dimatikan: ikuti aturan suara HP (USAGE_NOTIFICATION untuk alarm, USAGE_MEDIA untuk pratinjau).
+        val useAlarmStream = overrideDeviceVolume
+        val usage = when {
+            useAlarmStream -> AudioAttributes.USAGE_ALARM
+            isPreview -> AudioAttributes.USAGE_MEDIA
+            else -> AudioAttributes.USAGE_NOTIFICATION
+        }
+        currentStreamType = when {
+            useAlarmStream -> AudioManager.STREAM_ALARM
+            isPreview -> AudioManager.STREAM_MUSIC
+            else -> AudioManager.STREAM_NOTIFICATION
+        }
+
         val attrs = AudioAttributes.Builder()
-            .setUsage(if (isPreview) AudioAttributes.USAGE_MEDIA else AudioAttributes.USAGE_ALARM)
+            .setUsage(usage)
             .setContentType(if (isPreview) AudioAttributes.CONTENT_TYPE_SPEECH else AudioAttributes.CONTENT_TYPE_SONIFICATION)
             .build()
 
-        requestAudioFocus(am, attrs, isPreview)
-
-        if (!isPreview) {
-            try {
-                val pm = appContext.getSystemService(Context.POWER_SERVICE) as? PowerManager
-                wakeLock = pm?.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "moeslim:adzan_alarm")?.apply {
-                    setReferenceCounted(false)
-                    acquire(4 * 60 * 1000L)
-                }
-            } catch (_: Exception) {
-            }
-        }
+        requestAudioFocus(am, attrs, currentStreamType)
 
         return try {
             val mp = MediaPlayer()
             mp.setAudioAttributes(attrs)
-            mp.setVolume(1.0f, 1.0f)
 
             val fullKey = "flutter_assets/$assetPath"
             var loaded = false
@@ -152,23 +272,58 @@ object AdzanAudioPlayer {
             }
 
             mp.setOnCompletionListener {
-                stop(appContext)
-                if (onComplete != null) {
-                    mainHandler.post { onComplete() }
+                if (playGeneration.get() == token) {
+                    stop(appContext)
+                    if (onComplete != null) {
+                        mainHandler.post { onComplete() }
+                    }
                 }
             }
             mp.setOnErrorListener { _, _, _ ->
-                stop(appContext)
-                if (onComplete != null) {
-                    mainHandler.post { onComplete() }
+                if (playGeneration.get() == token) {
+                    stop(appContext)
+                    if (onComplete != null) {
+                        mainHandler.post { onComplete() }
+                    }
                 }
                 true
             }
+
             mp.prepare()
+            val durationMs = mp.duration.toLong().takeIf { it > 0L } ?: (4 * 60 * 1000L)
+
+            if (!isPreview) {
+                try {
+                    val pm = appContext.getSystemService(Context.POWER_SERVICE) as? PowerManager
+                    wakeLock = pm?.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "moeslim:adzan_alarm")?.apply {
+                        setReferenceCounted(false)
+                        acquire(durationMs + 10_000L)
+                    }
+                } catch (_: Exception) {
+                }
+            }
+
+            applyVolume(am, mp, safeVol, overrideDeviceVolume)
             mp.start()
             mediaPlayer = mp
+
+            // Penjaga cadangan bila OnCompletionListener tertunda pada sebagian perangkat Android/OEM.
+            val guard = Runnable {
+                if (playGeneration.get() == token) {
+                    stop(appContext)
+                    onComplete?.invoke()
+                }
+            }
+            completionGuard = guard
+            mainHandler.postDelayed(guard, durationMs + 1_500L)
+
             if (!isPreview && alarmInfo != null) {
                 activeAlarm = alarmInfo
+                AdzanAlarmReceiver.showRingingNotification(
+                    appContext,
+                    alarmInfo,
+                    timeoutAfterMs = durationMs + 2_000L
+                )
                 notifyObservers(alarmInfo)
             }
             true
@@ -179,7 +334,7 @@ object AdzanAudioPlayer {
     }
 
     @Suppress("DEPRECATION")
-    private fun requestAudioFocus(am: AudioManager?, attrs: AudioAttributes, isPreview: Boolean) {
+    private fun requestAudioFocus(am: AudioManager?, attrs: AudioAttributes, streamType: Int) {
         if (am == null) return
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -195,8 +350,7 @@ object AdzanAudioPlayer {
                 focusRequest = req
                 am.requestAudioFocus(req)
             } else {
-                val stream = if (isPreview) AudioManager.STREAM_MUSIC else AudioManager.STREAM_ALARM
-                am.requestAudioFocus(null, stream, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+                am.requestAudioFocus(null, streamType, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
             }
         } catch (_: Exception) {
         }
@@ -218,7 +372,11 @@ object AdzanAudioPlayer {
 
     fun stop(context: Context? = null) {
         val ctx = context?.applicationContext ?: lastAppContext
+        playGeneration.incrementAndGet()
+        completionGuard?.let { mainHandler.removeCallbacks(it) }
+        completionGuard = null
         val hadActive = activeAlarm != null
+        val hadPlayer = mediaPlayer != null
         activeAlarm = null
         try {
             mediaPlayer?.let {
@@ -231,6 +389,7 @@ object AdzanAudioPlayer {
         } catch (_: Exception) {
         } finally {
             mediaPlayer = null
+            restoreDeviceAlarmVolume()
             abandonAudioFocus()
             try {
                 if (wakeLock?.isHeld == true) wakeLock?.release()
@@ -244,7 +403,7 @@ object AdzanAudioPlayer {
                 } catch (_: Exception) {
                 }
             }
-            if (hadActive) {
+            if (hadActive || hadPlayer) {
                 notifyObservers(null)
             }
         }
@@ -261,6 +420,8 @@ class AdzanAlarmReceiver : BroadcastReceiver() {
         private const val PREFS_NAME = "moeslim_adzan_prefs"
         private const val KEY_THEME_MODE = "theme_mode"
         private const val KEY_LANGUAGE = "language"
+        private const val KEY_ADZAN_VOLUME = "adzan_volume"
+        private const val KEY_OVERRIDE_DEVICE_VOLUME = "override_device_volume"
         private val PRAYER_IDS = intArrayOf(100, 101, 102, 103, 104)
 
         fun saveUiPreferences(context: Context, themeMode: String?, language: String?) {
@@ -271,32 +432,119 @@ class AdzanAlarmReceiver : BroadcastReceiver() {
             }.apply()
         }
 
+        fun saveAudioPreferences(context: Context, adzanVolume: Float?, overrideDeviceVolume: Boolean?) {
+            val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit().apply {
+                if (adzanVolume != null) putFloat(KEY_ADZAN_VOLUME, adzanVolume.coerceIn(0f, 1f))
+                if (overrideDeviceVolume != null) putBoolean(KEY_OVERRIDE_DEVICE_VOLUME, overrideDeviceVolume)
+            }.apply()
+        }
+
         fun savedThemeMode(context: Context): String =
             context.applicationContext
                 .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                .getString(KEY_THEME_MODE, "system") ?: "system"
+                .getString(KEY_THEME_MODE, "light") ?: "light"
 
         fun savedLanguage(context: Context): String =
             context.applicationContext
                 .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                 .getString(KEY_LANGUAGE, "id") ?: "id"
 
-        /**
-         * Menentukan apakah pop-up adzan memakai tema gelap atau terang:
-         * - "dark" -> gelap
-         * - "light" -> terang
-         * - "system" (default / auto) -> mengikuti mode Gelap/Terang sistem HP pengguna.
-         */
+        fun savedAdzanVolume(context: Context): Float =
+            context.applicationContext
+                .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .getFloat(KEY_ADZAN_VOLUME, 0.85f)
+                .coerceIn(0f, 1f)
+
+        fun savedOverrideDeviceVolume(context: Context): Boolean =
+            context.applicationContext
+                .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .getBoolean(KEY_OVERRIDE_DEVICE_VOLUME, true)
+
+        data class AdzanThemePalette(
+            val isDark: Boolean,
+            val bgColor: Int,
+            val cardColor: Int,
+            val borderColor: Int,
+            val accentColor: Int,
+            val titleColor: Int,
+            val subtitleColor: Int,
+            val calloutColor: Int,
+            val stopBgColor: Int,
+            val stopTextColor: Int,
+            val secondaryStrokeColor: Int,
+            val secondaryTextColor: Int
+        )
+
         fun isDarkTheme(context: Context, themeMode: String? = null): Boolean {
             val mode = themeMode?.takeIf { it.isNotBlank() } ?: savedThemeMode(context)
+            return mode == "dark" || mode == "layl"
+        }
+
+        fun themePalette(context: Context, themeMode: String? = null): AdzanThemePalette {
+            val mode = themeMode?.takeIf { it.isNotBlank() } ?: savedThemeMode(context)
             return when (mode) {
-                "dark" -> true
-                "light" -> false
-                else -> {
-                    val nightMask = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-                    nightMask == Configuration.UI_MODE_NIGHT_YES
-                }
+                "dark" -> AdzanThemePalette(
+                    isDark = true,
+                    bgColor = Color.parseColor("#041F1A"),
+                    cardColor = Color.parseColor("#0A2E27"),
+                    borderColor = Color.parseColor("#D9AB36"),
+                    accentColor = Color.parseColor("#5FD1AE"),
+                    titleColor = Color.parseColor("#F7F7F1"),
+                    subtitleColor = Color.parseColor("#DCE6E3"),
+                    calloutColor = Color.parseColor("#D9AB36"),
+                    stopBgColor = Color.parseColor("#D9AB36"),
+                    stopTextColor = Color.parseColor("#07372F"),
+                    secondaryStrokeColor = Color.parseColor("#5FD1AE"),
+                    secondaryTextColor = Color.parseColor("#F7F7F1")
+                )
+                "layl" -> AdzanThemePalette(
+                    isDark = true,
+                    bgColor = Color.parseColor("#0A1930"),
+                    cardColor = Color.parseColor("#13284A"),
+                    borderColor = Color.parseColor("#E5B852"),
+                    accentColor = Color.parseColor("#8FC2FA"),
+                    titleColor = Color.parseColor("#EEF4FC"),
+                    subtitleColor = Color.parseColor("#C5DAF5"),
+                    calloutColor = Color.parseColor("#E5B852"),
+                    stopBgColor = Color.parseColor("#E5B852"),
+                    stopTextColor = Color.parseColor("#081B38"),
+                    secondaryStrokeColor = Color.parseColor("#8FC2FA"),
+                    secondaryTextColor = Color.parseColor("#EEF4FC")
+                )
+                "nature" -> lightPalette("#EDF6EA", "#FAFFF7", "#266D2A", "#14351A", "#35543A")
+                "sky" -> lightPalette("#EAF4FC", "#F9FCFF", "#1462B2", "#0E2C4D", "#365472")
+                "twilight" -> lightPalette("#F4EEFA", "#FDFBFF", "#674299", "#2A1B47", "#53426E")
+                "sahara" -> lightPalette("#FAF2E6", "#FFFDF8", "#845727", "#3A240E", "#62472B")
+                "sakina" -> lightPalette("#F4F0FA", "#FCFAFF", "#6A4C9E", "#2B1B49", "#544370")
+                "zamrud" -> lightPalette("#E5F5F3", "#F6FFFE", "#0D6B6A", "#0A3638", "#355C5E")
+                "rosa" -> lightPalette("#FDF0F4", "#FFF9FB", "#A83E61", "#471828", "#6C3B4C")
+                else -> lightPalette("#F7F7F1", "#FFFFFF", "#087E65", "#07372F", "#4B5B57")
             }
+        }
+
+        private fun lightPalette(
+            bgHex: String,
+            cardHex: String,
+            primaryHex: String,
+            titleHex: String,
+            subtitleHex: String
+        ): AdzanThemePalette {
+            val primary = Color.parseColor(primaryHex)
+            return AdzanThemePalette(
+                isDark = false,
+                bgColor = Color.parseColor(bgHex),
+                cardColor = Color.parseColor(cardHex),
+                borderColor = Color.argb(95, Color.red(primary), Color.green(primary), Color.blue(primary)),
+                accentColor = primary,
+                titleColor = Color.parseColor(titleHex),
+                subtitleColor = Color.parseColor(subtitleHex),
+                calloutColor = Color.parseColor("#8A6A14"),
+                stopBgColor = primary,
+                stopTextColor = Color.WHITE,
+                secondaryStrokeColor = primary,
+                secondaryTextColor = primary
+            )
         }
 
         fun ensureChannel(context: Context) {
@@ -322,7 +570,11 @@ class AdzanAlarmReceiver : BroadcastReceiver() {
         }
 
         @Suppress("DEPRECATION")
-        fun showRingingNotification(context: Context, info: ActiveAlarmInfo) {
+        fun showRingingNotification(
+            context: Context,
+            info: ActiveAlarmInfo,
+            timeoutAfterMs: Long = 4 * 60 * 1000L
+        ) {
             val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
             ensureChannel(context)
 
@@ -346,11 +598,11 @@ class AdzanAlarmReceiver : BroadcastReceiver() {
             val timePart = if (info.localTime.isNotEmpty()) " (${info.localTime}$locSuffix)" else locSuffix
             val fajrNote = if (info.isFajr) "Ash-shalaatu khairum minan-nauum • " else ""
             val isEn = info.language == "en"
-            val dark = isDarkTheme(context, info.themeMode)
-            val accentColor = Color.parseColor(if (dark) "#5FD1AE" else "#087E65")
+            val accentColor = themePalette(context, info.themeMode).accentColor
 
             val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 Notification.Builder(context, CHANNEL_ID)
+                    .setTimeoutAfter(timeoutAfterMs.coerceAtLeast(5_000L))
             } else {
                 Notification.Builder(context)
                     .setPriority(Notification.PRIORITY_MAX)
@@ -371,8 +623,8 @@ class AdzanAlarmReceiver : BroadcastReceiver() {
                 .setContentText("${fajrNote}Muadzin: ${info.muadzinName}")
                 .setCategory(Notification.CATEGORY_ALARM)
                 .setVisibility(Notification.VISIBILITY_PUBLIC)
-                .setOngoing(true)
-                .setAutoCancel(false)
+                .setOngoing(false)
+                .setAutoCancel(true)
                 .setContentIntent(alertPi)
                 .setFullScreenIntent(alertPi, true)
                 .setDeleteIntent(stopPi)
@@ -397,10 +649,13 @@ class AdzanAlarmReceiver : BroadcastReceiver() {
             alarms: List<Map<*, *>>,
             defaultAssetPath: String,
             defaultMuadzinName: String,
-            themeMode: String = "system",
-            language: String = "id"
+            themeMode: String = "light",
+            language: String = "id",
+            adzanVolume: Float = 0.85f,
+            overrideDeviceVolume: Boolean = true
         ) {
             saveUiPreferences(context, themeMode, language)
+            saveAudioPreferences(context, adzanVolume, overrideDeviceVolume)
             ensureChannel(context)
             cancelAll(context)
             val am = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
@@ -421,6 +676,8 @@ class AdzanAlarmReceiver : BroadcastReceiver() {
                     putExtra("assetPath", defaultAssetPath)
                     putExtra("themeMode", themeMode)
                     putExtra("language", item["language"] as? String ?: language)
+                    putExtra("adzanVolume", adzanVolume.coerceIn(0f, 1f))
+                    putExtra("overrideDeviceVolume", overrideDeviceVolume)
                 }
                 val pi = PendingIntent.getBroadcast(
                     context,
@@ -465,6 +722,17 @@ class AdzanAlarmReceiver : BroadcastReceiver() {
         }
         if (intent?.action != ACTION_TRIGGER) return
 
+        val volume = if (intent.hasExtra("adzanVolume")) {
+            intent.getFloatExtra("adzanVolume", savedAdzanVolume(context))
+        } else {
+            savedAdzanVolume(context)
+        }
+        val overrideDevice = if (intent.hasExtra("overrideDeviceVolume")) {
+            intent.getBooleanExtra("overrideDeviceVolume", savedOverrideDeviceVolume(context))
+        } else {
+            savedOverrideDeviceVolume(context)
+        }
+
         val info = ActiveAlarmInfo(
             prayer = intent.getStringExtra("prayer") ?: "fajr",
             prayerLabel = intent.getStringExtra("prayerLabel") ?: "Salat",
@@ -473,11 +741,21 @@ class AdzanAlarmReceiver : BroadcastReceiver() {
             muadzinName = intent.getStringExtra("muadzinName") ?: "Muadzin",
             isFajr = intent.getBooleanExtra("isFajr", false),
             themeMode = intent.getStringExtra("themeMode") ?: savedThemeMode(context),
-            language = intent.getStringExtra("language") ?: savedLanguage(context)
+            language = intent.getStringExtra("language") ?: savedLanguage(context),
+            adzanVolume = volume,
+            overrideDeviceVolume = overrideDevice
         )
         val assetPath = intent.getStringExtra("assetPath") ?: "assets/audio/adzan/makkah.mp3"
 
-        AdzanAudioPlayer.playAsset(context, assetPath, isPreview = false, alarmInfo = info)
-        showRingingNotification(context, info)
+        // playAsset akan menampilkan notifikasi dengan timeout otomatis persis sesuai durasi adzan
+        // dan menghapusnya segera saat adzan selesai.
+        AdzanAudioPlayer.playAsset(
+            context,
+            assetPath,
+            isPreview = false,
+            alarmInfo = info,
+            volume = volume,
+            overrideDeviceVolume = overrideDevice
+        )
     }
 }

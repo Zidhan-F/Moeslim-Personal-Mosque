@@ -17,8 +17,7 @@ class BrandLogo extends StatelessWidget {
 
   String _asset(bool dark) => switch (variant) {
         BrandLogoVariant.horizontal => dark ? 'horizontal_white' : 'horizontal',
-        // Varian stacked putih tidak tersedia di brand kit → pakai simbol putih di latar gelap.
-        BrandLogoVariant.stacked => dark ? 'symbol_white' : 'stacked',
+        BrandLogoVariant.stacked => dark ? 'stacked_white' : 'stacked',
         BrandLogoVariant.symbol => dark ? 'symbol_white' : 'symbol',
       };
 

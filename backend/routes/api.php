@@ -3,8 +3,11 @@
 use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\EventRegistrationController;
+use App\Http\Controllers\Api\FamilyController;
 use App\Http\Controllers\Api\MemberController;
 use App\Http\Controllers\Api\MosqueController;
+use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\SubscriptionController;
 use Illuminate\Support\Facades\Route;
 
@@ -25,6 +28,36 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('mosques', [MosqueController::class, 'index']);
     Route::post('mosques', [MosqueController::class, 'store']);
     Route::post('invitations/accept', [MemberController::class, 'accept'])->middleware('throttle:10,1');
+
+    // Moeslim Family Cloud (opt-in bagi akun Personal; terpisah dari Mosque)
+    Route::prefix('families')->group(function () {
+        Route::get('/', [FamilyController::class, 'index']);
+        Route::post('/', [FamilyController::class, 'store'])->middleware('throttle:10,1');
+        Route::get('{family}', [FamilyController::class, 'show']);
+        Route::patch('{family}', [FamilyController::class, 'update']);
+        Route::delete('{family}', [FamilyController::class, 'destroy']);
+        Route::post('{family}/invites', [FamilyController::class, 'invite'])->middleware('throttle:15,1');
+        Route::delete('{family}/invites/{invite}', [FamilyController::class, 'revoke']);
+        Route::put('{family}/events/{event}', [FamilyController::class, 'saveEvent']);
+        Route::post('{family}/goals', [FamilyController::class, 'saveGoal']);
+        Route::delete('{family}/goals/{goal}', [FamilyController::class, 'deleteGoal']);
+        Route::delete('{family}/members/{memberUserId}', [FamilyController::class, 'removeMember']);
+        Route::post('{family}/leave', [FamilyController::class, 'leave']);
+    });
+    Route::post('family-invites/accept', [FamilyController::class, 'accept'])->middleware('throttle:10,1');
+
+    // Pendaftaran kegiatan Ramadan Local & Kelas Masjid + Moeslim Services (sisi Jamaah/Personal)
+    Route::get('me/registrations', [EventRegistrationController::class, 'myRegistrations']);
+    Route::post('events/{event}/registrations', [EventRegistrationController::class, 'register'])->middleware('throttle:20,1');
+    Route::delete('events/{event}/registrations', [EventRegistrationController::class, 'cancel']);
+
+    Route::post('public/mosques/{slug}/service-requests', [ServiceController::class, 'submit'])->middleware('throttle:20,1');
+    Route::get('me/service-requests', [ServiceController::class, 'myRequests']);
+    Route::get('me/service-requests/{serviceRequest}', [ServiceController::class, 'myShow']);
+    Route::post('me/service-requests/{serviceRequest}/resubmit', [ServiceController::class, 'resubmit'])->middleware('throttle:20,1');
+    Route::post('me/service-requests/{serviceRequest}/cancel', [ServiceController::class, 'cancelByApplicant']);
+    Route::post('me/service-requests/{serviceRequest}/attachments', [ServiceController::class, 'uploadAttachment'])->middleware('throttle:15,1');
+    Route::get('service-attachments/{attachmentId}', [ServiceController::class, 'downloadAttachment']);
 
     Route::prefix('mosques/{mosque}')->middleware('tenant')->scopeBindings()->group(function () {
         // Billing tetap dapat diakses walau langganan berakhir.

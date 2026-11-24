@@ -263,11 +263,25 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('backup-status-msg')), findsOneWidget);
 
-    // 21–25. Pendalaman Al-Qur'an & Arab + Fokus Tilawah
+    // 21–25. Pendalaman Al-Qur'an & Arab + Fokus Tilawah (pilih dari 114 surah)
     await _openPage(tester, const QuranStudySuitePage());
     expect(find.text('Pendalaman Al-Qur\'an & Arab'), findsOneWidget);
     await _openPage(tester, const FocusTilawahPage());
     expect(find.byKey(const Key('focus-tilawah-autoscroll')), findsOneWidget);
+    expect(find.text('1. Al-Fatihah'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('focus-surah-picker')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('focus-surah-sheet')), findsOneWidget);
+    await tester.enterText(find.byKey(const Key('focus-surah-search')), '114');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('focus-surah-item-114')));
+    await tester.pumpAndSettle();
+    expect(find.text('114. An-Nas'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('focus-surah-prev')));
+    await tester.pumpAndSettle();
+    expect(find.text('113. Al-Falaq'), findsOneWidget);
 
     // 26–30. Salat, Kiblat & Astronomi
     await _openPage(tester, const AstronomyQiblaFiqihPage());

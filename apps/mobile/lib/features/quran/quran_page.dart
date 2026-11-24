@@ -241,7 +241,7 @@ class _MushafTab extends ConsumerWidget {
         Card(
           child: ListTile(
             key: const Key('open-murottal'),
-            leading: const Icon(MoeslimIcons.audio, color: BrandColors.emerald),
+            leading: const SoftArt(SoftAsset.headphones, width: 36, height: 36, thumbnail: true),
             title: Text(
               context.tr('Murottal Al-Qur\'an', 'Qur\'an Audio Recitation'),
               style: const TextStyle(fontWeight: FontWeight.w600),
@@ -261,7 +261,7 @@ class _MushafTab extends ConsumerWidget {
         Card(
           child: ListTile(
             key: const Key('open-tafsir-search'),
-            leading: const Icon(MoeslimIcons.buku, color: BrandColors.emerald),
+            leading: const SoftArt(SoftAsset.search, width: 36, height: 36, thumbnail: true),
             title: Text(
               context.tr('Tafsir Ringkas & Pencarian Ayat', 'Concise Tafsir & Verse Search'),
               style: const TextStyle(fontWeight: FontWeight.w600),
@@ -279,7 +279,7 @@ class _MushafTab extends ConsumerWidget {
         Card(
           child: ListTile(
             key: const Key('open-tahfidz'),
-            leading: const Icon(MoeslimIcons.target, color: BrandColors.emerald),
+            leading: const SoftArt(SoftAsset.target, width: 36, height: 36, thumbnail: true),
             title: Text(
               context.tr('Mode Hafalan (Tahfidz & Muraja\'ah)', 'Memorization Mode (Tahfidz & Review)'),
               style: const TextStyle(fontWeight: FontWeight.w600),
@@ -299,7 +299,7 @@ class _MushafTab extends ConsumerWidget {
         Card(
           child: ListTile(
             key: const Key('open-khatam-planner'),
-            leading: const Icon(MoeslimIcons.kalender, color: BrandColors.emerald),
+            leading: const SoftArt(SoftAsset.khatam, width: 36, height: 36, thumbnail: true),
             title: Text(
               context.tr('Perencana Khatam Al-Qur\'an', 'Qur\'an Khatam Planner'),
               style: const TextStyle(fontWeight: FontWeight.w600),
@@ -317,7 +317,7 @@ class _MushafTab extends ConsumerWidget {
         Card(
           child: ListTile(
             key: const Key('open-tajweed-learning'),
-            leading: const Icon(Icons.school_outlined, color: BrandColors.emerald),
+            leading: const SoftArt(SoftAsset.tajweed, width: 36, height: 36, thumbnail: true),
             title: Text(
               context.tr('Belajar Tajwid & Makharijul Huruf', 'Learn Tajweed & Articulation Points'),
               style: const TextStyle(fontWeight: FontWeight.w600),
@@ -335,7 +335,7 @@ class _MushafTab extends ConsumerWidget {
         Card(
           child: ListTile(
             key: const Key('open-quran-study-suite'),
-            leading: const Icon(MoeslimIcons.quranTerbuka, color: BrandColors.emerald),
+            leading: const SoftArt(SoftAsset.quranStudy, width: 36, height: 36, thumbnail: true),
             title: Text(
               context.tr(
                 'Pendalaman Al-Qur\'an, Kata per Kata & Fokus Tilawah',

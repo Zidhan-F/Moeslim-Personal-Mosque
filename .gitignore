@@ -9,6 +9,7 @@ __pycache__/
 # Dart/Flutter
 .dart_tool/
 build/
+.kotlin/
 .flutter-plugins
 .flutter-plugins-dependencies
 pubspec_overrides.yaml

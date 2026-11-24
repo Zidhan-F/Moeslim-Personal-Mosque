@@ -53,13 +53,8 @@ class _MoeslimAppState extends ConsumerState<MoeslimApp> with WidgetsBindingObse
     return MaterialApp(
       title: 'Moeslim PM',
       debugShowCheckedModeBanner: false,
-      theme: buildTheme(Brightness.light),
-      darkTheme: buildTheme(Brightness.dark),
-      themeMode: switch (s?.themeMode) {
-        AppThemeMode.light => ThemeMode.light,
-        AppThemeMode.dark => ThemeMode.dark,
-        _ => ThemeMode.system,
-      },
+      theme: buildAppTheme(s?.themeMode ?? AppThemeMode.light),
+      themeMode: ThemeMode.light,
       builder: (context, child) => AppLangScope(
         language: lang,
         child: MediaQuery(
@@ -185,16 +180,19 @@ class _ActiveAdzanPopup extends StatelessWidget {
   Widget build(BuildContext context) {
     final isFajr = prayer == Prayer.fajr;
     final pLabel = context.prayerLabel(prayer);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surfaceColor = isDark ? BrandColors.nightCard : BrandColors.white;
-    final borderColor = isDark ? BrandColors.gold : BrandColors.emerald.withValues(alpha: .35);
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final visual = AppThemeVisual.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final surfaceColor = theme.cardTheme.color ?? (isDark ? BrandColors.nightCard : BrandColors.white);
+    final borderColor = isDark ? visual.heroAccentColor : scheme.primary.withValues(alpha: .35);
     final shadowColor = isDark ? Colors.black.withValues(alpha: .45) : Colors.black.withValues(alpha: .16);
-    final iconBg = isDark ? BrandColors.gold.withValues(alpha: .20) : BrandColors.emerald.withValues(alpha: .12);
-    final iconColor = isDark ? BrandColors.gold : BrandColors.emerald;
-    final titleColor = isDark ? BrandColors.cream : BrandColors.deep;
-    final subtitleColor = isDark ? BrandColors.cream.withValues(alpha: .82) : BrandColors.textMuted;
-    final buttonBg = isDark ? BrandColors.gold : BrandColors.emerald;
-    final buttonFg = isDark ? BrandColors.deep : Colors.white;
+    final iconBg = isDark ? visual.heroAccentColor.withValues(alpha: .20) : scheme.primary.withValues(alpha: .12);
+    final iconColor = isDark ? visual.heroAccentColor : scheme.primary;
+    final titleColor = scheme.onSurface;
+    final subtitleColor = scheme.onSurface.withValues(alpha: isDark ? .82 : .74);
+    final buttonBg = isDark ? visual.heroAccentColor : scheme.primary;
+    final buttonFg = isDark ? BrandColors.deep : scheme.onPrimary;
 
     return Material(
       key: const Key('active-adzan-popup-surface'),

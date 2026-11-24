@@ -8,7 +8,9 @@ import 'package:http/http.dart' as http;
 import 'package:moeslim_mobile/app.dart';
 import 'package:moeslim_mobile/core/adzan_service.dart';
 import 'package:moeslim_mobile/core/location_service.dart';
+import 'package:moeslim_mobile/core/profile_photo_service.dart';
 import 'package:moeslim_mobile/core/providers.dart';
+import 'package:moeslim_mobile/features/ibadah/asmaul_husna_audio.dart';
 import 'package:moeslim_mobile/features/ibadah/doa_pages.dart';
 import 'package:moeslim_mobile/features/ibadah/qibla_page.dart';
 import 'package:moeslim_mobile/features/masjid/session.dart';
@@ -229,12 +231,16 @@ class FakeAdzanAlarmBackend implements AdzanAlarmBackend {
 
   AppThemeMode? lastThemeMode;
   AppLanguage? lastLanguage;
+  double? lastVolume;
+  bool? lastOverrideDeviceVolume;
 
   @override
   Future<void> syncAlarms(List<ScheduledAdzanAlarm> alarms, PersonalSettings settings) async {
     syncedAlarms = List.unmodifiable(alarms);
     lastThemeMode = settings.themeMode;
     lastLanguage = settings.language;
+    lastVolume = settings.adzanVolume;
+    lastOverrideDeviceVolume = settings.adzanOverrideDeviceVolume;
   }
 
   @override
@@ -243,14 +249,24 @@ class FakeAdzanAlarmBackend implements AdzanAlarmBackend {
     Prayer? prayer,
     String? localTime,
     String? locationName,
-    AppThemeMode themeMode = AppThemeMode.system,
+    AppThemeMode themeMode = AppThemeMode.light,
     AppLanguage language = AppLanguage.id,
+    double volume = 0.85,
+    bool overrideDeviceVolume = true,
   }) async {
     playedMuadzins.add(muadzin);
     playedPrayers.add(prayer);
     lastThemeMode = themeMode;
     lastLanguage = language;
+    lastVolume = volume;
+    lastOverrideDeviceVolume = overrideDeviceVolume;
     if (prayer != null) activeNativeAlarm = prayer;
+  }
+
+  @override
+  Future<void> setVolume(double volume, {bool overrideDeviceVolume = true}) async {
+    lastVolume = volume;
+    lastOverrideDeviceVolume = overrideDeviceVolume;
   }
 
   @override
@@ -285,6 +301,100 @@ class FakeAdzanAlarmBackend implements AdzanAlarmBackend {
   }
 }
 
+class FakeAsmaulAudioEngine implements AsmaulAudioEngine {
+  final _playing = StreamController<bool>.broadcast();
+  final _index = StreamController<int?>.broadcast();
+  final _completed = StreamController<void>.broadcast();
+
+  final List<String> playedAssets = [];
+  List<String>? lastPlaylist;
+  int? lastPlaylistStartIndex;
+  double speed = 1.0;
+  AsmaulRepeatMode repeatMode = AsmaulRepeatMode.off;
+  int pauseCalls = 0;
+  int resumeCalls = 0;
+  int stopCalls = 0;
+  int? lastSeekIndex;
+
+  @override
+  Stream<bool> get playingStream => _playing.stream;
+
+  @override
+  Stream<int?> get currentIndexStream => _index.stream;
+
+  @override
+  Stream<void> get completedStream => _completed.stream;
+
+  void emitIndex(int index) {
+    if (!_index.isClosed) _index.add(index);
+  }
+
+  void emitCompleted() {
+    if (!_playing.isClosed) _playing.add(false);
+    if (!_completed.isClosed) _completed.add(null);
+  }
+
+  @override
+  Future<void> playAsset(String assetPath, {double speed = 1.0, bool loopOne = false}) async {
+    playedAssets.add(assetPath);
+    this.speed = speed;
+    repeatMode = loopOne ? AsmaulRepeatMode.one : AsmaulRepeatMode.off;
+    if (!_playing.isClosed) _playing.add(true);
+  }
+
+  @override
+  Future<void> playPlaylist(
+    List<String> assetPaths, {
+    int startIndex = 0,
+    double speed = 1.0,
+    AsmaulRepeatMode repeatMode = AsmaulRepeatMode.off,
+  }) async {
+    lastPlaylist = List.unmodifiable(assetPaths);
+    lastPlaylistStartIndex = startIndex;
+    this.speed = speed;
+    this.repeatMode = repeatMode;
+    if (!_index.isClosed) _index.add(startIndex);
+    if (!_playing.isClosed) _playing.add(true);
+  }
+
+  @override
+  Future<void> pause() async {
+    pauseCalls++;
+    if (!_playing.isClosed) _playing.add(false);
+  }
+
+  @override
+  Future<void> resume() async {
+    resumeCalls++;
+    if (!_playing.isClosed) _playing.add(true);
+  }
+
+  @override
+  Future<void> stop() async {
+    stopCalls++;
+    if (!_playing.isClosed) _playing.add(false);
+  }
+
+  @override
+  Future<void> seekToIndex(int index) async {
+    lastSeekIndex = index;
+    if (!_index.isClosed) _index.add(index);
+  }
+
+  @override
+  Future<void> setSpeed(double speed) async => this.speed = speed;
+
+  @override
+  Future<void> setRepeatMode(AsmaulRepeatMode mode) async => repeatMode = mode;
+
+  @override
+  Future<void> dispose() async {
+    await _playing.close();
+    await _index.close();
+    await _completed.close();
+  }
+}
+
 Future<ProviderContainer> pumpApp(
   WidgetTester tester, {
   KeyValueStore? store,
@@ -299,6 +409,8 @@ Future<ProviderContainer> pumpApp(
   LocationService? locationService,
   DeclinationService? declinationService,
   AdzanAlarmBackend? adzanBackend,
+  AsmaulAudioEngine? asmaulAudioEngine,
+  ProfilePhotoService? profilePhotoService,
   bool showOnboarding = false,
 }) async {
   store ??= InMemoryStore();
@@ -317,6 +429,8 @@ Future<ProviderContainer> pumpApp(
       locationServiceProvider.overrideWithValue(locationService ?? ownLocation!),
       declinationServiceProvider.overrideWithValue(declinationService ?? const FakeDeclinationService()),
       adzanBackendProvider.overrideWithValue(adzanBackend ?? FakeAdzanAlarmBackend()),
+      asmaulAudioEngineProvider.overrideWithValue(asmaulAudioEngine ?? FakeAsmaulAudioEngine()),
+      if (profilePhotoService != null) profilePhotoServiceProvider.overrideWithValue(profilePhotoService),
       quranSourceProvider.overrideWithValue(quran ?? FakeQuranSource()),
       dailyDuasProvider.overrideWith((ref) async => dailyDuas ?? _defaultDailyDuas()),
       audioManifestProvider.overrideWith((ref) async => manifest ?? AudioManifest.empty),

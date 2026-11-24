@@ -8,8 +8,9 @@ import 'helpers.dart';
 void main() {
   testWidgets('Beranda memakai ilustrasi brand, tema brand, dan font Inter', (tester) async {
     await pumpApp(tester);
-    // Banner sapaan memakai siluet masjid sesuai visualisasi (logo resmi tetap di onboarding & Tentang).
-    expect(find.descendant(of: find.byKey(const Key('greeting')), matching: find.byType(BrandArt)), findsOneWidget);
+    // Banner sapaan tampil bersih tanpa ikon masjid, memakai tema brand dan font Inter.
+    expect(find.byKey(const Key('greeting')), findsOneWidget);
+    expect(find.descendant(of: find.byKey(const Key('greeting')), matching: find.byType(BrandArt)), findsNothing);
     final ctx = tester.element(find.byKey(const Key('countdown')));
     expect(Theme.of(ctx).colorScheme.primary, BrandColors.emerald);
     expect(Theme.of(ctx).textTheme.bodyMedium?.fontFamily, contains('Inter'));

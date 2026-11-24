@@ -10,16 +10,58 @@ import 'package:shared_prayer/shared_prayer.dart';
 import '../../core/format.dart';
 import '../../core/l10n.dart';
 import '../../core/location_service.dart';
+import '../../core/profile_photo_service.dart';
 import '../../core/providers.dart';
+import '../../core/theme.dart';
 import '../../ui/components.dart';
 import '../../ui/core_nav.dart';
 import '../ibadah/doa_pages.dart';
-import '../ibadah/guided_dzikir_page.dart';
 import '../ibadah/qibla_page.dart';
-import '../ibadah/utility_accessibility_page.dart';
 import '../prayer/prayer_page.dart';
 import '../quran/quran_source.dart';
 import 'all_features_page.dart';
+
+/// 30 variasi kalimat doa dan harapan pembuka di Beranda (bilingual ID/EN).
+const greetingBlessingPhrases = <(String, String)>[
+  ('Semoga hari ini penuh keberkahan.', 'May your day be filled with blessings.'),
+  ('Semoga setiap langkah hari ini dimudahkan Allah.', 'May Allah make every step easy for you today.'),
+  ('Semoga hati selalu tenang dalam naungan-Nya.', 'May your heart stay calm under His care.'),
+  ('Awali hari dengan niat baik dan rasa syukur.', 'Begin the day with good intentions and gratitude.'),
+  ('Semoga rezeki hari ini datang dengan halal dan lapang.', 'May your sustenance today be lawful and ample.'),
+  ('Semoga urusan hari ini selesai dengan lancar.', 'May your affairs today unfold smoothly.'),
+  ('Semoga Allah menjaga keluarga dan orang tersayang.', 'May Allah protect your family and loved ones.'),
+  ('Jangan lupa sisipkan doa di sela kesibukan hari ini.', 'Pause for a quiet prayer between your tasks today.'),
+  ('Semoga lelah hari ini tercatat sebagai amal baik.', 'May your effort today be recorded as a good deed.'),
+  ('Semoga ilmu dan amal hari ini membawa manfaat.', 'May your knowledge and deeds bring lasting benefit today.'),
+  ('Semoga Allah melapangkan dada menghadapi segala ujian.', 'May Allah grant you a calm chest through every trial.'),
+  ('Semoga kebaikan kecil hari ini dibalas berlipat ganda.', 'May the small good you do today return multiplied.'),
+  ('Semoga lisan dan hati terjaga dalam kebaikan.', 'May your words and heart stay grounded in goodness.'),
+  ('Semoga kesehatan dan kekuatan selalu menyertai Anda.', 'May good health and steady strength stay with you.'),
+  ('Semoga waktu hari ini terisi dengan hal yang bermanfaat.', 'May your hours today be spent on what truly benefits.'),
+  ('Semoga Allah mempertemukan Anda dengan kabar baik.', 'May Allah bring welcome news your way today.'),
+  ('Semoga salat hari ini membawa ketenteraman jiwa.', 'May your prayers today bring quiet peace to your soul.'),
+  ('Semoga pintu kebaikan terbuka di setiap pertemuan.', 'May every meeting today open a door to goodness.'),
+  ('Semoga Allah menuntun pilihan terbaik untuk hari ini.', 'May Allah guide you toward the wisest choices today.'),
+  ('Semoga kesabaran hari ini berbuah ketenangan.', 'May your patience today bear quiet peace.'),
+  ('Semoga rumah dan langkah Anda diliputi rahmat-Nya.', 'May His mercy rest upon your home and every step.'),
+  ('Semoga rasa syukur meringankan setiap beban hari ini.', 'May gratitude lighten every weight you carry today.'),
+  ('Semoga Allah memudahkan jalan menuntut ilmu hari ini.', 'May Allah ease your way in seeking knowledge today.'),
+  ('Semoga istighfar dan dzikir menyejukkan hati hari ini.', 'May seeking forgiveness and remembrance cool your heart today.'),
+  ('Semoga pekerjaan hari ini membawa keberkahan bagi sesama.', 'May your work today bring blessing to those around you.'),
+  ('Semoga Allah melindungi dari segala hal yang menyulitkan.', 'May Allah shelter you from hardship and harm.'),
+  ('Semoga tilawah hari ini menerangi hati dan pikiran.', 'May your recitation today brighten your heart and mind.'),
+  ('Semoga setiap doa yang terucap hari ini diijabah.', 'May the prayers you raise today be answered.'),
+  ('Semoga langkah menuju kebaikan terasa ringan hari ini.', 'May walking toward what is good feel light today.'),
+  ('Semoga hari ini ditutup dengan hati yang lapang dan tenang.', 'May this day close with an open and peaceful heart.'),
+];
+
+/// Generator acak untuk kalimat pembuka Beranda (dapat di-override saat pengujian).
+final greetingBlessingRandomProvider = Provider<math.Random>((_) => math.Random());
+
+/// Dipilih 1x secara acak saat aplikasi baru dibuka dan dipertahankan selama sesi berjalan.
+final sessionGreetingBlessingIndexProvider = Provider<int>(
+  (ref) => ref.read(greetingBlessingRandomProvider).nextInt(greetingBlessingPhrases.length),
+);
 
 /// 30 ayat pilihan dari 30 surah dan ayat yang berbeda-beda (diambil dari dataset terpasang).
 const dailyAyahRefs = <(int, int)>[
@@ -104,7 +146,7 @@ class HomePage extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
         children: [
-          _Greeting(name: settings?.displayName),
+          _Greeting(settings: settings),
           Transform.translate(offset: const Offset(0, -18), child: const _LivePrayerCard()),
           SectionHeader(context.tr('Menu Cepat', 'Quick Menu')),
           LayoutBuilder(
@@ -148,90 +190,8 @@ class HomePage extends ConsumerWidget {
             },
           ),
           const SizedBox(height: 16),
-          const _ContextualSunnahHomeCard(),
-          const SizedBox(height: 12),
           const _DailyAyah(),
         ],
-      ),
-    );
-  }
-}
-
-class _ContextualSunnahHomeCard extends ConsumerWidget {
-  const _ContextualSunnahHomeCard();
-
-  static ({String window, String title, String subtitle}) _localizeAdvice(
-    BuildContext context,
-    ContextualSunnahAdvice advice,
-  ) {
-    if (!context.isEn) {
-      return (window: advice.timeWindowLabel, title: advice.title, subtitle: advice.subtitle);
-    }
-    return switch (advice.id) {
-      'tahajud_sahur' => (
-        window: 'Last Third of the Night & Suhoor',
-        title: 'Blessed Time for Tahajjud, Witr & Istighfar',
-        subtitle: 'Ask Allah in quiet supplication and seek forgiveness during the pre-dawn hours.',
-      ),
-      'dzikir_pagi' => (
-        window: 'Morning After Fajr',
-        title: 'Morning Dhikr & Early Charity',
-        subtitle: 'Start your day with Ayat al-Kursi, Sayyid al-Istighfar, and guided morning remembrance.',
-      ),
-      'salat_dhuha' => (
-        window: 'Mid-Morning',
-        title: 'Time for Dhuha Prayer (2-8 Rakaat)',
-        subtitle: 'Two rakaat of Dhuha fulfill the charity due for every joint in your body today.',
-      ),
-      'dzikir_petang' => (
-        window: 'Evening After Asr',
-        title: 'Guided Evening Dhikr',
-        subtitle: 'Protect your evening and night with authentic prophetic evening remembrance.',
-      ),
-      'almulk_muhasabah' => (
-        window: 'Before Sleeping',
-        title: 'Recite Surah Al-Mulk, Make Wudu & Reflect',
-        subtitle: 'Recite Surah Al-Mulk (30 verses) and close the night with quiet self-reflection.',
-      ),
-      'dzikrullah_siang' => (
-        window: 'Midday',
-        title: 'Pray on Time & Keep Your Tongue in Dhikr',
-        subtitle: 'Prepare for the Dhuhr and Asr call to prayer and remember Allah between daily tasks.',
-      ),
-      'sunnah_jumat' => (
-        window: 'Blessings of Friday',
-        title: 'Recite Surah Al-Kahf & Send Salawat',
-        subtitle:
-            'Friday is the best day of the week. Read Al-Kahf, send blessings on the Prophet, and pray before Maghrib.',
-      ),
-      _ => (window: advice.timeWindowLabel, title: advice.title, subtitle: advice.subtitle),
-    };
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final now = ref.watch(nowProvider).value ?? DateTime.now();
-    final advice = evaluateContextualSunnahForTime(now).first;
-    final localized = _localizeAdvice(context, advice);
-    final scheme = Theme.of(context).colorScheme;
-    final t = Theme.of(context).textTheme;
-
-    return Card(
-      key: const Key('home-contextual-sunnah-card'),
-      child: ListTile(
-        leading: Icon(MoeslimIcons.bintang, color: scheme.primary),
-        title: Text(localized.title, style: t.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
-        subtitle: Text('${localized.window} · ${localized.subtitle}', maxLines: 2, overflow: TextOverflow.ellipsis),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => advice.actionType == 'dzikir_pagi'
-                ? const GuidedDzikirPage(initialTime: GuidedDzikirTime.pagi)
-                : (advice.actionType == 'dzikir_petang'
-                      ? const GuidedDzikirPage(initialTime: GuidedDzikirTime.petang)
-                      : const UtilityAccessibilityPage(initialTab: 4)),
-          ),
-        ),
       ),
     );
   }
@@ -275,41 +235,56 @@ class _LivePrayerCardState extends ConsumerState<_LivePrayerCard> {
   }
 }
 
-class _Greeting extends StatelessWidget {
-  final String? name;
-  const _Greeting({required this.name});
+class _Greeting extends ConsumerWidget {
+  final PersonalSettings? settings;
+  const _Greeting({required this.settings});
 
   @override
-  Widget build(BuildContext context) => PatternBanner(
-    key: const Key('greeting'),
-    padding: const EdgeInsets.fromLTRB(20, 18, 20, 36),
-    child: Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text("Assalamu'alaikum", style: TextStyle(color: BrandColors.cream, fontSize: 15)),
-              Text(
-                name?.isNotEmpty == true ? name! : context.tr('Sahabat Moeslim', 'Fellow Muslim'),
-                style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                context.tr('Semoga hari ini penuh keberkahan.', 'May your day be filled with blessings.'),
-                style: const TextStyle(color: BrandColors.cream, fontSize: 13),
-              ),
-            ],
+  Widget build(BuildContext context, WidgetRef ref) {
+    final visual = AppThemeVisual.of(context);
+    final phraseIdx = ref.watch(sessionGreetingBlessingIndexProvider) % greetingBlessingPhrases.length;
+    final (phraseId, phraseEn) = greetingBlessingPhrases[phraseIdx];
+    final activeSettings = settings ?? PersonalSettings.defaults;
+    final name = activeSettings.displayName;
+    return HomeHeroBanner(
+      key: const Key('greeting'),
+      padding: const EdgeInsets.fromLTRB(20, 18, 18, 36),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Assalamu'alaikum",
+                  style: TextStyle(color: visual.heroSubtextColor, fontSize: 15, fontWeight: FontWeight.w500),
+                ),
+                Text(
+                  name?.isNotEmpty == true ? name! : context.tr('Sahabat Moeslim', 'Fellow Muslim'),
+                  style: TextStyle(color: visual.heroTextColor, fontSize: 22, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  context.tr(phraseId, phraseEn),
+                  key: const Key('greeting-blessing'),
+                  style: TextStyle(color: visual.heroSubtextColor, fontSize: 13),
+                ),
+              ],
+            ),
           ),
-        ),
-        SizedBox(
-          width: MediaQuery.textScalerOf(context).scale(14) > 16 ? 72 : 120,
-          height: 84,
-          child: const BrandArt(BrandIllustration.skyline, fit: BoxFit.contain, alignment: Alignment.bottomRight),
-        ),
-      ],
-    ),
-  );
+          const SizedBox(width: 14),
+          ProfileAvatarButton(
+            key: const Key('home-profile-avatar'),
+            photoPath: activeSettings.profilePhotoPath,
+            displayName: name,
+            size: 64,
+            onTap: () => showProfilePhotoSheet(context, ref, activeSettings),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _PrayerCard extends StatelessWidget {
@@ -323,6 +298,7 @@ class _PrayerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
     final scheme = Theme.of(context).colorScheme;
+    final visual = AppThemeVisual.of(context);
     final rows = <(String, DateTime, Prayer?)>[
       (context.prayerLabel(Prayer.fajr), status.today.fajr, Prayer.fajr),
       (context.tr('Syuruq', 'Sunrise'), status.today.sunrise, null),
@@ -396,8 +372,8 @@ class _PrayerCard extends StatelessWidget {
                   children: [
                     Container(
                       padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(color: BrandColors.gold.withValues(alpha: .15), shape: BoxShape.circle),
-                      child: const Icon(MoeslimIcons.masjid, color: BrandColors.goldText, size: 30),
+                      decoration: BoxDecoration(color: visual.countdownBg, shape: BoxShape.circle),
+                      child: Icon(MoeslimIcons.masjid, color: visual.countdownText, size: 30),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -429,7 +405,7 @@ class _PrayerCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   decoration: BoxDecoration(
-                    color: BrandColors.gold.withValues(alpha: .18),
+                    color: visual.countdownBg,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Wrap(
@@ -453,9 +429,7 @@ class _PrayerCard extends StatelessWidget {
                             context.tr('pukul ${hhmm(status.nextTime)}', 'at ${hhmm(status.nextTime)}'),
                             style: t.titleSmall?.copyWith(
                               fontWeight: FontWeight.w800,
-                              color: Theme.of(context).brightness == Brightness.dark
-                                  ? BrandColors.gold
-                                  : BrandColors.goldText,
+                              color: visual.countdownText,
                             ),
                           ),
                         ],
@@ -463,15 +437,13 @@ class _PrayerCard extends StatelessWidget {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(MoeslimIcons.jam, size: 16, color: BrandColors.goldText),
+                          Icon(MoeslimIcons.jam, size: 16, color: visual.countdownText),
                           const SizedBox(width: 4),
                           Text(
                             context.tr('${countdown(status.remaining)} lagi', '${countdown(status.remaining)} left'),
                             key: const Key('countdown'),
                             style: TextStyle(
-                              color: Theme.of(context).brightness == Brightness.dark
-                                  ? BrandColors.gold
-                                  : BrandColors.goldText,
+                              color: visual.countdownText,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -490,13 +462,26 @@ class _PrayerCard extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 6),
                           decoration: BoxDecoration(
-                            color: p != null && p == status.nextPrayer ? scheme.primary.withValues(alpha: .12) : null,
+                            color: p != null && p == status.nextPrayer ? visual.activePrayerBg : null,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Column(
                             children: [
-                              Text(label, style: const TextStyle(fontSize: 11.5)),
-                              Text(hhmm(time), style: const TextStyle(fontWeight: FontWeight.w700)),
+                              Text(
+                                label,
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  color: p != null && p == status.nextPrayer ? visual.activePrayerText : null,
+                                  fontWeight: p != null && p == status.nextPrayer ? FontWeight.w700 : null,
+                                ),
+                              ),
+                              Text(
+                                hhmm(time),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  color: p != null && p == status.nextPrayer ? visual.activePrayerText : null,
+                                ),
+                              ),
                             ],
                           ),
                         ),

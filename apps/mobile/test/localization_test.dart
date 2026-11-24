@@ -182,7 +182,7 @@ void main() {
     await tester.tap(find.text('Worship').last);
     await tester.pumpAndSettle();
     expect(find.text('Daily Worship'), findsOneWidget);
-    expect(find.textContaining('Morning, Evening & Post-Prayer Dhikr'), findsOneWidget);
+    expect(find.textContaining('guided dhikr (morning, evening, post-prayer)'), findsOneWidget);
   });
 
   testWidgets('seluruh halaman fitur utama dan 50 fitur tambahan merender bersih dalam mode English (AppLanguage.en)', (

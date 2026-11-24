@@ -22,7 +22,7 @@ import android.widget.TextView
 /**
  * Layar pop-up alarm adzan saat waktu salat tiba (tampil di atas layar kunci / heads-up)
  * agar pengguna dapat langsung mematikan suara adzan dengan satu ketukan.
- * Tema otomatis mengikuti pengaturan tema aplikasi (Auto/Sistem HP, Terang, atau Gelap).
+ * Tema otomatis mengikuti 10 pilihan tema tampilan aplikasi (default: Terang).
  */
 class AdzanAlertActivity : Activity() {
     companion object {
@@ -71,6 +71,14 @@ class AdzanAlertActivity : Activity() {
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         renderContent(intent)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (!AdzanAudioPlayer.isActivelyPlaying() && !isFinishing) {
+            AdzanAudioPlayer.stop(applicationContext)
+            finish()
+        }
     }
 
     override fun onDestroy() {
@@ -140,20 +148,21 @@ class AdzanAlertActivity : Activity() {
             ?: AdzanAlarmReceiver.savedLanguage(this)
 
         val isEn = language == "en"
-        val isDark = AdzanAlarmReceiver.isDarkTheme(this, themeMode)
+        val palette = AdzanAlarmReceiver.themePalette(this, themeMode)
+        val isDark = palette.isDark
 
-        val bgColor = Color.parseColor(if (isDark) "#041F1A" else "#F7F7F1")
-        val cardColor = Color.parseColor(if (isDark) "#0A2E27" else "#FFFFFF")
-        val borderColor = Color.parseColor(if (isDark) "#D9AB36" else "#59087E65")
-        val overlineColor = Color.parseColor(if (isDark) "#D9AB36" else "#087E65")
-        val titleColor = Color.parseColor(if (isDark) "#F7F7F1" else "#07372F")
-        val subtitleColor = Color.parseColor(if (isDark) "#DCE6E3" else "#4B5B57")
-        val calloutColor = Color.parseColor(if (isDark) "#D9AB36" else "#8A6A14")
-        val muadzinColor = Color.parseColor(if (isDark) "#B8CEC8" else "#4B5B57")
-        val stopBgColor = Color.parseColor(if (isDark) "#D9AB36" else "#087E65")
-        val stopTextColor = Color.parseColor(if (isDark) "#07372F" else "#FFFFFF")
-        val secondaryStrokeColor = Color.parseColor(if (isDark) "#5FD1AE" else "#087E65")
-        val secondaryTextColor = Color.parseColor(if (isDark) "#F7F7F1" else "#087E65")
+        val bgColor = palette.bgColor
+        val cardColor = palette.cardColor
+        val borderColor = palette.borderColor
+        val overlineColor = if (isDark) palette.calloutColor else palette.accentColor
+        val titleColor = palette.titleColor
+        val subtitleColor = palette.subtitleColor
+        val calloutColor = palette.calloutColor
+        val muadzinColor = palette.subtitleColor
+        val stopBgColor = palette.stopBgColor
+        val stopTextColor = palette.stopTextColor
+        val secondaryStrokeColor = palette.secondaryStrokeColor
+        val secondaryTextColor = palette.secondaryTextColor
 
         applySystemBarsTheme(isDark, bgColor)
 

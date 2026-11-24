@@ -2,8 +2,11 @@ import 'dart:math' as math;
 
 import 'package:moeslim_brand/material_3d.dart';
 import 'package:moeslim_brand/moeslim_brand.dart';
+import 'package:personal_core/personal_core.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../core/l10n.dart';
+import '../core/theme.dart';
 
 /// Pola geometris islami (bintang delapan) yang halus untuk latar header/kartu.
 class IslamicPatternPainter extends CustomPainter {
@@ -40,7 +43,7 @@ class IslamicPatternPainter extends CustomPainter {
   bool shouldRepaint(IslamicPatternPainter old) => old.color != color || old.cell != cell;
 }
 
-/// Header hijau bergradasi dengan pola islami (sapaan Beranda, banner fitur).
+/// Banner bermotif islami bernuansa kaya (kontras tinggi untuk teks putih) untuk header fitur.
 class PatternBanner extends StatelessWidget {
   final Widget child;
   final EdgeInsets padding;
@@ -53,20 +56,215 @@ class PatternBanner extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => ClipRRect(
-    borderRadius: borderRadius,
-    child: DecoratedBox(
-      decoration: BoxDecoration(
-        image: BrandBackground.bannerGelap.decoration(),
-        gradient: LinearGradient(
-          colors: [BrandColors.emerald, BrandColors.deep],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+  Widget build(BuildContext context) {
+    final visual = AppThemeVisual.of(context);
+    return ClipRRect(
+      borderRadius: borderRadius,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: visual.bannerGradient,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: CustomPaint(
+          painter: IslamicPatternPainter(color: Colors.white.withValues(alpha: .08), cell: 34),
+          child: Padding(padding: padding, child: child),
         ),
       ),
-      child: Padding(padding: padding, child: child),
-    ),
-  );
+    );
+  }
+}
+
+/// Banner hero atmosferik untuk Beranda dan Profil, menyesuaikan langit & ornamen tiap 10 tema.
+class HomeHeroBanner extends StatelessWidget {
+  final Widget child;
+  final EdgeInsets padding;
+  final BorderRadius borderRadius;
+  final AppThemeVisual? visualOverride;
+
+  const HomeHeroBanner({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.fromLTRB(20, 18, 20, 36),
+    this.borderRadius = const BorderRadius.all(Radius.circular(20)),
+    this.visualOverride,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final visual = visualOverride ?? AppThemeVisual.of(context);
+    return ClipRRect(
+      borderRadius: borderRadius,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: visual.heroGradient,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: CustomPaint(painter: _HeroAtmospherePainter(visual)),
+            ),
+            Padding(padding: padding, child: child),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HeroAtmospherePainter extends CustomPainter {
+  final AppThemeVisual visual;
+  const _HeroAtmospherePainter(this.visual);
+
+  void _drawCrescent(Canvas canvas, Offset center, double radius, Color color) {
+    final moon = Path.combine(
+      PathOperation.difference,
+      Path()..addOval(Rect.fromCircle(center: center, radius: radius)),
+      Path()..addOval(Rect.fromCircle(center: center + Offset(radius * .46, -radius * .22), radius: radius * .86)),
+    );
+    canvas.drawPath(moon, Paint()..color = color);
+  }
+
+  void _drawStar(Canvas canvas, Offset c, double r, Color color) {
+    final p = Path()
+      ..moveTo(c.dx, c.dy - r)
+      ..lineTo(c.dx + r * .3, c.dy - r * .3)
+      ..lineTo(c.dx + r, c.dy)
+      ..lineTo(c.dx + r * .3, c.dy + r * .3)
+      ..lineTo(c.dx, c.dy + r)
+      ..lineTo(c.dx - r * .3, c.dy + r * .3)
+      ..lineTo(c.dx - r, c.dy)
+      ..lineTo(c.dx - r * .3, c.dy - r * .3)
+      ..close();
+    canvas.drawPath(p, Paint()..color = color);
+  }
+
+  void _drawCloud(Canvas canvas, Offset base, double s, Color color) {
+    final p = Paint()..color = color;
+    canvas.drawCircle(base, s * .42, p);
+    canvas.drawCircle(base + Offset(s * .42, -s * .14), s * .5, p);
+    canvas.drawCircle(base + Offset(s * .88, 0), s * .38, p);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(Rect.fromLTWH(base.dx - s * .32, base.dy - s * .05, s * 1.48, s * .46), Radius.circular(s)),
+      p,
+    );
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final accent = visual.heroAccentColor;
+    if (visual.heroSunsetGlow != null) {
+      final glowPaint = Paint()
+        ..shader = RadialGradient(
+          center: const Alignment(0.75, 0.72),
+          radius: 0.85,
+          colors: [visual.heroSunsetGlow!, visual.heroSunsetGlow!.withValues(alpha: 0)],
+        ).createShader(Offset.zero & size);
+      canvas.drawRect(Offset.zero & size, glowPaint);
+    }
+
+    switch (visual.motif) {
+      case HeroMotif.geometric:
+        IslamicPatternPainter(color: accent.withValues(alpha: .09), cell: 32).paint(canvas, size);
+      case HeroMotif.nightStars:
+        IslamicPatternPainter(color: accent.withValues(alpha: .07), cell: 36).paint(canvas, size);
+        _drawCrescent(canvas, Offset(size.width * .78, size.height * .26), 9, accent.withValues(alpha: .85));
+        _drawStar(canvas, Offset(size.width * .68, size.height * .18), 3.6, accent.withValues(alpha: .75));
+        _drawStar(canvas, Offset(size.width * .88, size.height * .19), 2.8, accent.withValues(alpha: .6));
+        _drawStar(canvas, Offset(size.width * .61, size.height * .32), 2.2, Colors.white.withValues(alpha: .45));
+      case HeroMotif.natureLeaves:
+        final leafPaint = Paint()..color = accent.withValues(alpha: .18);
+        for (final (dx, dy, rx, ry, rot) in [
+          (.86, .12, 18.0, 8.0, -0.5),
+          (.93, .22, 16.0, 7.0, -0.9),
+          (.77, .09, 14.0, 6.5, -0.25),
+          (.96, .08, 13.0, 6.0, -1.2),
+        ]) {
+          canvas.save();
+          canvas.translate(size.width * dx, size.height * dy);
+          canvas.rotate(rot);
+          canvas.drawOval(Rect.fromCenter(center: Offset.zero, width: rx * 2, height: ry * 2), leafPaint);
+          canvas.restore();
+        }
+      case HeroMotif.skyClouds:
+        _drawCloud(canvas, Offset(size.width * .62, size.height * .25), 18, Colors.white.withValues(alpha: .22));
+        _drawCloud(canvas, Offset(size.width * .82, size.height * .19), 15, Colors.white.withValues(alpha: .28));
+        _drawCrescent(canvas, Offset(size.width * .73, size.height * .22), 7.5, Colors.white.withValues(alpha: .72));
+      case HeroMotif.twilightMoon:
+        _drawCrescent(canvas, Offset(size.width * .75, size.height * .26), 9.5, accent.withValues(alpha: .9));
+        _drawStar(canvas, Offset(size.width * .65, size.height * .20), 3.2, Colors.white.withValues(alpha: .65));
+        _drawStar(canvas, Offset(size.width * .86, size.height * .18), 2.6, Colors.white.withValues(alpha: .55));
+        _drawStar(canvas, Offset(size.width * .58, size.height * .33), 2.0, accent.withValues(alpha: .55));
+      case HeroMotif.desertSun:
+        final sunPaint = Paint()
+          ..shader = RadialGradient(
+            colors: [accent.withValues(alpha: .22), accent.withValues(alpha: 0)],
+          ).createShader(Rect.fromCircle(center: Offset(size.width * .82, size.height * .28), radius: 52));
+        canvas.drawCircle(Offset(size.width * .82, size.height * .28), 52, sunPaint);
+        final dunePaint = Paint()..color = accent.withValues(alpha: .10);
+        final dune = Path()
+          ..moveTo(0, size.height)
+          ..quadraticBezierTo(size.width * .35, size.height * .72, size.width * .7, size.height * .88)
+          ..quadraticBezierTo(size.width * .88, size.height * .95, size.width, size.height * .82)
+          ..lineTo(size.width, size.height)
+          ..close();
+        canvas.drawPath(dune, dunePaint);
+      case HeroMotif.midnightMoon:
+        _drawCrescent(canvas, Offset(size.width * .77, size.height * .24), 10, accent.withValues(alpha: .92));
+        for (final (dx, dy, r) in [
+          (.62, .18, 3.2),
+          (.69, .31, 2.2),
+          (.87, .16, 2.8),
+          (.92, .30, 2.0),
+          (.55, .24, 1.9),
+          (.82, .38, 1.8),
+        ]) {
+          _drawStar(canvas, Offset(size.width * dx, size.height * dy), r, accent.withValues(alpha: .72));
+        }
+      case HeroMotif.lavenderBlossoms:
+        final blossom = Paint()..color = accent.withValues(alpha: .16);
+        for (final (dx, dy, r) in [(.82, .16, 7.0), (.89, .24, 8.5), (.94, .12, 6.0), (.75, .11, 5.5)]) {
+          canvas.drawCircle(Offset(size.width * dx, size.height * dy), r, blossom);
+        }
+        IslamicPatternPainter(color: accent.withValues(alpha: .06), cell: 36).paint(canvas, size);
+      case HeroMotif.tealArch:
+        IslamicPatternPainter(color: accent.withValues(alpha: .11), cell: 32).paint(canvas, size);
+        final archStroke = Paint()
+          ..color = accent.withValues(alpha: .38)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.4;
+        final arch = Path()
+          ..moveTo(size.width * .62, size.height)
+          ..lineTo(size.width * .62, size.height * .36)
+          ..quadraticBezierTo(size.width * .78, size.height * .06, size.width * .94, size.height * .36)
+          ..lineTo(size.width * .94, size.height);
+        canvas.drawPath(arch, archStroke);
+      case HeroMotif.rosePetals:
+        final petal = Paint()..color = accent.withValues(alpha: .17);
+        for (final (dx, dy, rx, ry, rot) in [
+          (.82, .14, 10.0, 5.5, 0.4),
+          (.90, .20, 12.0, 6.0, -0.35),
+          (.75, .24, 8.0, 4.5, 0.7),
+          (.94, .10, 9.0, 5.0, -0.8),
+          (.68, .15, 7.5, 4.0, 0.2),
+        ]) {
+          canvas.save();
+          canvas.translate(size.width * dx, size.height * dy);
+          canvas.rotate(rot);
+          canvas.drawOval(Rect.fromCenter(center: Offset.zero, width: rx * 2, height: ry * 2), petal);
+          canvas.restore();
+        }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_HeroAtmospherePainter old) => old.visual != visual;
 }
 
 /// Kartu ornamen krem dengan bingkai emas tipis (judul surah, detail doa).
@@ -76,17 +274,26 @@ class OrnamentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
+    final visual = AppThemeVisual.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: dark ? BrandColors.nightCard : const Color(0xFFFFFDF6),
+        color: dark ? (theme.cardTheme.color ?? BrandColors.nightCard) : (theme.cardTheme.color ?? const Color(0xFFFFFDF6)),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: BrandColors.gold.withValues(alpha: .55)),
-        image: (dark ? BrandBackground.bannerGelap : BrandBackground.alquranKrem).decoration(),
+        border: Border.all(
+          color: dark ? visual.heroAccentColor.withValues(alpha: .42) : BrandColors.gold.withValues(alpha: .55),
+        ),
+        image: dark
+            ? null
+            : (visual.mode == AppThemeMode.light ? BrandBackground.alquranKrem.decoration() : null),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
-        child: Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20), child: child),
+        child: CustomPaint(
+          painter: dark ? IslamicPatternPainter(color: visual.heroAccentColor.withValues(alpha: .06), cell: 34) : null,
+          child: Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20), child: child),
+        ),
       ),
     );
   }
@@ -101,7 +308,9 @@ class ArchHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
+    final visual = AppThemeVisual.of(context);
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
       child: Stack(
@@ -110,10 +319,12 @@ class ArchHeader extends StatelessWidget {
             child: dark
                 ? DecoratedBox(
                     decoration: BoxDecoration(
-                      color: BrandColors.nightCard,
+                      color: theme.cardTheme.color ?? BrandColors.nightCard,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: BrandColors.gold.withValues(alpha: .45)),
-                      image: BrandBackground.bannerGelap.decoration(),
+                      border: Border.all(color: visual.heroAccentColor.withValues(alpha: .42)),
+                    ),
+                    child: CustomPaint(
+                      painter: IslamicPatternPainter(color: visual.heroAccentColor.withValues(alpha: .07), cell: 34),
                     ),
                   )
                 : const BrandArt(BrandIllustration.archHeader, fit: BoxFit.fill),
@@ -376,6 +587,54 @@ class _PillTabsState extends State<PillTabs> {
                 for (var i = 0; i < widget.labels.length; i++) Expanded(child: _tab(context, i, scrollable: false)),
               ],
             ),
+    );
+  }
+}
+
+/// Watermark pengembang yang halus dan dapat diketuk untuk membuka situs resmi.
+class DeveloperWatermark extends StatelessWidget {
+  final EdgeInsets padding;
+  const DeveloperWatermark({super.key, this.padding = const EdgeInsets.symmetric(vertical: 16)});
+
+  static final _siteUri = Uri.parse('https://zidhan.id');
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final t = Theme.of(context).textTheme;
+    return Padding(
+      padding: padding,
+      child: Center(
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () async {
+            try {
+              await launchUrl(_siteUri, mode: LaunchMode.externalApplication);
+            } catch (_) {}
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+            decoration: BoxDecoration(
+              color: scheme.primary.withValues(alpha: .07),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: scheme.primary.withValues(alpha: .20)),
+            ),
+            child: Text.rich(
+              TextSpan(
+                text: 'Develop by ',
+                style: t.labelMedium?.copyWith(color: scheme.onSurfaceVariant, fontWeight: FontWeight.w500),
+                children: [
+                  TextSpan(
+                    text: 'zidhan.id',
+                    style: t.labelMedium?.copyWith(color: scheme.primary, fontWeight: FontWeight.w700),
+                  ),
+                ],
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -30,6 +30,8 @@ Future<List<http.Request>> openMosque(
     200,
     scrollable: find.byType(Scrollable).first,
   );
+  await Scrollable.ensureVisible(tester.element(find.byKey(const Key('masjid-entry'))), alignment: 0.5);
+  await tester.pumpAndSettle();
   await tester.tap(find.byKey(const Key('masjid-entry')));
   await tester.pumpAndSettle();
   expect(find.byType(MasjidDashboardPage), findsOneWidget);

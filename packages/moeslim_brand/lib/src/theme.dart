@@ -11,7 +11,33 @@ TextStyle quranTextStyle({double fontSize = 26, Color? color}) =>
 
 /// Tema Material 3 Moeslim PM (terang & gelap) dengan tipografi Inter yang dibundel (offline).
 abstract final class BrandTheme {
-  static ThemeData light() => _build(
+  static ThemeData palette({
+    required Color seed,
+    required Color surface,
+    required Color card,
+    Color? primary,
+    Color? onPrimary,
+    Color? secondary,
+    Color? onSurface,
+    Brightness brightness = Brightness.light,
+    Iterable<ThemeExtension<dynamic>>? extensions,
+  }) {
+    final generated = ColorScheme.fromSeed(seedColor: seed, brightness: brightness, surface: surface);
+    return _build(
+      generated.copyWith(
+        primary: primary ?? generated.primary,
+        onPrimary: onPrimary ?? generated.onPrimary,
+        secondary: secondary ?? generated.secondary,
+        surface: surface,
+        onSurface: onSurface ?? generated.onSurface,
+      ),
+      scaffold: surface,
+      card: card,
+      extensions: extensions,
+    );
+  }
+
+  static ThemeData light({Iterable<ThemeExtension<dynamic>>? extensions}) => _build(
         ColorScheme.fromSeed(
           seedColor: BrandColors.emerald,
           brightness: Brightness.light,
@@ -25,9 +51,10 @@ abstract final class BrandTheme {
         ),
         scaffold: BrandColors.cream,
         card: BrandColors.white,
+        extensions: extensions,
       );
 
-  static ThemeData dark() => _build(
+  static ThemeData dark({Iterable<ThemeExtension<dynamic>>? extensions}) => _build(
         ColorScheme.fromSeed(
           seedColor: BrandColors.emerald,
           brightness: Brightness.dark,
@@ -41,10 +68,22 @@ abstract final class BrandTheme {
         ),
         scaffold: BrandColors.nightSurface,
         card: BrandColors.nightCard,
+        extensions: extensions,
       );
 
-  static ThemeData _build(ColorScheme scheme, {required Color scaffold, required Color card}) {
-    final base = ThemeData(useMaterial3: true, colorScheme: scheme, fontFamily: _font, package: _package);
+  static ThemeData _build(
+    ColorScheme scheme, {
+    required Color scaffold,
+    required Color card,
+    Iterable<ThemeExtension<dynamic>>? extensions,
+  }) {
+    final base = ThemeData(
+      useMaterial3: true,
+      colorScheme: scheme,
+      fontFamily: _font,
+      package: _package,
+      extensions: extensions,
+    );
     final text = base.textTheme
         .apply(fontFamily: _font, package: _package, bodyColor: scheme.onSurface, displayColor: scheme.onSurface);
     return base.copyWith(

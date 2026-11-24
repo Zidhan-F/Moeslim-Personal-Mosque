@@ -773,7 +773,7 @@ class _QuranStudySuitePageState extends ConsumerState<QuranStudySuitePage> {
 
 class FocusTilawahPage extends ConsumerStatefulWidget {
   final int initialSurah;
-  const FocusTilawahPage({super.key, this.initialSurah = 18});
+  const FocusTilawahPage({super.key, this.initialSurah = 1});
 
   @override
   ConsumerState<FocusTilawahPage> createState() => _FocusTilawahPageState();
@@ -799,6 +799,138 @@ class _FocusTilawahPageState extends ConsumerState<FocusTilawahPage> {
     _timer?.cancel();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _selectSurah(int number) {
+    final target = number.clamp(1, 114);
+    if (target == _surahNum) return;
+    _timer?.cancel();
+    setState(() {
+      _surahNum = target;
+      _autoScroll = false;
+    });
+    if (_scrollController.hasClients) {
+      _scrollController.jumpTo(0);
+    }
+  }
+
+  void _openSurahPicker(Color bg, Color fg, Color subFg) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      backgroundColor: bg,
+      builder: (sheetCtx) {
+        var query = '';
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            final q = query.trim().toLowerCase();
+            final filtered = [
+              for (final s in surahs)
+                if (q.isEmpty ||
+                    s.name.toLowerCase().contains(q) ||
+                    s.arabicName.contains(q) ||
+                    '${s.number}'.contains(q))
+                  s,
+            ];
+            return DraggableScrollableSheet(
+              expand: false,
+              initialChildSize: 0.78,
+              minChildSize: 0.45,
+              maxChildSize: 0.92,
+              builder: (_, scrollController) => Column(
+                key: const Key('focus-surah-sheet'),
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          ctx.tr('Pilih Surah (114 Surah)', 'Choose Surah (114 Surahs)'),
+                          style: Theme.of(ctx).textTheme.titleMedium?.copyWith(color: fg, fontWeight: FontWeight.w700),
+                        ),
+                        const SizedBox(height: 10),
+                        TextField(
+                          key: const Key('focus-surah-search'),
+                          style: TextStyle(color: fg),
+                          decoration: InputDecoration(
+                            isDense: true,
+                            prefixIcon: Icon(MoeslimIcons.pencarian, color: subFg),
+                            hintText: ctx.tr(
+                              'Cari nama atau nomor surah (1-114)',
+                              'Search surah name or number (1-114)',
+                            ),
+                            hintStyle: TextStyle(color: subFg),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: subFg.withValues(alpha: .4)),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: fg),
+                            ),
+                          ),
+                          onChanged: (v) => setModalState(() => query = v),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: filtered.isEmpty
+                        ? Center(
+                            child: Text(
+                              ctx.tr('Surah tidak ditemukan.', 'No matching surah found.'),
+                              style: TextStyle(color: subFg),
+                            ),
+                          )
+                        : ListView.builder(
+                            controller: scrollController,
+                            itemCount: filtered.length,
+                            itemBuilder: (_, i) {
+                              final s = filtered[i];
+                              final selected = s.number == _surahNum;
+                              return ListTile(
+                                key: Key('focus-surah-item-${s.number}'),
+                                leading: OctagonNumber(s.number, size: 32),
+                                title: Text(
+                                  '${s.number}. ${s.name}',
+                                  style: TextStyle(
+                                    color: fg,
+                                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  ctx.tr('${s.ayahCount} ayat', '${s.ayahCount} verses'),
+                                  style: TextStyle(color: subFg, fontSize: 12.5),
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(s.arabicName, style: quranTextStyle(fontSize: 20, color: fg)),
+                                    if (selected) ...[
+                                      const SizedBox(width: 8),
+                                      Icon(Icons.check_circle_rounded, color: BrandColors.gold, size: 20),
+                                    ],
+                                  ],
+                                ),
+                                selected: selected,
+                                selectedTileColor: fg.withValues(alpha: .08),
+                                onTap: () {
+                                  Navigator.of(sheetCtx).pop();
+                                  _selectSurah(s.number);
+                                },
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   void _toggleAutoScroll() {
@@ -835,7 +967,42 @@ class _FocusTilawahPageState extends ConsumerState<FocusTilawahPage> {
       appBar: AppBar(
         backgroundColor: bg,
         foregroundColor: fg,
-        title: Text(context.tr('Fokus Tilawah: ${surah.name}', 'Focus Reading: ${surah.name}')),
+        title: InkWell(
+          key: const Key('focus-surah-picker'),
+          borderRadius: BorderRadius.circular(10),
+          onTap: () => _openSurahPicker(bg, fg, subFg),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '${surah.number}. ${surah.name}',
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: fg, fontSize: 17, fontWeight: FontWeight.w700),
+                      ),
+                      Text(
+                        context.tr(
+                          'Fokus Tilawah · ${surah.ayahCount} ayat · 114 Surah',
+                          'Focus Reading · ${surah.ayahCount} verses · 114 Surahs',
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: subFg, fontSize: 11.5, fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(Icons.keyboard_arrow_down_rounded, color: fg),
+              ],
+            ),
+          ),
+        ),
         actions: [
           IconButton(
             key: const Key('focus-tilawah-autoscroll'),
@@ -856,6 +1023,32 @@ class _FocusTilawahPageState extends ConsumerState<FocusTilawahPage> {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ActionChip(
+                      key: const Key('focus-surah-chip'),
+                      avatar: Icon(MoeslimIcons.daftar, size: 16, color: fg),
+                      label: Text(
+                        context.tr('Pilih Surah (${surah.number}/114)', 'Surah (${surah.number}/114)'),
+                        style: TextStyle(color: fg, fontWeight: FontWeight.w600),
+                      ),
+                      backgroundColor: fg.withValues(alpha: .08),
+                      side: BorderSide(color: subFg.withValues(alpha: .35)),
+                      onPressed: () => _openSurahPicker(bg, fg, subFg),
+                    ),
+                  ),
+                  IconButton(
+                    key: const Key('focus-surah-prev'),
+                    tooltip: context.tr('Surah sebelumnya', 'Previous surah'),
+                    onPressed: _surahNum > 1 ? () => _selectSurah(_surahNum - 1) : null,
+                    icon: Icon(Icons.chevron_left_rounded, color: _surahNum > 1 ? fg : subFg.withValues(alpha: .35)),
+                  ),
+                  IconButton(
+                    key: const Key('focus-surah-next'),
+                    tooltip: context.tr('Surah berikutnya', 'Next surah'),
+                    onPressed: _surahNum < 114 ? () => _selectSurah(_surahNum + 1) : null,
+                    icon: Icon(Icons.chevron_right_rounded, color: _surahNum < 114 ? fg : subFg.withValues(alpha: .35)),
+                  ),
                   for (final st in TilawahSurfaceTheme.values)
                     Padding(
                       padding: const EdgeInsets.only(right: 8),
@@ -905,9 +1098,43 @@ class _FocusTilawahPageState extends ConsumerState<FocusTilawahPage> {
                 return ListView.separated(
                   controller: _scrollController,
                   padding: const EdgeInsets.all(20),
-                  itemCount: ayat.length,
+                  itemCount: ayat.length + 1,
                   separatorBuilder: (_, _) => Divider(color: subFg.withValues(alpha: .25), height: 28),
                   itemBuilder: (context, index) {
+                    if (index == ayat.length) {
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 8, bottom: 20),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: _surahNum > 1 ? () => _selectSurah(_surahNum - 1) : null,
+                                icon: const Icon(Icons.chevron_left_rounded),
+                                label: Text(
+                                  _surahNum > 1
+                                      ? surahs[_surahNum - 2].name
+                                      : context.tr('Surah Pertama', 'First Surah'),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: FilledButton.icon(
+                                onPressed: _surahNum < 114 ? () => _selectSurah(_surahNum + 1) : null,
+                                icon: const Icon(Icons.chevron_right_rounded),
+                                label: Text(
+                                  _surahNum < 114
+                                      ? surahs[_surahNum].name
+                                      : context.tr('Surah Terakhir', 'Last Surah'),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
                     final a = ayat[index];
                     final translation = a.translationFor(context.lang);
                     return Column(

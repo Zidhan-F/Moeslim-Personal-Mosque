@@ -283,7 +283,11 @@ class _AboutLicensesPageState extends ConsumerState<AboutLicensesPage> {
               textAlign: TextAlign.center,
               style: t.titleSmall?.copyWith(color: scheme.onSurfaceVariant, fontWeight: FontWeight.w600),
             ),
-            const SizedBox(height: 14),
+            const DeveloperWatermark(
+              key: Key('about-developer-watermark'),
+              padding: EdgeInsets.only(top: 8, bottom: 6),
+            ),
+            const SizedBox(height: 8),
             OrnamentCard(
               child: Text(AboutLicensesPage.statementFor(lang), style: t.bodyMedium?.copyWith(height: 1.45)),
             ),
@@ -428,6 +432,28 @@ class _AboutLicensesPageState extends ConsumerState<AboutLicensesPage> {
                       title: Text(m.name, style: const TextStyle(fontWeight: FontWeight.w600)),
                       subtitle: Text('${m.originFor(lang)} • ${m.styleFor(lang)}'),
                     ),
+                  const Divider(height: 1),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
+                    child: Text(
+                      context.tr('Audio Asmaul Husna Bawaan', 'Built-in Asmaul Husna Audio'),
+                      style: t.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                  ListTile(
+                    dense: true,
+                    leading: Icon(MoeslimIcons.suara, color: scheme.primary),
+                    title: Text(
+                      context.tr('99 Pelafalan Asmaul Husna (Offline)', '99 Names of Allah Audio (Offline)'),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: Text(
+                      context.tr(
+                        'Audio pelafalan Arab Fusha terpasang di perangkat untuk pemutaran satuan, berurutan, dan kuis hafalan.',
+                        'Bundled Fusha Arabic pronunciation audio for individual playback, continuous 1-99 playback, and memorization quizzes.',
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -467,7 +493,7 @@ class _AboutLicensesPageState extends ConsumerState<AboutLicensesPage> {
                       context: context,
                       applicationName: 'Moeslim PM',
                       applicationVersion: appVersion,
-                      applicationLegalese: 'Moeslim Personal & Moeslim Mosque',
+                      applicationLegalese: 'Moeslim Personal & Moeslim Mosque • Develop by zidhan.id',
                     ),
                   ),
                 ],

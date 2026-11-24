@@ -54,10 +54,14 @@ class EventController extends Controller
     public function update(Request $request, Mosque $mosque, Event $event): JsonResponse
     {
         $data = $request->validate(array_map(fn ($r) => array_merge(['sometimes'], array_diff($r, ['required'])), $this->rules()));
+        $data['version'] = ($event->version ?? 1) + 1;
+        if (! isset($data['publication_status']) && $event->publication_status === 'published') {
+            $data['publication_status'] = 'updated';
+        }
         $event->update($data);
         Audit::log($mosque, 'event.updated', $event, array_keys($data));
 
-        return response()->json(['data' => $event]);
+        return response()->json(['data' => $event->fresh()]);
     }
 
     public function toggleDisplay(Request $request, Mosque $mosque, Event $event): JsonResponse
@@ -96,6 +100,13 @@ class EventController extends Controller
             'ends_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
             'visibility' => ['required', Rule::in(['public', 'internal'])],
             'show_on_display' => ['nullable', 'boolean'],
+            'publication_status' => ['nullable', Rule::in(Event::PUBLICATION_STATUSES)],
+            'hijri_year' => ['nullable', 'integer', 'between:1400,1600'],
+            'capacity' => ['nullable', 'integer', 'between:1,10000'],
+            'registration_closes_at' => ['nullable', 'date'],
+            'registration_enabled' => ['nullable', 'boolean'],
+            'waitlist_enabled' => ['nullable', 'boolean'],
+            'learning_path' => ['nullable', 'string', 'max:80'],
         ];
     }
 }

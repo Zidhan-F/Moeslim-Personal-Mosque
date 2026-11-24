@@ -12,7 +12,6 @@ import '../../ui/components.dart';
 import '../prayer/prayer_page.dart';
 import '../quran/quran_page.dart';
 import 'doa_pages.dart';
-import 'guided_dzikir_page.dart';
 import 'tasbih_page.dart';
 
 class UtilityAccessibilityPage extends ConsumerStatefulWidget {
@@ -380,7 +379,7 @@ class _UtilityAccessibilityPageState extends ConsumerState<UtilityAccessibilityP
             MoeslimIcons.zikr,
             context.tr('4. Dzikir Pagi, Petang & Salat', '4. Morning, Evening & Prayer Dhikr'),
             context.tr('Bacaan dzikir terpandu langkah demi langkah', 'Step-by-step guided dhikr recitations'),
-            () => const GuidedDzikirPage(),
+            () => const DoaListPage(initialTab: 2),
           ),
           (
             MoeslimIcons.tasbih,

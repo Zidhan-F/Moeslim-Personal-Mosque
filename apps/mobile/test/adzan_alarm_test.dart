@@ -20,6 +20,20 @@ import 'package:shared_prayer/shared_prayer.dart';
 
 import 'helpers.dart';
 
+Future<void> _scrollIntoView(WidgetTester tester, Finder target) async {
+  final listFinder = find.descendant(
+    of: find.byType(PrayerSettingsPage),
+    matching: find.byType(ListView),
+  );
+  for (var i = 0; i < 12; i++) {
+    final center = tester.getCenter(target);
+    if (center.dy >= 90 && center.dy <= 510) return;
+    final dy = center.dy > 510 ? -220.0 : 220.0;
+    await tester.drag(listFinder.first, Offset(0, dy));
+    await tester.pumpAndSettle();
+  }
+}
+
 void main() {
   test('semua berkas audio adzan muadzin tersedia secara offline dan merupakan rekaman MP3 asli', () {
     expect(adzanMuadzins.length, greaterThanOrEqualTo(4));
@@ -119,7 +133,7 @@ void main() {
 
     // Pilih Muadzin Masjid Nabawi, Madinah (Syaikh Essam Bukhari).
     final madinahTile = find.byKey(const Key('muadzin-option-madinah'));
-    await tester.ensureVisible(madinahTile);
+    await _scrollIntoView(tester, madinahTile);
     await tester.tap(madinahTile);
     await tester.pumpAndSettle();
 
@@ -129,7 +143,7 @@ void main() {
 
     // Tekan tombol preview untuk muadzin Mishary Alafasy.
     final misharyPreview = find.byKey(const Key('preview-muadzin-mishary'));
-    await tester.ensureVisible(misharyPreview);
+    await _scrollIntoView(tester, misharyPreview);
     await tester.tap(misharyPreview);
     await tester.pumpAndSettle();
 
@@ -254,12 +268,12 @@ void main() {
     expect(find.byKey(const Key('active-adzan-banner')), findsNothing);
   });
 
-  testWidgets('tema pop-up notifikasi adzan mengikuti tema Auto/Sistem HP (Terang & Gelap) serta pilihan manual', (
+  testWidgets('tema pop-up adzan mengikuti pilihan aplikasi, bukan tema sistem HP', (
     tester,
   ) async {
     final store = InMemoryStore();
     await SettingsRepository(store).save(
-      PersonalSettings.defaults.copyWith(onboardingDone: true, themeMode: AppThemeMode.system),
+      PersonalSettings.defaults.copyWith(onboardingDone: true, themeMode: AppThemeMode.light),
     );
     final backend = FakeAdzanAlarmBackend();
     tester.platformDispatcher.platformBrightnessTestValue = Brightness.light;
@@ -267,20 +281,17 @@ void main() {
 
     final container = await pumpApp(tester, store: store, adzanBackend: backend);
 
-    // 1. Mode Auto (system) + HP Terang -> pop-up menggunakan permukaan terang (putih).
     backend.emitNativeAlarm(Prayer.dhuhr);
     await tester.pumpAndSettle();
-    expect(backend.lastThemeMode, AppThemeMode.system);
+    expect(backend.lastThemeMode, AppThemeMode.light);
     var surface = tester.widget<Material>(find.byKey(const Key('active-adzan-popup-surface')));
     expect(surface.color, BrandColors.white);
 
-    // 2. Mode Auto (system) + HP Gelap -> pop-up otomatis beralih ke permukaan gelap (nightCard).
     tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
     await tester.pumpAndSettle();
     surface = tester.widget<Material>(find.byKey(const Key('active-adzan-popup-surface')));
-    expect(surface.color, BrandColors.nightCard);
+    expect(surface.color, BrandColors.white);
 
-    // 3. Pilihan manual Terang (light) pada HP Gelap -> pop-up tetap terang & tersinkron ke backend native.
     final current = await SettingsRepository(store).load();
     await container.read(settingsProvider.notifier).save(current.copyWith(themeMode: AppThemeMode.light));
     await tester.pumpAndSettle();
@@ -288,12 +299,113 @@ void main() {
     expect(surface.color, BrandColors.white);
     expect(backend.lastThemeMode, AppThemeMode.light);
 
-    // 4. Pilihan manual Gelap (dark) pada HP Terang -> pop-up gelap & tersinkron ke backend native.
     tester.platformDispatcher.platformBrightnessTestValue = Brightness.light;
     await container.read(settingsProvider.notifier).save(current.copyWith(themeMode: AppThemeMode.dark));
     await tester.pumpAndSettle();
     surface = tester.widget<Material>(find.byKey(const Key('active-adzan-popup-surface')));
     expect(surface.color, BrandColors.nightCard);
     expect(backend.lastThemeMode, AppThemeMode.dark);
+  });
+
+  testWidgets('pengaturan volume adzan mandiri tersimpan, tersinkron ke backend, dan pop-up hilang otomatis saat adzan selesai', (
+    tester,
+  ) async {
+    final store = InMemoryStore();
+    final backend = FakeAdzanAlarmBackend();
+    final container = await pumpApp(tester, store: store, adzanBackend: backend);
+
+    final nav = tester.state<NavigatorState>(find.byType(Navigator).first);
+    nav.push(MaterialPageRoute(builder: (_) => const PrayerSettingsPage()));
+    await tester.pumpAndSettle();
+
+    // Default: suara adzan mandiri aktif (85%, mengabaikan aturan hening/volume HP).
+    expect(backend.lastVolume, closeTo(0.85, 0.001));
+    expect(backend.lastOverrideDeviceVolume, isTrue);
+
+    // Ubah volume ke 100% dan matikan override -> tersimpan & tersinkron ke backend.
+    final maxBtn = find.byKey(const Key('adzan-volume-max'));
+    await _scrollIntoView(tester, maxBtn);
+    await tester.tap(maxBtn);
+    await tester.pumpAndSettle();
+    expect((await SettingsRepository(store).load()).adzanVolume, closeTo(1.0, 0.001));
+    expect(backend.lastVolume, closeTo(1.0, 0.001));
+
+    final overrideSwitch = find.byKey(const Key('adzan-override-device-switch'));
+    await _scrollIntoView(tester, overrideSwitch);
+    await tester.tap(overrideSwitch);
+    await tester.pumpAndSettle();
+    expect((await SettingsRepository(store).load()).adzanOverrideDeviceVolume, isFalse);
+    expect(backend.lastOverrideDeviceVolume, isFalse);
+
+    // Nyalakan lagi mode mandiri & uji pop-up alarm.
+    await _scrollIntoView(tester, overrideSwitch);
+    await tester.tap(overrideSwitch);
+    await tester.pumpAndSettle();
+    final testBtn = find.byKey(const Key('test-adzan-alarm'));
+    await _scrollIntoView(tester, testBtn);
+    await tester.tap(testBtn);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('active-adzan-banner')), findsOneWidget);
+    expect(backend.lastVolume, closeTo(1.0, 0.001));
+    expect(backend.lastOverrideDeviceVolume, isTrue);
+
+    // Begitu audio adzan selesai secara alami -> pop-up notifikasi otomatis hilang!
+    backend.completePlayback();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('active-adzan-banner')), findsNothing);
+
+    // Simulasi alarm selesai saat aplikasi di background lalu app kembali dibuka (syncActiveNativeAlarm).
+    await container.read(adzanControllerProvider.notifier).triggerAlarm(Prayer.asr);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('active-adzan-banner')), findsOneWidget);
+    backend.activeNativeAlarm = null;
+    await container.read(adzanControllerProvider.notifier).syncActiveNativeAlarm();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('active-adzan-banner')), findsNothing);
+  });
+
+  testWidgets('pengaturan suara adzan langsung di Profil tersimpan, memutar pratinjau, dan membuka detail muadzin', (
+    tester,
+  ) async {
+    final store = InMemoryStore();
+    final backend = FakeAdzanAlarmBackend();
+    await pumpApp(tester, store: store, adzanBackend: backend);
+
+    await tester.tap(find.text('Profil').last);
+    await tester.pumpAndSettle();
+
+    final scroll = find.byType(Scrollable).first;
+    await tester.scrollUntilVisible(find.byKey(const Key('profile-adzan-volume-max')), 200, scrollable: scroll);
+    await Scrollable.ensureVisible(tester.element(find.byKey(const Key('profile-adzan-volume-max'))), alignment: 0.5);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('profile-adzan-card')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('profile-adzan-volume-max')));
+    await tester.pumpAndSettle();
+    expect((await SettingsRepository(store).load()).adzanVolume, closeTo(1.0, 0.001));
+    expect(backend.lastVolume, closeTo(1.0, 0.001));
+
+    await Scrollable.ensureVisible(
+      tester.element(find.byKey(const Key('profile-adzan-override-switch'))),
+      alignment: 0.5,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('profile-adzan-override-switch')));
+    await tester.pumpAndSettle();
+    expect((await SettingsRepository(store).load()).adzanOverrideDeviceVolume, isFalse);
+    expect(backend.lastOverrideDeviceVolume, isFalse);
+
+    await tester.scrollUntilVisible(find.byKey(const Key('profile-adzan-muadzin')), 200, scrollable: scroll);
+    await Scrollable.ensureVisible(tester.element(find.byKey(const Key('profile-adzan-muadzin'))), alignment: 0.5);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('profile-adzan-preview')));
+    await tester.pumpAndSettle();
+    expect(backend.playedMuadzins.last.id, 'makkah');
+
+    await tester.tap(find.byKey(const Key('profile-adzan-muadzin')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('adzan-settings-card')), findsOneWidget);
   });
 }

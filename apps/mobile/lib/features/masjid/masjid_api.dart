@@ -57,13 +57,16 @@ class MasjidApi {
 
     final http.Response res;
     try {
-      res = await http.Response.fromStream(await _client.send(req).timeout(const Duration(seconds: 20)));
+      res = await () async {
+        final streamed = await _client.send(req);
+        return http.Response.fromStream(streamed);
+      }().timeout(const Duration(seconds: 10));
     } catch (_) {
       throw ApiException(
         0,
         _tr(
-          'Tidak dapat terhubung ke server. Periksa koneksi internet.',
-          'Unable to connect to the server. Please check your internet connection.',
+          'Tidak dapat terhubung ke server. Pastikan server aktif dan koneksi internet tersedia.',
+          'Unable to connect to the server. Make sure the server is online and check your internet connection.',
         ),
       );
     }
@@ -81,10 +84,15 @@ class MasjidApi {
     }
 
     final map = decoded is Map<String, dynamic> ? decoded : <String, dynamic>{};
+    final fallbackMessage = decoded == null && (res.statusCode == 404 || res.statusCode >= 502)
+        ? _tr(
+            'Server Moeslim Mosque sedang tidak aktif atau tidak dapat dijangkau (${res.statusCode}).',
+            'Moeslim Mosque server is currently offline or unreachable (${res.statusCode}).',
+          )
+        : _tr('Terjadi kesalahan (${res.statusCode}).', 'An error occurred (${res.statusCode}).');
     throw ApiException(
       res.statusCode,
-      (map['message'] as String?) ??
-          _tr('Terjadi kesalahan (${res.statusCode}).', 'An error occurred (${res.statusCode}).'),
+      (map['message'] as String?) ?? fallbackMessage,
       code: map['code'] as String?,
       errors: (map['errors'] as Map<String, dynamic>?) ?? const {},
     );
@@ -360,4 +368,130 @@ class MasjidApi {
       _map((await _send('POST', '/mosques/$id/coupons/redeem', body: {'code': code}))['data']);
   Future<Map<String, dynamic>> voidCoupon(String id, int couponId) async =>
       _map((await _send('POST', '/mosques/$id/coupons/$couponId/void'))['data']);
+
+  // ── Moeslim Family Cloud (opt-in lintas perangkat) ──────────────────────
+  Future<List<Map<String, dynamic>>> families() async => _list((await _send('GET', '/families'))['data']);
+  Future<Map<String, dynamic>> createFamily(String name, {String timezone = 'Asia/Jakarta'}) async =>
+      _map((await _send('POST', '/families', body: {'name': name, 'timezone': timezone}))['data']);
+  Future<Map<String, dynamic>> familyDetail(String familyId) async =>
+      _map((await _send('GET', '/families/$familyId'))['data']);
+  Future<Map<String, dynamic>> createFamilyInvite(String familyId) async =>
+      _map((await _send('POST', '/families/$familyId/invites'))['data']);
+  Future<void> revokeFamilyInvite(String familyId, String inviteId) =>
+      _send('DELETE', '/families/$familyId/invites/$inviteId');
+  Future<Map<String, dynamic>> acceptFamilyInvite(String token) async =>
+      _map((await _send('POST', '/family-invites/accept', body: {'token': token}))['data']);
+  Future<Map<String, dynamic>> saveFamilyEvent(String familyId, String eventId, Map<String, dynamic> data) async =>
+      _map((await _send('PUT', '/families/$familyId/events/$eventId', body: data))['data']);
+  Future<Map<String, dynamic>> saveFamilyGoal(String familyId, Map<String, dynamic> data) async =>
+      _map((await _send('POST', '/families/$familyId/goals', body: data))['data']);
+  Future<void> deleteFamilyGoal(String familyId, String goalId) =>
+      _send('DELETE', '/families/$familyId/goals/$goalId');
+  Future<void> leaveFamily(String familyId) => _send('POST', '/families/$familyId/leave');
+  Future<void> dissolveFamily(String familyId, String confirmName) =>
+      _send('DELETE', '/families/$familyId', body: {'confirm_name': confirmName});
+
+  // ── Ramadan Local & Kelas Masjid (Publik + Pendaftaran Jamaah) ──────────
+  Future<Map<String, dynamic>> publicRamadanEvents(String slug, {int? hijriYear}) async => _map(
+    await _send(
+      'GET',
+      '/public/mosques/$slug/ramadan/events',
+      query: {if (hijriYear != null) 'hijri_year': '$hijriYear'},
+    ),
+  );
+  Future<Map<String, dynamic>> publicMosqueClasses(String slug, {String? learningPath}) async => _map(
+    await _send(
+      'GET',
+      '/public/mosques/$slug/classes',
+      query: {'learning_path': ?learningPath},
+    ),
+  );
+  Future<Map<String, dynamic>> registerEvent(
+    int eventId, {
+    String? participantName,
+    String? contactPhone,
+    String? notes,
+  }) async => _map(
+    (await _send(
+      'POST',
+      '/events/$eventId/registrations',
+      body: {
+        if (participantName != null && participantName.isNotEmpty) 'participant_name': participantName,
+        if (contactPhone != null && contactPhone.isNotEmpty) 'contact_phone': contactPhone,
+        if (notes != null && notes.isNotEmpty) 'notes': notes,
+      },
+    ))['data'],
+  );
+  Future<Map<String, dynamic>> cancelEventRegistration(int eventId) async =>
+      _map((await _send('DELETE', '/events/$eventId/registrations'))['data']);
+  Future<List<Map<String, dynamic>>> myEventRegistrations() async =>
+      _list((await _send('GET', '/me/registrations'))['data']);
+  Future<Map<String, dynamic>> mosqueEventRegistrations(String mosqueId, int eventId) async =>
+      _map(await _send('GET', '/mosques/$mosqueId/events/$eventId/registrations'));
+  Future<Map<String, dynamic>> updateMosqueEventRegistration(
+    String mosqueId,
+    int eventId,
+    String registrationId,
+    String status,
+  ) async => _map(
+    (await _send('PATCH', '/mosques/$mosqueId/events/$eventId/registrations/$registrationId', body: {'status': status}))['data'],
+  );
+
+  // ── Moeslim Services (Jamaah & Pengurus Mosque) ─────────────────────────
+  Future<Map<String, dynamic>> publicMosqueServices(String slug) async =>
+      _map(await _send('GET', '/public/mosques/$slug/services'));
+  Future<Map<String, dynamic>> submitServiceRequest(
+    String slug, {
+    required String definitionId,
+    required Map<String, String> answers,
+    required String idempotencyKey,
+  }) async => _map(
+    (await _send(
+      'POST',
+      '/public/mosques/$slug/service-requests',
+      body: {'service_definition_id': definitionId, 'answers': answers},
+      headers: {'Idempotency-Key': idempotencyKey},
+    ))['data'],
+  );
+  Future<List<Map<String, dynamic>>> myServiceRequests() async =>
+      _list((await _send('GET', '/me/service-requests'))['data']);
+  Future<Map<String, dynamic>> resubmitServiceRequest(
+    String requestId,
+    Map<String, String> answers, {
+    String? message,
+  }) async => _map(
+    (await _send(
+      'POST',
+      '/me/service-requests/$requestId/resubmit',
+      body: {'answers': answers, if (message != null && message.isNotEmpty) 'message': message},
+    ))['data'],
+  );
+  Future<Map<String, dynamic>> cancelServiceRequest(String requestId, {String? reason}) async => _map(
+    (await _send(
+      'POST',
+      '/me/service-requests/$requestId/cancel',
+      body: {if (reason != null && reason.isNotEmpty) 'reason': reason},
+    ))['data'],
+  );
+
+  Future<List<Map<String, dynamic>>> mosqueServices(String mosqueId) async =>
+      _list((await _send('GET', '/mosques/$mosqueId/services'))['data']);
+  Future<Map<String, dynamic>> createMosqueService(String mosqueId, Map<String, dynamic> data) async =>
+      _map((await _send('POST', '/mosques/$mosqueId/services', body: data))['data']);
+  Future<Map<String, dynamic>> updateMosqueService(String mosqueId, String defId, Map<String, dynamic> data) async =>
+      _map((await _send('PATCH', '/mosques/$mosqueId/services/$defId', body: data))['data']);
+  Future<List<Map<String, dynamic>>> mosqueServiceRequests(String mosqueId, {String? status, String? type}) async =>
+      _list((await _send('GET', '/mosques/$mosqueId/service-requests', query: {'status': ?status, 'type': ?type}))['data']);
+  Future<Map<String, dynamic>> updateMosqueServiceRequestStatus(
+    String mosqueId,
+    String requestId,
+    String status, {
+    String? message,
+  }) async => _map(
+    (await _send(
+      'PATCH',
+      '/mosques/$mosqueId/service-requests/$requestId/status',
+      body: {'status': status, if (message != null && message.isNotEmpty) 'message': message},
+    ))['data'],
+  );
 }

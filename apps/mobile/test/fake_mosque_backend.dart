@@ -29,6 +29,8 @@ const adminPermissions = [
   'zakat.write',
   'qurban.view',
   'qurban.write',
+  'services.view',
+  'services.manage',
 ];
 
 String _today() {
@@ -585,6 +587,157 @@ MockClient fakeMosqueBackend(
         return json({'code': 'coupon_already_redeemed', 'message': 'Kupon QBN-DUP sudah ditukarkan sebelumnya.'}, 422);
       }
       return json({'data': {'id': 31, 'code': code, 'recipient_name': 'Warga RW 05 #1', 'status': 'redeemed'}});
+    case ('GET', '/public/mosques/masjid-al-ikhlas/ramadan/events'):
+      return json({
+        'mosque': {'id': 'M1', 'slug': 'masjid-al-ikhlas', 'name': 'Masjid Al-Ikhlas', 'timezone': 'Asia/Jakarta'},
+        'synced_at': '${today}T08:00:00Z',
+        'data': [
+          {
+            'id': 701,
+            'title': 'Tarawih & Kultum Malam Pertama',
+            'description': 'Shalat tarawih berjamaah 11 rakaat bersama imam masjid.',
+            'category': 'ramadan',
+            'location': 'Ruang Utama',
+            'speaker': 'Ust. Salman',
+            'starts_at': '${today}T12:30:00Z',
+            'publication_status': 'updated',
+            'hijri_year': 1447,
+            'registration_enabled': true,
+            'waitlist_enabled': true,
+            'capacity': 100,
+            'confirmed_count': 40,
+            'waitlisted_count': 0,
+            'remaining_seats': 60,
+            'updated_at': '${today}T07:45:00Z',
+          },
+        ],
+      });
+    case ('GET', '/public/mosques/masjid-al-ikhlas/classes'):
+      return json({
+        'mosque': {'id': 'M1', 'slug': 'masjid-al-ikhlas', 'name': 'Masjid Al-Ikhlas', 'timezone': 'Asia/Jakarta'},
+        'synced_at': '${today}T08:00:00Z',
+        'data': [
+          {
+            'id': 702,
+            'title': 'Kelas Bahasa Arab Dasar',
+            'category': 'pendidikan',
+            'learning_path': 'bahasa_arab',
+            'speaker': 'Ust. Ridwan',
+            'starts_at': '${today}T13:00:00Z',
+            'publication_status': 'published',
+            'registration_enabled': true,
+            'capacity': 25,
+            'remaining_seats': 10,
+          },
+        ],
+      });
+    case ('GET', '/me/registrations'):
+      return json({'data': []});
+    case ('POST', '/events/701/registrations'):
+      return json({'data': {'id': 'reg-1', 'event_id': 701, 'status': 'confirmed'}}, 201);
+    case ('DELETE', '/events/701/registrations'):
+      return json({'data': {'id': 'reg-1', 'event_id': 701, 'status': 'cancelled'}});
+    case ('GET', '/public/mosques/masjid-al-ikhlas/services'):
+      return json({
+        'mosque': {'id': 'M1', 'slug': 'masjid-al-ikhlas', 'name': 'Masjid Al-Ikhlas', 'city': 'Jakarta'},
+        'data': [
+          {
+            'id': 'svc-def-1',
+            'title': 'Pendaftaran TPQ Al-Ikhlas',
+            'type': 'tpq',
+            'description': 'Kelas baca tulis Al-Qur\'an untuk anak usia 6-12 tahun.',
+            'privacy_notice': 'Data santri hanya diakses pengurus pendidikan Masjid Al-Ikhlas.',
+            'fields': [
+              {'key': 'nama_santri', 'label': 'Nama Santri', 'type': 'text', 'required': true},
+              {'key': 'kontak_wali', 'label': 'Kontak Wali', 'type': 'text', 'required': true},
+            ],
+            'form_version': 1,
+            'capacity': 30,
+            'remaining_capacity': 12,
+            'retention_days': 365,
+          },
+        ],
+      });
+    case ('POST', '/public/mosques/masjid-al-ikhlas/service-requests'):
+      final body = jsonDecode(req.body) as Map;
+      return json({
+        'data': {
+          'id': 'svc-req-1',
+          'reference_no': 'SVC-2611-TEST01',
+          'status': 'submitted',
+          'answers': body['answers'],
+          'definition': {'id': 'svc-def-1', 'title': 'Pendaftaran TPQ Al-Ikhlas', 'type': 'tpq'},
+          'history': [
+            {'status': 'submitted', 'message': 'Permohonan dikirim oleh pemohon.'},
+          ],
+        },
+      }, 201);
+    case ('GET', '/me/service-requests'):
+      return json({
+        'data': [
+          {
+            'id': 'svc-req-1',
+            'reference_no': 'SVC-2611-TEST01',
+            'status': 'submitted',
+            'answers': {'nama_santri': 'Zaid', 'kontak_wali': '08123456789'},
+            'definition': {
+              'id': 'svc-def-1',
+              'title': 'Pendaftaran TPQ Al-Ikhlas',
+              'type': 'tpq',
+              'mosque': {'slug': 'masjid-al-ikhlas', 'name': 'Masjid Al-Ikhlas'},
+            },
+            'history': [
+              {'status': 'submitted', 'message': 'Permohonan dikirim oleh pemohon.'},
+            ],
+          },
+        ],
+      });
+    case ('GET', '/mosques/M1/services'):
+      return json({
+        'data': [
+          {
+            'id': 'svc-def-1',
+            'title': 'Pendaftaran TPQ Al-Ikhlas',
+            'type': 'tpq',
+            'description': 'Kelas baca tulis Al-Qur\'an anak.',
+            'privacy_notice': 'Data hanya untuk pengurus pendidikan.',
+            'active': true,
+            'retention_days': 365,
+            'total_requests_count': 1,
+            'pending_requests_count': 1,
+          },
+        ],
+      });
+    case ('POST', '/mosques/M1/services'):
+      return json({'data': {'id': 'svc-def-2', ...jsonDecode(req.body) as Map}}, 201);
+    case ('PATCH', '/mosques/M1/services/svc-def-1'):
+      return json({'data': {'id': 'svc-def-1', ...jsonDecode(req.body) as Map}});
+    case ('GET', '/mosques/M1/service-requests'):
+      return json({
+        'data': [
+          {
+            'id': 'svc-req-1',
+            'reference_no': 'SVC-2611-TEST01',
+            'status': 'submitted',
+            'created_at': '${today}T09:00:00Z',
+            'answers': {'nama_santri': 'Zaid', 'kontak_wali': '08123456789'},
+            'definition': {'id': 'svc-def-1', 'title': 'Pendaftaran TPQ Al-Ikhlas', 'type': 'tpq'},
+            'user': {'id': 1, 'name': 'Ahmad Fadli', 'email': 'b@x.id'},
+            'history': [
+              {'status': 'submitted', 'message': 'Permohonan dikirim oleh pemohon.'},
+            ],
+          },
+        ],
+      });
+    case ('PATCH', '/mosques/M1/service-requests/svc-req-1/status'):
+      final body = jsonDecode(req.body) as Map;
+      return json({
+        'data': {
+          'id': 'svc-req-1',
+          'reference_no': 'SVC-2611-TEST01',
+          'status': body['status'],
+        },
+      });
   }
   return json({'message': 'not found'}, 404);
 });

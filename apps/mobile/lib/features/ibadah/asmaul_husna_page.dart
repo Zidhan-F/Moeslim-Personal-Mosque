@@ -6,6 +6,7 @@ import 'package:personal_core/personal_core.dart';
 import '../../core/l10n.dart';
 import '../../core/providers.dart';
 import '../../ui/components.dart';
+import 'asmaul_husna_audio.dart';
 
 const Map<int, (String, String)> _asmaulEn = {
   1: ('The Most Merciful', 'Bestows boundless mercy and blessings upon all creation in this world.'),
@@ -187,7 +188,159 @@ class _AsmaulHusnaPageState extends ConsumerState<AsmaulHusnaPage> {
     );
   }
 
+  Widget _buildAudioBar(BuildContext context, AsmaulAudioState audio) {
+    final t = Theme.of(context).textTheme;
+    final scheme = Theme.of(context).colorScheme;
+    final ctrl = ref.read(asmaulAudioControllerProvider.notifier);
+    final activeItem = audio.currentNumber != null ? asmaulHusnaCatalog[audio.currentNumber! - 1] : null;
+
+    final speedLabel = switch (audio.speed) {
+      0.75 => '0.75x',
+      1.25 => '1.25x',
+      _ => '1x',
+    };
+    final repeatLabel = switch (audio.repeatMode) {
+      AsmaulRepeatMode.off => context.tr('Ulangi: Mati', 'Repeat: Off'),
+      AsmaulRepeatMode.one => context.tr('Ulangi: 1 Nama', 'Repeat: 1 Name'),
+      AsmaulRepeatMode.all => context.tr('Ulangi: Semua', 'Repeat: All'),
+    };
+
+    return Card(
+      key: const Key('asmaul-audio-card'),
+      margin: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Icon(MoeslimIcons.audio, color: scheme.primary, size: 22),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: activeItem == null
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              context.tr('Audio Offline 99 Asmaul Husna', 'Offline Audio (99 Names)'),
+                              style: t.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                            Text(
+                              context.tr(
+                                'Putar berurutan 1-99 atau ketuk tombol dengar di tiap nama.',
+                                'Play 1-99 in order or tap listen on any name.',
+                              ),
+                              style: t.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '#${activeItem.number} ${activeItem.latin}',
+                              key: const Key('asmaul-audio-now'),
+                              style: t.titleSmall?.copyWith(fontWeight: FontWeight.w700, color: scheme.primary),
+                            ),
+                            Text(
+                              '${_meaningFor(context, activeItem)} · ${activeItem.arabic}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: t.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                            ),
+                          ],
+                        ),
+                ),
+              ],
+            ),
+            if (activeItem == null) ...[
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: FilledButton.icon(
+                  key: const Key('asmaul-play-all'),
+                  onPressed: () => ctrl.playAll(startNumber: 1),
+                  icon: const Icon(MoeslimIcons.play, size: 18),
+                  label: Text(context.tr('Putar Semua (1-99)', 'Play All (1-99)')),
+                ),
+              ),
+            ],
+            if (activeItem != null) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 4,
+                runSpacing: 4,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        key: const Key('asmaul-audio-prev'),
+                        tooltip: context.tr('Nama sebelumnya', 'Previous name'),
+                        onPressed: ctrl.previous,
+                        icon: const Icon(MoeslimIcons.sebelumnya),
+                      ),
+                      FilledButton.tonalIcon(
+                        key: const Key('asmaul-audio-toggle'),
+                        onPressed: ctrl.togglePlayPause,
+                        icon: Icon(audio.playing ? MoeslimIcons.pause : MoeslimIcons.play, size: 18),
+                        label: Text(
+                          audio.playing ? context.tr('Jeda', 'Pause') : context.tr('Lanjut', 'Resume'),
+                        ),
+                      ),
+                      IconButton(
+                        key: const Key('asmaul-audio-next'),
+                        tooltip: context.tr('Nama berikutnya', 'Next name'),
+                        onPressed: ctrl.next,
+                        icon: const Icon(MoeslimIcons.selanjutnya),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        key: const Key('asmaul-audio-repeat'),
+                        tooltip: repeatLabel,
+                        onPressed: ctrl.cycleRepeat,
+                        icon: Icon(
+                          MoeslimIcons.ulang,
+                          color: audio.repeatMode == AsmaulRepeatMode.off ? null : scheme.primary,
+                        ),
+                      ),
+                      TextButton(
+                        key: const Key('asmaul-audio-speed'),
+                        onPressed: ctrl.cycleSpeed,
+                        child: Text(speedLabel, style: const TextStyle(fontWeight: FontWeight.w700)),
+                      ),
+                      IconButton(
+                        key: const Key('asmaul-audio-stop'),
+                        tooltip: context.tr('Hentikan audio', 'Stop audio'),
+                        onPressed: ctrl.stop,
+                        icon: const Icon(MoeslimIcons.tutup),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+            if (audio.error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(audio.error!, style: t.bodySmall?.copyWith(color: scheme.error)),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildListTab(BuildContext context) {
+    final audio = ref.watch(asmaulAudioControllerProvider);
+    final ctrl = ref.read(asmaulAudioControllerProvider.notifier);
     final filtered = [
       for (final item in asmaulHusnaCatalog)
         if ((!_onlyMemorized || _memorized.contains(item.number)) && _matchesItem(item, _query)) item,
@@ -197,8 +350,9 @@ class _AsmaulHusnaPageState extends ConsumerState<AsmaulHusnaPage> {
 
     return Column(
       children: [
+        _buildAudioBar(context, audio),
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
           child: Column(
             children: [
               TextField(
@@ -225,25 +379,29 @@ class _AsmaulHusnaPageState extends ConsumerState<AsmaulHusnaPage> {
                 onChanged: (v) => setState(() => _query = v.trim()),
               ),
               const SizedBox(height: 8),
-              Row(
-                children: [
-                  ChoiceChip(
-                    materialTapTargetSize: MaterialTapTargetSize.padded,
-                    label: Text(context.tr('Semua (99)', 'All (99)')),
-                    selected: !_onlyMemorized,
-                    onSelected: (_) => setState(() => _onlyMemorized = false),
-                  ),
-                  const SizedBox(width: 8),
-                  ChoiceChip(
-                    key: const Key('asmaul-filter-memorized'),
-                    materialTapTargetSize: MaterialTapTargetSize.padded,
-                    label: Text(
-                      context.tr('Sudah Dihafal (${_memorized.length})', 'Memorized (${_memorized.length})'),
+              SizedBox(
+                width: double.infinity,
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [
+                    ChoiceChip(
+                      materialTapTargetSize: MaterialTapTargetSize.padded,
+                      label: Text(context.tr('Semua (99)', 'All (99)')),
+                      selected: !_onlyMemorized,
+                      onSelected: (_) => setState(() => _onlyMemorized = false),
                     ),
-                    selected: _onlyMemorized,
-                    onSelected: (_) => setState(() => _onlyMemorized = !_onlyMemorized),
-                  ),
-                ],
+                    ChoiceChip(
+                      key: const Key('asmaul-filter-memorized'),
+                      materialTapTargetSize: MaterialTapTargetSize.padded,
+                      label: Text(
+                        context.tr('Sudah Dihafal (${_memorized.length})', 'Memorized (${_memorized.length})'),
+                      ),
+                      selected: _onlyMemorized,
+                      onSelected: (_) => setState(() => _onlyMemorized = !_onlyMemorized),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -294,41 +452,78 @@ class _AsmaulHusnaPageState extends ConsumerState<AsmaulHusnaPage> {
                   itemBuilder: (context, index) {
                     final item = filtered[index];
                     final isMem = _memorized.contains(item.number);
+                    final isActive = audio.currentNumber == item.number;
+                    final isThisPlaying = isActive && audio.playing;
                     return Card(
-                      child: ListTile(
-                        leading: OctagonNumber(item.number),
-                        title: Row(
+                      shape: isActive
+                          ? RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              side: BorderSide(color: scheme.primary, width: 1.5),
+                            )
+                          : null,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 12, 8, 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Expanded(
-                              child: Text(
-                                '${item.latin} · ${_meaningFor(context, item)}',
-                                style: const TextStyle(fontWeight: FontWeight.w700),
-                              ),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                OctagonNumber(item.number),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    '${item.latin} · ${_meaningFor(context, item)}',
+                                    style: const TextStyle(fontWeight: FontWeight.w700),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  item.arabic,
+                                  textDirection: TextDirection.rtl,
+                                  style: quranTextStyle(fontSize: 22, color: scheme.primary),
+                                ),
+                              ],
                             ),
-                            Text(
-                              item.arabic,
-                              textDirection: TextDirection.rtl,
-                              style: quranTextStyle(fontSize: 22, color: scheme.primary),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 6, right: 4),
+                              child: Text(_explanationFor(context, item), style: t.bodySmall),
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                TextButton.icon(
+                                  key: Key('asmaul-play-${item.number}'),
+                                  onPressed: () => ctrl.playSingle(item.number),
+                                  icon: Icon(
+                                    isThisPlaying ? MoeslimIcons.pause : MoeslimIcons.suara,
+                                    size: 18,
+                                    color: scheme.primary,
+                                  ),
+                                  label: Text(
+                                    isThisPlaying
+                                        ? context.tr('Jeda', 'Pause')
+                                        : context.tr('Dengarkan', 'Listen'),
+                                  ),
+                                ),
+                                const Spacer(),
+                                IconButton(
+                                  key: Key('asmaul-mem-${item.number}'),
+                                  tooltip: isMem
+                                      ? context.tr('Tandai belum hafal', 'Mark as not memorized')
+                                      : context.tr('Tandai sudah hafal', 'Mark as memorized'),
+                                  onPressed: () async {
+                                    final next = await ref.read(asmaulHusnaRepoProvider).toggleMemorized(item.number);
+                                    setState(() => _memorized = next);
+                                  },
+                                  icon: Icon(
+                                    isMem ? MoeslimIcons.berhasil : Icons.check_circle_outline,
+                                    color: isMem ? scheme.primary : null,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
-                        ),
-                        subtitle: Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(_explanationFor(context, item)),
-                        ),
-                        trailing: IconButton(
-                          key: Key('asmaul-mem-${item.number}'),
-                          tooltip: isMem
-                              ? context.tr('Tandai belum hafal', 'Mark as not memorized')
-                              : context.tr('Tandai sudah hafal', 'Mark as memorized'),
-                          onPressed: () async {
-                            final next = await ref.read(asmaulHusnaRepoProvider).toggleMemorized(item.number);
-                            setState(() => _memorized = next);
-                          },
-                          icon: Icon(
-                            isMem ? MoeslimIcons.berhasil : Icons.check_circle_outline,
-                            color: isMem ? scheme.primary : null,
-                          ),
                         ),
                       ),
                     );
@@ -340,7 +535,10 @@ class _AsmaulHusnaPageState extends ConsumerState<AsmaulHusnaPage> {
   }
 
   Widget _buildQuizTab(BuildContext context) {
+    final audio = ref.watch(asmaulAudioControllerProvider);
+    final ctrl = ref.read(asmaulAudioControllerProvider.notifier);
     final q = buildAsmaulHusnaQuizQuestion(_quizIndex);
+    final isQuizPlaying = audio.currentNumber == q.target.number && audio.playing;
     final t = Theme.of(context).textTheme;
     final scheme = Theme.of(context).colorScheme;
 
@@ -374,6 +572,17 @@ class _AsmaulHusnaPageState extends ConsumerState<AsmaulHusnaPage> {
                   ),
                   textAlign: TextAlign.center,
                   style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  key: const Key('asmaul-quiz-play'),
+                  onPressed: () => ctrl.playSingle(q.target.number),
+                  icon: Icon(isQuizPlaying ? MoeslimIcons.pause : MoeslimIcons.suara, size: 18),
+                  label: Text(
+                    isQuizPlaying
+                        ? context.tr('Jeda Audio', 'Pause Audio')
+                        : context.tr('Dengarkan Pelafalan', 'Listen Pronunciation'),
+                  ),
                 ),
               ],
             ),

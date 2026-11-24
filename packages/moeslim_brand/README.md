@@ -2,9 +2,31 @@
 
 Shared Flutter visual assets for Personal, Mosque and TV Display.
 
+## Logo Brand Kit V2
+
+The active logo comes from the user-supplied `Moeslim_PM_Logo_Brand_Kit_V2.zip`
+(integrated 2026-11-24). Its original files are retained in `brand-kit-v2-src/`.
+The mark is the single human figure beside the mosque under an arch.
+The archive's PNG artwork is copied directly, without redrawing the logo.
+
+- `assets/logo/horizontal.png` and `horizontal_white.png` use the light/dark
+  horizontal wordmarks from `03_Logotype_Wordmark`.
+- `stacked.png` and `stacked_white.png` use the matching vertical wordmarks;
+  dark mode now retains the full vertical lockup.
+- `symbol.png` and `symbol_white.png` use the transparent 512 px symbols.
+- Both Android apps use the supplied density, round and adaptive launcher icons,
+  including the monochrome layer for Android 13 themed icons.
+- Mobile native splash symbols, Android TV launcher banner, backend favicon
+  and web TV logo use V2. The TV banner is a proportional resize of the supplied
+  dark wordmark. Web references use `v=2` to invalidate the previous image cache.
+
+Older brand-kit source files are historical references; they are not the active
+logo bundle. The UI color tokens and 3D illustration palette remain separate
+from the colors embedded in the supplied logo artwork.
+
 ## Soft 3D collection
 
-`assets/3d/` contains 38 generated renders with local 192 px thumbnails for
+`assets/3d/` contains 66 generated renders with local 192 px thumbnails for
 navigation and feature icons. Full illustrations use a maximum 768 px edge;
 the TV mosque scene uses 1536 px width. WebP preserves transparency. Previous
 illustration/kit files remain as source history but are no longer bundled.
@@ -50,6 +72,8 @@ source paths when re-encoding on another machine, then run from the repo root:
 npm ci --prefix tools/asset_kit/optimizer
 node tools/asset_kit/optimizer/encode.cjs tools/asset_kit/optimizer/sources.json
 node tools/asset_kit/optimizer/encode.cjs tools/asset_kit/optimizer/extra-sources.json
+node tools/asset_kit/optimizer/encode.cjs tools/asset_kit/optimizer/extra-sources-2.json
+node tools/asset_kit/optimizer/encode.cjs tools/asset_kit/optimizer/extra-sources-3.json
 ```
 
 The two small SVGs in `assets/3d/` are native beveled geometry: a centered compass

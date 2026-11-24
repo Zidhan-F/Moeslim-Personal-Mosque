@@ -9,6 +9,7 @@ import '../../core/format.dart';
 import '../../core/l10n.dart';
 import '../../core/providers.dart';
 import '../../ui/components.dart';
+import '../more/ramadan_local_page.dart';
 
 class SeasonalRamadanPage extends ConsumerStatefulWidget {
   final int initialTab;
@@ -178,6 +179,28 @@ class _SeasonalRamadanPageState extends ConsumerState<SeasonalRamadanPage> {
                       style: t.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
                     ),
                   ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Card(
+                key: const Key('open-ramadan-local'),
+                child: ListTile(
+                  leading: Icon(MoeslimIcons.masjid, color: scheme.primary),
+                  title: Text(
+                    context.tr('Jadwal Ramadan Masjid Lokal', 'Local Mosque Ramadan Schedule'),
+                    style: t.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                  subtitle: Text(
+                    context.tr(
+                      'Lihat jadwal tarawih, buka bersama, kajian resmi masjid, dan pendaftaran jamaah.',
+                      'Browse official tarawih, iftar, lectures, and congregation registration.',
+                    ),
+                    style: t.bodySmall,
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const RamadanLocalPage()),
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
