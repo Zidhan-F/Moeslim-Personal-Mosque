@@ -4,6 +4,7 @@ import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:personal_core/personal_core.dart';
 
 import '../../ui/components.dart';
+import '../nearby/location_service.dart';
 import 'masjid_api.dart';
 import 'mosque_providers.dart';
 import 'mosque_shell.dart';
@@ -361,6 +362,22 @@ class _RegisterMosquePageState extends ConsumerState<RegisterMosquePage> {
   final _phone = TextEditingController();
   final _simas = TextEditingController();
   City _city = indonesianCities.firstWhere((c) => c.name == 'Jakarta');
+  LocationFix? _gps;
+  bool _locating = false;
+
+  /// Titik persis masjid dari GPS (pengurus berdiri di masjid) agar tepat di Masjid Terdekat.
+  Future<void> _useGps() async {
+    setState(() => _locating = true);
+    try {
+      final fix = await ref.read(locationServiceProvider).current();
+      setState(() => _gps = fix);
+    } on LocationException catch (e) {
+      if (mounted) setState(() => _error = e.message);
+    } finally {
+      if (mounted) setState(() => _locating = false);
+    }
+  }
+
   String? _error;
   bool _busy = false;
 
@@ -436,6 +453,26 @@ class _RegisterMosquePageState extends ConsumerState<RegisterMosquePage> {
             items: [for (final c in indonesianCities) DropdownMenuItem(value: c, child: Text(c.name))],
             onChanged: (c) => setState(() => _city = c ?? _city),
           ),
+          const SizedBox(height: 8),
+          Card(
+            margin: EdgeInsets.zero,
+            child: ListTile(
+              key: const Key('use-gps'),
+              leading: Icon(_gps == null ? Icons.my_location : Icons.check_circle, color: BrandColors.emerald),
+              title: Text(_gps == null ? 'Gunakan lokasi saya sekarang' : 'Titik masjid tersimpan'),
+              subtitle: Text(
+                _gps == null
+                    ? 'Lakukan saat Anda berada di masjid agar jamaah menemukannya tepat di Masjid Terdekat.'
+                    : '${_gps!.latitude.toStringAsFixed(5)}, ${_gps!.longitude.toStringAsFixed(5)} '
+                          '(akurasi ±${_gps!.accuracyM.round()} m)',
+                key: const Key('gps-point'),
+              ),
+              trailing: _locating
+                  ? const SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.chevron_right),
+              onTap: _locating ? null : _useGps,
+            ),
+          ),
           const SizedBox(height: 12),
           TextField(
             controller: _phone,
@@ -479,8 +516,8 @@ class _RegisterMosquePageState extends ConsumerState<RegisterMosquePage> {
                         'address': _address.text.trim(),
                         'city': _city.name,
                         'province': _city.province,
-                        'latitude': _city.latitude,
-                        'longitude': _city.longitude,
+                        'latitude': _gps?.latitude ?? _city.latitude,
+                        'longitude': _gps?.longitude ?? _city.longitude,
                         'timezone': _tzName(_city.utcOffset),
                         if (_phone.text.trim().isNotEmpty) 'phone': _phone.text.trim(),
                         if (_simas.text.trim().isNotEmpty) 'simas_id': _simas.text.trim(),

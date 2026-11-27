@@ -5,6 +5,7 @@ import '../prayer/prayer_page.dart';
 import '../quran/naghom_pages.dart';
 import 'doa_pages.dart';
 import 'hijri_page.dart';
+import '../nearby/nearby_page.dart';
 import 'qibla_page.dart';
 import 'tasbih_page.dart';
 import 'tracker_page.dart';
@@ -20,6 +21,7 @@ class IbadahPage extends StatelessWidget {
       (Icons.fact_check, 'Catatan Ibadah', 'Checklist, streak & grafik', () => const TrackerPage()),
       (Icons.calendar_month, 'Jadwal Salat', 'Akurat sesuai lokasi', () => const PrayerPage()),
       (Icons.explore, 'Arah Kiblat', 'Kompas & derajat kiblat', () => const QiblaPage()),
+      (Icons.near_me_outlined, 'Masjid Terdekat', 'Masjid & musala di sekitar Anda', () => const NearbyMosquesPage()),
       (Icons.event_note, 'Kalender Hijriah', 'Tanggal Islam & hari penting', () => const HijriPage()),
       (Icons.graphic_eq, '7 Irama Naghom', 'Fitur andalan tilawah', () => const NaghomCatalogPage()),
     ];

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Mosque;
+use App\Services\Directory\DirectoryService;
 use App\Services\MosqueRegistrar;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -65,6 +66,9 @@ class MosqueController extends Controller
             );
         }
         $mosque->update($data);
+        if ($mosque->wasChanged(['name', 'latitude', 'longitude', 'address', 'city'])) {
+            app(DirectoryService::class)->linkMosque($mosque);
+        }
 
         return $this->show($request, $mosque->fresh());
     }

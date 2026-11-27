@@ -1,0 +1,10 @@
+{
+  "version": 0.6,
+  "elements": [
+    {"type": "node", "id": 1001, "lat": -6.1702, "lon": 106.8314, "tags": {"amenity": "place_of_worship", "religion": "muslim", "name": "Masjid Istiqlal", "addr:street": "Jl. Taman Wijaya Kusuma", "addr:city": "Jakarta Pusat"}},
+    {"type": "way", "id": 2002, "center": {"lat": -6.1820, "lon": 106.8290}, "tags": {"amenity": "place_of_worship", "religion": "muslim", "name": "Musholla Al-Hidayah"}},
+    {"type": "node", "id": 1003, "lat": -6.1750, "lon": 106.8270, "tags": {"amenity": "place_of_worship", "religion": "muslim"}},
+    {"type": "node", "id": 1004, "lat": -6.1690, "lon": 106.8330, "tags": {"amenity": "place_of_worship", "religion": "christian", "name": "Gereja Katedral"}},
+    {"type": "relation", "id": 3005, "center": {"lat": -6.2000, "lon": 106.8450}, "tags": {"amenity": "place_of_worship", "religion": "muslim", "name": "Masjid Agung Sunda Kelapa"}}
+  ]
+}

@@ -1,10 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:moeslim_brand/moeslim_brand.dart';
 import 'package:personal_core/personal_core.dart';
 
 import '../../core/format.dart';
 import '../../core/providers.dart';
+import '../../ui/components.dart';
 import '../masjid/session.dart';
+import '../nearby/nearby_page.dart';
 
 final _followedProvider = FutureProvider.autoDispose((ref) => ref.watch(favoriteMosqueRepoProvider).all());
 
@@ -17,7 +20,7 @@ class FollowedMosquesPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final followed = ref.watch(_followedProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Masjid Diikuti'), centerTitle: true, automaticallyImplyLeading: !asTab),
+      appBar: AppBar(title: const Text('Masjid Sekitar Anda'), centerTitle: true, automaticallyImplyLeading: !asTab),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Cari masjid',
         child: const Icon(Icons.search),
@@ -26,32 +29,64 @@ class FollowedMosquesPage extends ConsumerWidget {
           ref.invalidate(_followedProvider);
         },
       ),
-      body: followed.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('$e')),
-        data: (list) => list.isEmpty
-            ? const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(32),
-                  child: Text(
-                    'Ikuti masjid di sekitar Anda untuk melihat agenda kajian dan pengumuman publiknya — gratis, tanpa akun. Ketuk ikon cari.',
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              )
-            : ListView(
-                children: [
-                  for (final m in list)
-                    ListTile(
-                      leading: const Icon(Icons.mosque),
-                      title: Text(m.name),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () =>
-                          Navigator.of(context)
-                              .push(MaterialPageRoute(builder: (_) => FollowedMosqueDetailPage(mosque: m))),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 88),
+        children: [
+          Card(
+            margin: EdgeInsets.zero,
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              key: const Key('open-nearby'),
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NearbyMosquesPage())),
+              child: const Padding(
+                padding: EdgeInsets.all(14),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Masjid Terdekat', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                          SizedBox(height: 2),
+                          Text('Temukan masjid & musala di sekitar Anda, lengkap dengan jarak, arah, dan rute.'),
+                        ],
+                      ),
                     ),
-                ],
+                    BrandArt(BrandIllustration.mosqueCircle, height: 76),
+                  ],
+                ),
               ),
+            ),
+          ),
+          const SectionHeader('Masjid Diikuti'),
+          followed.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Center(child: Text('$e')),
+            data: (list) => list.isEmpty
+                ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(32),
+                      child: Text(
+                        'Ikuti masjid untuk melihat agenda kajian dan pengumuman publiknya — gratis, tanpa akun. Buka Masjid Terdekat atau ketuk ikon cari.',
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  )
+                : Column(
+                    children: [
+                      for (final m in list)
+                        ListTile(
+                          leading: const Icon(Icons.mosque),
+                          title: Text(m.name),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () =>
+                              Navigator.of(context)
+                                  .push(MaterialPageRoute(builder: (_) => FollowedMosqueDetailPage(mosque: m))),
+                        ),
+                    ],
+                  ),
+          ),
+        ],
       ),
     );
   }

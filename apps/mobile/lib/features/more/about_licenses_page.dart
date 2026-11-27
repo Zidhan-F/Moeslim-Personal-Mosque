@@ -17,6 +17,11 @@ const contentSources = <(String, String)>[
     'Terjemahan: Al-Qur\'an dan Terjemahannya — Kementerian Agama RI',
     'Teks terjemahan id.indonesian melalui Tanzil.net (pembaruan 4 Juni 2010).',
   ),
+  (
+    'Data Masjid Terdekat: OpenStreetMap',
+    '© OpenStreetMap contributors — Open Database License (ODbL) 1.0, openstreetmap.org/copyright. '
+        'Ditambah masjid yang dikonfirmasi pengurusnya dan koreksi jamaah yang sudah ditinjau.',
+  ),
   ('Font mushaf: Amiri Quran', '© The Amiri Project Authors — SIL Open Font License 1.1.'),
   ('Font antarmuka: Inter', '© The Inter Project Authors — SIL Open Font License 1.1.'),
 ];

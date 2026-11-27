@@ -75,5 +75,7 @@ Batas: 500 agenda+pengumuman aktif (`content_limit_reached`), 5.000 inventaris (
 |---|---|
 | GET | `/public/mosques?q&city` |
 | GET | `/public/mosques/{slug}` · `/events` · `/announcements` |
+| GET | `/public/directory/cells/{geohash4}` — direktori Masjid Terdekat per sel wilayah (ETag) |
+| POST | `/public/directory/reports` — laporan koreksi/masjid baru (tanpa akun, 10/jam) |
 
 Hanya field allowlist (tanpa kontak internal, keuangan, identitas pengurus). Rate limit 60/menit.

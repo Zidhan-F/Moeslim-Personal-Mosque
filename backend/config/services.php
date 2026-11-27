@@ -2,6 +2,12 @@
 
 return [
 
+    // Sumber impor direktori masjid (OpenStreetMap). Dipanggil job server, bukan dari aplikasi.
+    'overpass' => [
+        'url' => env('OVERPASS_URL', 'https://overpass-api.de/api/interpreter'),
+        'schedule' => (bool) env('OVERPASS_SCHEDULE', false),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Third Party Services

@@ -34,10 +34,17 @@ Ilustrasi (masjid, Al-Qur'an di rehal, lentera, Ka'bah, perisai login, pemandang
 digambar ulang sebagai vektor mengikuti paket visualisasi — sumber & cara render di `tools/illustrations/`.
 
 Tangkapan layar hasil render (font & warna brand) ada di `docs/brand/screenshots/`:
-`personal/` (Onboarding, Beranda, Al-Qur'an, Mushaf, Murottal, 7 Irama, Doa, Jadwal, Kiblat, Tasbih, Catatan Ibadah),
+`personal/` (Onboarding, Beranda, Al-Qur'an, Mushaf, Murottal, 7 Irama, Doa, Jadwal, Kiblat, Tasbih, Catatan Ibadah, Masjid Terdekat),
 `mosque/` (Pilih Peran, Registrasi, Login/Aktivasi, Dashboard, Keuangan, Tambah/Riwayat Transaksi,
 Laporan, Pengurus & Role, Agenda, Petugas, Inventaris, Konfigurasi TV, Konten, Akun) dan
 `tv/` (Layar Utama, fase Iqamah, Informasi Jamaah, tema Terang & Gelap).
+
+## Masjid Terdekat
+
+Masjid & musala di sekitar pengguna dari GPS: data OpenStreetMap (ODbL) + masjid terdaftar Moeslim Mosque
+(terverifikasi otomatis) + koreksi jamaah yang dimoderasi. Aplikasi mengunduh paket per wilayah dan menghitung
+jarak di perangkat (privasi & offline). Operasional impor/moderasi: `docs/masjid-terdekat.md`;
+keputusan desain: `docs/adr/0006-masjid-terdekat.md`.
 
 ## Teks Al-Qur'an
 

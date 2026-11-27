@@ -12,6 +12,7 @@ dependencies:
   flutter_compass: ^0.8.1
   flutter_riverpod: ^3.5.0
   flutter_secure_storage: ^11.2.0
+  geolocator: ^14.1.2
   http: ^1.6.0
   intl: ^0.20.3
   just_audio: ^0.10.6
@@ -25,6 +26,7 @@ dependencies:
   shared_prayer:
     path: ../../packages/shared_prayer
   shared_preferences: ^2.5.6
+  url_launcher: ^6.3.3
 
 dev_dependencies:
   flutter_test:

@@ -12,7 +12,7 @@ import '../ibadah/doa_pages.dart';
 import '../ibadah/hijri_page.dart';
 import '../ibadah/qibla_page.dart';
 import '../ibadah/tracker_page.dart';
-import '../more/followed_mosques_page.dart';
+import '../nearby/nearby_page.dart';
 import '../prayer/prayer_page.dart';
 import '../quran/naghom_hero.dart';
 import '../quran/naghom_pages.dart';
@@ -91,9 +91,10 @@ class HomePage extends ConsumerWidget {
                   MenuTile(icon: Icons.fact_check, label: 'Catatan Ibadah', onTap: () => push(const TrackerPage())),
                   MenuTile(icon: Icons.graphic_eq, label: '7 Irama', onTap: () => push(const NaghomCatalogPage())),
                   MenuTile(
-                    icon: Icons.location_city,
-                    label: 'Masjid Diikuti',
-                    onTap: () => push(const FollowedMosquesPage()),
+                    key: const Key('menu-nearby'),
+                    icon: Icons.near_me_outlined,
+                    label: 'Masjid Terdekat',
+                    onTap: () => push(const NearbyMosquesPage()),
                   ),
                 ],
               ),

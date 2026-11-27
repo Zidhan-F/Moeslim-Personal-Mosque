@@ -39,13 +39,14 @@ class MasjidApi {
     Object? body,
     Map<String, String>? query,
     Map<String, String>? headers,
+    bool auth = true,
   }) async {
     final uri = Uri.parse('$baseUrl$path').replace(queryParameters: query);
     final req = http.Request(method, uri)
       ..headers.addAll({
         'Accept': 'application/json',
         if (body != null) 'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
+        if (auth && token != null) 'Authorization': 'Bearer $token',
         ...?headers,
       });
     if (body != null) req.body = jsonEncode(body);
@@ -155,6 +156,13 @@ class MasjidApi {
 
   Future<void> toggleEventDisplay(String mosqueId, int eventId, bool show) =>
       _send('PATCH', '/mosques/$mosqueId/events/$eventId/display', body: {'show_on_display': show});
+
+  // Direktori Masjid Terdekat — sengaja TANPA token: unduhan sel wilayah tidak terkait akun mana pun.
+  Future<Map<String, dynamic>> directoryCell(String cell) async =>
+      Map<String, dynamic>.from(await _send('GET', '/public/directory/cells/$cell', auth: false) as Map);
+
+  Future<void> reportDirectory(Map<String, dynamic> data) =>
+      _send('POST', '/public/directory/reports', body: data, auth: false);
 
   // Publik (tanpa akun)
   Future<List<Map<String, dynamic>>> searchPublicMosques(String q) async =>

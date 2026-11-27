@@ -6,6 +6,8 @@ import 'package:moeslim_mobile/app.dart';
 import 'package:moeslim_mobile/core/providers.dart';
 import 'package:moeslim_mobile/features/ibadah/qibla_page.dart';
 import 'package:moeslim_mobile/features/masjid/session.dart';
+import 'package:moeslim_mobile/features/nearby/location_service.dart';
+import 'package:moeslim_mobile/features/nearby/nearby_page.dart';
 
 import 'dart:async';
 
@@ -99,6 +101,8 @@ Future<ProviderContainer> pumpApp(
   AudioEngine? engine,
   OfflineAudioStore? offline,
   bool showOnboarding = false,
+  LocationService? location,
+  Future<bool> Function(DirectoryPlace)? mapLauncher,
 }) async {
   store ??= InMemoryStore();
   if (!showOnboarding) {
@@ -116,6 +120,8 @@ Future<ProviderContainer> pumpApp(
       offlineAudioProvider.overrideWithValue(offline ?? FakeOfflineAudio()),
       if (client != null) httpClientProvider.overrideWithValue(client),
       tokenStoreProvider.overrideWithValue(tokens ?? MemoryTokenStore()),
+      locationServiceProvider.overrideWithValue(location ?? const FakeLocationService(problem: LocationProblem.denied)),
+      mapLauncherProvider.overrideWithValue(mapLauncher ?? (_) async => true),
     ],
   );
   addTearDown(container.dispose);
@@ -129,4 +135,20 @@ Future<ProviderContainer> pumpApp(
 Future<void> openIramaSheet(WidgetTester tester) async {
   await tester.tap(find.byKey(const Key('irama-picker')));
   await tester.pumpAndSettle();
+}
+
+/// Lokasi palsu: posisi tetap, atau masalah izin/GPS.
+class FakeLocationService implements LocationService {
+  final LocationFix? fix;
+  final LocationProblem? problem;
+  const FakeLocationService({this.fix, this.problem});
+
+  @override
+  Future<LocationFix> current() async {
+    if (problem != null) throw LocationException(problem!);
+    return fix!;
+  }
+
+  @override
+  Future<void> openSettings() async {}
 }
